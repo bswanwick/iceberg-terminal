@@ -1,6 +1,6 @@
 # Iceberg Terminal
 
-React + TypeScript + Vite app wired with Redux Toolkit, redux-observable/RxJS, Firebase, and MUI. Includes Google Auth + Firestore CRUD sample flow and ESLint + Prettier.
+React + TypeScript + Vite app wired with Redux Toolkit, redux-observable/RxJS, Firebase, and MUI (styled-components engine). Includes Google Auth + Firestore CRUD sample flow and ESLint + Prettier.
 
 ## Quick start
 
