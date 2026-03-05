@@ -28,8 +28,13 @@ import {
 
 const notesCollection = (uid: string) => collection(db, 'users', uid, 'notes')
 
-const toErrorMessage = (error: unknown, fallback: string) =>
-  error instanceof Error && error.message ? error.message : fallback
+const toErrorMessage = (error: unknown, fallback: string) => {
+  if (import.meta.env.DEV) {
+    console.error('[notes:error]', error)
+  }
+
+  return error instanceof Error && error.message ? error.message : fallback
+}
 
 const toNote = (docSnap: { id: string; data: () => Record<string, unknown> }): Note => {
   const data = docSnap.data()
