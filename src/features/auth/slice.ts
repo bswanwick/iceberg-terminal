@@ -23,7 +23,7 @@ const initialState: AuthState = {
   ready: false,
 }
 
-const authSlice = createSlice({
+export const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
@@ -52,13 +52,6 @@ const authSlice = createSlice({
   },
 })
 
-export const {
-  authClearError,
-  authError,
-  authSignInRequested,
-  authSignOutRequested,
-  authStartListening,
-  authStateChanged,
-} = authSlice.actions
+export type AuthAction = ReturnType<(typeof authSlice.actions)[keyof typeof authSlice.actions]>
 
-export default authSlice.reducer
+export default authSlice

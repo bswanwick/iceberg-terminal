@@ -1,19 +1,10 @@
-import type { AnyAction } from '@reduxjs/toolkit'
 import type { Epic } from 'redux-observable'
-import { ofType } from 'redux-observable'
 import { from, Observable, of } from 'rxjs'
-import { catchError, exhaustMap, ignoreElements, map } from 'rxjs/operators'
+import { catchError, exhaustMap, filter, ignoreElements, map } from 'rxjs/operators'
 import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth'
-import type { RootState } from '../../app/store'
+import type { AnyFeatureAction, RootState } from '../../app/store'
 import { auth, googleProvider } from '../../firebase'
-import {
-  authError,
-  authSignInRequested,
-  authSignOutRequested,
-  authStartListening,
-  authStateChanged,
-  type AuthUser,
-} from './authSlice'
+import slice, { type AuthUser } from './slice'
 
 const toAuthUser = (user: User): AuthUser => ({
   uid: user.uid,
@@ -41,35 +32,37 @@ const authState$ = new Observable<AuthUser | null>((subscriber) => {
   return unsubscribe
 })
 
-export const authListenerEpic: Epic<AnyAction, AnyAction, RootState> = (action$) =>
+export const authListenerEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootState> = (action$) =>
   action$.pipe(
-    ofType(authStartListening.type),
+    filter(slice.actions.authStartListening.match),
     exhaustMap(() =>
       authState$.pipe(
-        map((user) => authStateChanged(user)),
-        catchError((error) => of(authError(toErrorMessage(error, 'ssssssss Auth error')))),
+        map((user) => slice.actions.authStateChanged(user)),
+        catchError((error) => of(slice.actions.authError(toErrorMessage(error, 'Auth error')))),
       ),
     ),
   )
 
-export const authSignInEpic: Epic<AnyAction, AnyAction, RootState> = (action$) =>
+export const authSignInEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootState> = (action$) =>
   action$.pipe(
-    ofType(authSignInRequested.type),
+    filter(slice.actions.authSignInRequested.match),
     exhaustMap(() =>
       from(signInWithPopup(auth, googleProvider)).pipe(
         ignoreElements(),
-        catchError((error) => of(authError(toErrorMessage(error, 'aaaaaaa   Sign in failed')))),
+        catchError((error) => of(slice.actions.authError(toErrorMessage(error, 'Sign in failed')))),
       ),
     ),
   )
 
-export const authSignOutEpic: Epic<AnyAction, AnyAction, RootState> = (action$) =>
+export const authSignOutEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootState> = (action$) =>
   action$.pipe(
-    ofType(authSignOutRequested.type),
+    filter(slice.actions.authSignOutRequested.match),
     exhaustMap(() =>
       from(signOut(auth)).pipe(
         ignoreElements(),
-        catchError((error) => of(authError(toErrorMessage(error, 'Sign out failed')))),
+        catchError((error) =>
+          of(slice.actions.authError(toErrorMessage(error, 'Sign out failed'))),
+        ),
       ),
     ),
   )

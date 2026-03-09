@@ -1,18 +1,38 @@
 import { combineEpics } from 'redux-observable'
-import { authListenerEpic, authSignInEpic, authSignOutEpic } from '../features/auth/authEpics'
+import { authListenerEpic, authSignInEpic, authSignOutEpic } from '../features/auth/epics'
 import {
-  notesAddEpic,
-  notesDeleteEpic,
-  notesFetchEpic,
-  notesUpdateEpic,
-} from '../features/notes/notesEpics'
+  canonicalRecordAddEpic,
+  canonicalRecordDeleteEpic,
+  canonicalRecordUpdateEpic,
+  canonicalRecordsFetchEpic,
+} from '../features/canonicalRecords/epics'
+import {
+  inventoryAddEpic,
+  inventoryDeleteEpic,
+  inventoryFetchEpic,
+  inventoryItemPhotoUploadEpic,
+  inventoryPhotoDeleteEpic,
+  inventoryPhotoRemoveEpic,
+  inventoryPhotoUploadEpic,
+  inventoryUpdateEpic,
+} from '../features/inventory/epics'
+import { newsletterSubscribeEpic } from '../features/newsletter/epics'
 
 export const rootEpic = combineEpics(
   authListenerEpic,
   authSignInEpic,
   authSignOutEpic,
-  notesFetchEpic,
-  notesAddEpic,
-  notesUpdateEpic,
-  notesDeleteEpic,
+  canonicalRecordsFetchEpic,
+  canonicalRecordAddEpic,
+  canonicalRecordUpdateEpic,
+  canonicalRecordDeleteEpic,
+  inventoryFetchEpic,
+  inventoryAddEpic,
+  inventoryUpdateEpic,
+  inventoryDeleteEpic,
+  inventoryPhotoUploadEpic,
+  inventoryPhotoRemoveEpic,
+  inventoryPhotoDeleteEpic,
+  inventoryItemPhotoUploadEpic,
+  newsletterSubscribeEpic,
 )

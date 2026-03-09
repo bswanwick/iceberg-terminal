@@ -1,0 +1,91 @@
+import { useState } from 'react'
+import type { MouseEvent } from 'react'
+import { Avatar, Box, Button, ButtonBase, Menu, MenuItem, Stack, Typography } from '@mui/material'
+
+import { useAppDispatch, useAppSelector } from '../app/hooks'
+import { selectAuthReady, selectAuthStatus, selectAuthUser } from '../features/auth/selectors'
+import { authSlice } from '../features/auth/slice'
+
+type MenuAnchor = HTMLElement | null
+
+type MenuClickEvent = MouseEvent<HTMLElement>
+
+function HeaderMenu() {
+  const dispatch = useAppDispatch()
+  const user = useAppSelector(selectAuthUser)
+  const authReady = useAppSelector(selectAuthReady)
+  const authStatus = useAppSelector(selectAuthStatus)
+
+  const [anchorEl, setAnchorEl] = useState<MenuAnchor>(null)
+  const menuOpen = Boolean(anchorEl)
+
+  const handleMenuOpen = (event: MenuClickEvent) => {
+    setAnchorEl(event.currentTarget)
+  }
+
+  const handleMenuClose = () => {
+    setAnchorEl(null)
+  }
+
+  const handleSignOut = () => {
+    handleMenuClose()
+    dispatch(authSlice.actions.authSignOutRequested())
+  }
+
+  if (!user) {
+    return (
+      <Button
+        variant="contained"
+        color="secondary"
+        onClick={() => dispatch(authSlice.actions.authSignInRequested())}
+        disabled={!authReady || authStatus === 'loading'}
+      >
+        Sign in with Google
+      </Button>
+    )
+  }
+
+  return (
+    <>
+      <ButtonBase
+        onClick={handleMenuOpen}
+        sx={{
+          borderRadius: 2,
+          px: 1.5,
+          py: 1,
+          textAlign: 'left',
+          width: '100%',
+          justifyContent: 'flex-start',
+        }}
+        aria-controls={menuOpen ? 'header-user-menu' : undefined}
+        aria-haspopup="true"
+        aria-expanded={menuOpen ? 'true' : undefined}
+      >
+        <Stack direction="row" spacing={2} alignItems="center">
+          <Avatar src={user.photoURL ?? undefined} alt={user.displayName ?? 'User'} />
+          <Box>
+            <Typography fontWeight={600}>{user.displayName ?? 'Signed-in user'}</Typography>
+            <Typography variant="body2" sx={{ fontFamily: 'IBM Plex Mono' }}>
+              {user.email}
+            </Typography>
+          </Box>
+        </Stack>
+      </ButtonBase>
+      <Menu
+        id="header-user-menu"
+        anchorEl={anchorEl}
+        open={menuOpen}
+        onClose={handleMenuClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        PaperProps={{ sx: { minWidth: 220 } }}
+      >
+        <MenuItem disabled={!authReady || authStatus === 'loading'} onClick={handleSignOut}>
+          Sign out
+        </MenuItem>
+      </Menu>
+    </>
+  )
+}
+
+export default HeaderMenu

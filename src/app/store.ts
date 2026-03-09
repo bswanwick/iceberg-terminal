@@ -1,18 +1,27 @@
 import { combineReducers, configureStore } from '@reduxjs/toolkit'
 import { createEpicMiddleware } from 'redux-observable'
-import type { AnyAction } from '@reduxjs/toolkit'
-import authReducer from '../features/auth/authSlice'
-import notesReducer from '../features/notes/notesSlice'
+import auth, { type AuthAction } from '../features/auth/slice'
+import canonicalRecords, { type CanonicalRecordsAction } from '../features/canonicalRecords/slice'
+import inventory, { type InventoryAction } from '../features/inventory/slice'
+import newsletter, { type NewsletterAction } from '../features/newsletter/slice'
 import { rootEpic } from './rootEpic'
 
 const rootReducer = combineReducers({
-  auth: authReducer,
-  notes: notesReducer,
+  auth: auth.reducer,
+  canonicalRecords: canonicalRecords.reducer,
+  inventory: inventory.reducer,
+  newsletter: newsletter.reducer,
 })
 
 export type RootState = ReturnType<typeof rootReducer>
 
-const epicMiddleware = createEpicMiddleware<AnyAction, AnyAction, RootState>()
+export type AnyFeatureAction =
+  | AuthAction
+  | CanonicalRecordsAction
+  | InventoryAction
+  | NewsletterAction
+
+const epicMiddleware = createEpicMiddleware<AnyFeatureAction, AnyFeatureAction, RootState>()
 
 export const store = configureStore({
   reducer: rootReducer,
