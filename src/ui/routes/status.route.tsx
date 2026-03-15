@@ -7,18 +7,12 @@ function StatusRoute() {
   const authReady = useAppSelector(selectAuthReady)
   const authStatus = useAppSelector(selectAuthStatus)
 
-  const statusLabel = authReady
-    ? authStatus === 'authenticated'
-      ? 'Signed in'
-      : 'Signed out'
-    : 'Checking session'
-
   return (
     <Paper
       elevation={0}
       sx={{
         p: { xs: 3, md: 4 },
-        borderRadius: 4,
+        borderRadius: 3,
         background: 'linear-gradient(135deg, rgba(20, 71, 102, 0.08), rgba(255, 235, 196, 0.6))',
         border: '1px solid rgba(20, 71, 102, 0.15)',
       }}
@@ -35,7 +29,6 @@ function StatusRoute() {
           a quick summary without the full inventory grid.
         </Typography>
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-start">
-          <Chip label={statusLabel} color={user ? 'success' : 'default'} />
           <Chip label={`Auth ready: ${authReady ? 'yes' : 'no'}`} variant="outlined" />
           <Chip label={`Session: ${authStatus}`} variant="outlined" />
         </Stack>

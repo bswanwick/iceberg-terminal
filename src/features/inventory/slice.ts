@@ -1,14 +1,17 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import type { VintagePaperConditionReport } from './condition-report'
 import authSlice from '../auth/slice'
 
 export type InventoryItem = {
   id: string
   title: string
+  publisher: string
   canonicalRecordId: string
   publishDate: string
   format: string
   dimensions: string
   conditionGrade: string
+  conditionReport: VintagePaperConditionReport | null
   acquisitionDate: string
   acquisitionSource: string
   notes: string
@@ -25,11 +28,13 @@ export type InventoryPhoto = {
 
 export type InventoryFormState = {
   title: string
+  publisher: string
   canonicalRecordId: string
   publishDate: string
   format: string
   dimensions: string
   conditionGrade: string
+  conditionReport: VintagePaperConditionReport | null
   acquisitionDate: string
   acquisitionSource: string
   notes: string
@@ -37,11 +42,16 @@ export type InventoryFormState = {
   photos: InventoryPhoto[]
 }
 
-type InventoryFormField = Exclude<keyof InventoryFormState, 'photos'>
+type InventoryFormField = Exclude<keyof InventoryFormState, 'conditionReport' | 'photos'>
 
 type InventoryFormUpdatePayload = {
   field: InventoryFormField
   value: string
+}
+
+type InventoryConditionReportUpdatePayload = {
+  form: 'add' | 'edit'
+  report: VintagePaperConditionReport | null
 }
 
 type InventoryEditStartPayload = {
@@ -90,6 +100,8 @@ type InventoryUiState = {
   editingId: string | null
   photoUploadStatus: 'idle' | 'uploading' | 'error'
   photoUploadError: string | null
+  conditionReportDialogOpen: boolean
+  conditionReportDialogForm: 'add' | 'edit' | null
 }
 
 type InventoryState = {
@@ -109,11 +121,13 @@ type InventoryDeletePayload = {
 
 const createEmptyInventoryForm = (): InventoryFormState => ({
   title: '',
+  publisher: '',
   canonicalRecordId: '',
   publishDate: '',
   format: '',
   dimensions: '',
   conditionGrade: '',
+  conditionReport: null,
   acquisitionDate: '',
   acquisitionSource: '',
   notes: '',
@@ -131,6 +145,8 @@ const initialState: InventoryState = {
     editingId: null,
     photoUploadStatus: 'idle',
     photoUploadError: null,
+    conditionReportDialogOpen: false,
+    conditionReportDialogForm: null,
   },
 }
 
@@ -202,7 +218,9 @@ export const inventorySlice = createSlice({
     },
     inventoryPhotoRemoved: (state, action: PayloadAction<InventoryPhotoRemovedPayload>) => {
       const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
-      targetForm.photos = targetForm.photos.filter((photo) => photo.path !== action.payload.photo.path)
+      targetForm.photos = targetForm.photos.filter(
+        (photo) => photo.path !== action.payload.photo.path,
+      )
       state.ui.photoUploadStatus = 'idle'
       state.ui.photoUploadError = null
     },
@@ -219,6 +237,21 @@ export const inventorySlice = createSlice({
     inventoryEditFormUpdated: (state, action: PayloadAction<InventoryFormUpdatePayload>) => {
       state.ui.editForm[action.payload.field] = action.payload.value
     },
+    inventoryConditionReportSaved: (
+      state,
+      action: PayloadAction<InventoryConditionReportUpdatePayload>,
+    ) => {
+      const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
+      targetForm.conditionReport = action.payload.report
+    },
+    conditionReportDialogOpened: (state, action: PayloadAction<{ form: 'add' | 'edit' }>) => {
+      state.ui.conditionReportDialogOpen = true
+      state.ui.conditionReportDialogForm = action.payload.form
+    },
+    conditionReportDialogClosed: (state) => {
+      state.ui.conditionReportDialogOpen = false
+      state.ui.conditionReportDialogForm = null
+    },
     inventoryAddFormReset: (state) => {
       state.ui.addForm = createEmptyInventoryForm()
       state.ui.photoUploadStatus = 'idle'
@@ -233,11 +266,13 @@ export const inventorySlice = createSlice({
       state.ui.editingId = item.id
       state.ui.editForm = {
         title: item.title,
+        publisher: item.publisher,
         canonicalRecordId: item.canonicalRecordId,
         publishDate: item.publishDate,
         format: item.format,
         dimensions: item.dimensions,
         conditionGrade: item.conditionGrade,
+        conditionReport: item.conditionReport ?? null,
         acquisitionDate: item.acquisitionDate,
         acquisitionSource: item.acquisitionSource,
         notes: item.notes,
@@ -252,6 +287,8 @@ export const inventorySlice = createSlice({
       state.ui.editForm = createEmptyInventoryForm()
       state.ui.photoUploadStatus = 'idle'
       state.ui.photoUploadError = null
+      state.ui.conditionReportDialogOpen = false
+      state.ui.conditionReportDialogForm = null
     },
   },
   extraReducers: (builder) => {
@@ -265,6 +302,8 @@ export const inventorySlice = createSlice({
         state.ui.editingId = null
         state.ui.photoUploadStatus = 'idle'
         state.ui.photoUploadError = null
+        state.ui.conditionReportDialogOpen = false
+        state.ui.conditionReportDialogForm = null
       }
     })
   },

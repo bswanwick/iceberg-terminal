@@ -4,6 +4,7 @@ import auth, { type AuthAction } from '../features/auth/slice'
 import canonicalRecords, { type CanonicalRecordsAction } from '../features/canonicalRecords/slice'
 import inventory, { type InventoryAction } from '../features/inventory/slice'
 import newsletter, { type NewsletterAction } from '../features/newsletter/slice'
+import ui, { type UiAction } from '../features/ui/slice'
 import { rootEpic } from './rootEpic'
 
 const rootReducer = combineReducers({
@@ -11,6 +12,7 @@ const rootReducer = combineReducers({
   canonicalRecords: canonicalRecords.reducer,
   inventory: inventory.reducer,
   newsletter: newsletter.reducer,
+  ui: ui.reducer,
 })
 
 export type RootState = ReturnType<typeof rootReducer>
@@ -20,6 +22,7 @@ export type AnyFeatureAction =
   | CanonicalRecordsAction
   | InventoryAction
   | NewsletterAction
+  | UiAction
 
 const epicMiddleware = createEpicMiddleware<AnyFeatureAction, AnyFeatureAction, RootState>()
 

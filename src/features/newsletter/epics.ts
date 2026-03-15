@@ -5,10 +5,12 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import type { AnyFeatureAction, RootState } from '../../app/store'
 import { db } from '../../firebase'
 import slice from './slice'
-
-const normalizeEmail = (value: string) => value.trim().toLowerCase()
-
-const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+import {
+  normalizeEmail,
+  normalizeFirstName,
+  normalizeInterests,
+  validateSubscriptionPayload,
+} from './formUtils'
 
 const toErrorMessage = (error: unknown, fallback: string) => {
   if (import.meta.env.DEV) {
@@ -24,18 +26,26 @@ export const newsletterSubscribeEpic: Epic<AnyFeatureAction, AnyFeatureAction, R
   action$.pipe(
     filter(slice.actions.newsletterSubscribeRequested.match),
     mergeMap((action) => {
-      const email = normalizeEmail(action.payload)
-      if (!isValidEmail(email)) {
-        return of(slice.actions.newsletterSubscribeFailed('Enter a valid email address.'))
+      const payload = {
+        email: normalizeEmail(action.payload.email),
+        firstName: normalizeFirstName(action.payload.firstName),
+        interests: normalizeInterests(action.payload.interests),
+      }
+
+      const validationError = validateSubscriptionPayload(payload)
+      if (validationError) {
+        return of(slice.actions.newsletterSubscribeFailed(validationError))
       }
 
       return from(
         addDoc(collection(db, 'NewsletterSubscriptions'), {
-          email,
+          email: payload.email,
+          firstName: payload.firstName,
+          interests: payload.interests,
           createdAt: serverTimestamp(),
         }),
       ).pipe(
-        map(() => slice.actions.newsletterSubscribeSucceeded(email)),
+        map(() => slice.actions.newsletterSubscribeSucceeded(payload)),
         catchError((error) =>
           of(
             slice.actions.newsletterSubscribeFailed(toErrorMessage(error, 'Subscription failed.')),

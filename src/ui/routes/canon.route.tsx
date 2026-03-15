@@ -2,14 +2,14 @@ import { Alert } from '@mui/material'
 import { Navigate } from 'react-router-dom'
 import { useAppSelector } from '../../app/hooks'
 import { selectAuthError, selectAuthReady, selectAuthUser } from '../../features/auth/selectors'
-import { selectInventoryError } from '../../features/inventory/selectors'
-import InventorySection from '../../features/inventory/components/InventorySection'
+import { selectCanonicalRecordsError } from '../../features/canonicalRecords/selectors'
+import CanonicalRecordsSection from '../../features/canonicalRecords/components/CanonicalRecordsSection'
 
-function DashboardRoute() {
+function CanonRoute() {
   const authError = useAppSelector(selectAuthError)
   const authReady = useAppSelector(selectAuthReady)
   const user = useAppSelector(selectAuthUser)
-  const inventoryError = useAppSelector(selectInventoryError)
+  const canonicalRecordsError = useAppSelector(selectCanonicalRecordsError)
 
   if (authReady && !user) {
     return <Navigate to="/" replace />
@@ -18,10 +18,10 @@ function DashboardRoute() {
   return (
     <>
       {authError && <Alert severity="error">{authError}</Alert>}
-      {inventoryError && <Alert severity="error">{inventoryError}</Alert>}
-      <InventorySection />
+      {canonicalRecordsError && <Alert severity="error">{canonicalRecordsError}</Alert>}
+      <CanonicalRecordsSection />
     </>
   )
 }
 
-export default DashboardRoute
+export default CanonRoute

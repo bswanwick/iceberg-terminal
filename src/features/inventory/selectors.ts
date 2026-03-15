@@ -10,3 +10,7 @@ export const selectInventoryPhotoUploadStatus = (state: RootState) =>
   state.inventory.ui.photoUploadStatus
 export const selectInventoryPhotoUploadError = (state: RootState) =>
   state.inventory.ui.photoUploadError
+export const selectInventoryConditionReportDialogOpen = (state: RootState) =>
+  state.inventory.ui.conditionReportDialogOpen
+export const selectInventoryConditionReportDialogForm = (state: RootState) =>
+  state.inventory.ui.conditionReportDialogForm

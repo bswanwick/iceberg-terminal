@@ -1,8 +1,12 @@
 # Iceberg Terminal
 
-Collectors today operate in a fragmented environment. They rely on a patchwork of platforms and tools to research, track, and manage their collections. This often involves juggling email alerts, spreadsheets, saved searches, and manual note-taking across multiple websites and marketplaces. The market lacks a purpose-built operating system for collectors — a centralized tool that empowers collectors to research and manage their collections in a structured way.
+Iceberg Terminal is a research and inventory platform for niche collectors, designed to organize canonical records, personal collections, and track market activity in one place.
 
-Iceberg Terminal addresses this gap by providing a dedicated dashboard designed specifically for collectors. Instead of juggling alerts, spreadsheets, and scattered research, collectors interact with a structured system built around the objects themselves.
+## Why?
+
+Collectors today operate in a fragmented environment. They rely on a patchwork of platforms and tools to research, track, and manage their collections. This often involves juggling email alerts, user interfaces, spreadsheets, saved searches, and manual note-taking across multiple websites and marketplaces. Iceberg Terminal addresses this gap by providing a dedicated dashboard designed specifically for collectors and researchers. Instead of juggling email feeds, spreadsheets, and saved searches, collectors could interact with a system built around the objects themselves. The market lacks a centralized tool that empowers collectors to enjoy their hobby more effeciently. Iceberg Terminal aims to be that tool.
+
+## What?
 
 The core experience of Iceberg Terminal is built on a few foundational capabilities:
 
@@ -17,6 +21,10 @@ The core experience of Iceberg Terminal is built on a few foundational capabilit
 Together, these components create a focused research and collection environment focused on making the collector's life easier. Worthpoint is a great tool for looking up historical prices. Ebay is a great tool for finding current listings. Museum websites are a great tool for research and authentication. It's time to bring them all together for the collector in a single terminal.
 
 Once this core system is established, Iceberg Terminal can be extended by integrating external data sources such as auction houses, dealer listings, historical archives, and other public sources that feed information into the canonical record database. This allows the system to continuously enrich object records with new sightings, auction results, and reference imagery, strengthening the catalog and improving research capabilities over time.
+
+## Who?
+
+The Iceberg Terminal is a passion project led by Blaise Swanwick and Swanwick & Co. Galleries.
 
 # Quick start
 
@@ -141,3 +149,5 @@ System shall store high-resolution images suitable for research and inspection
 6. Google Blaze plan for billing + storage
 7. datatables for listing canonical records and inventory
 8. Rework the hero page + theming
+9. Use local AI model to parse tags out of scanned images (ship names, people, places, etc) as part of intake process, use those tags to automate Etsy listings.
+10. Let users register for newsletter. as we scale, let users subscribe to specific canonical objects in their possesion. Once a user buys something Cunard, for example, they will recieve sporadic updates from me, content, related to their preferred tags. As I learn, they learn.

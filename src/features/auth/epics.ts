@@ -1,9 +1,10 @@
 import type { Epic } from 'redux-observable'
-import { from, Observable, of } from 'rxjs'
-import { catchError, exhaustMap, filter, ignoreElements, map } from 'rxjs/operators'
+import { concat, from, Observable, of } from 'rxjs'
+import { catchError, exhaustMap, filter, ignoreElements, mergeMap } from 'rxjs/operators'
 import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth'
 import type { AnyFeatureAction, RootState } from '../../app/store'
 import { auth, googleProvider } from '../../firebase'
+import { screenLock } from '../ui/slice'
 import slice, { type AuthUser } from './slice'
 
 const toAuthUser = (user: User): AuthUser => ({
@@ -36,9 +37,14 @@ export const authListenerEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
   action$.pipe(
     filter(slice.actions.authStartListening.match),
     exhaustMap(() =>
-      authState$.pipe(
-        map((user) => slice.actions.authStateChanged(user)),
-        catchError((error) => of(slice.actions.authError(toErrorMessage(error, 'Auth error')))),
+      concat(
+        of(screenLock(true)),
+        authState$.pipe(
+          mergeMap((user) => of(slice.actions.authStateChanged(user), screenLock(false))),
+          catchError((error) =>
+            of(slice.actions.authError(toErrorMessage(error, 'Auth error')), screenLock(false)),
+          ),
+        ),
       ),
     ),
   )

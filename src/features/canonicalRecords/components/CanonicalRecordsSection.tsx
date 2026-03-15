@@ -25,6 +25,7 @@ import {
   selectCanonicalRecordsStatus,
 } from '../selectors'
 import { selectAuthUser } from '../../auth/selectors'
+import { selectAppLocked } from '../../ui/selectors'
 import { canonicalRecordsSlice } from '../slice'
 
 const CanonicalRecordsSection = () => {
@@ -35,6 +36,7 @@ const CanonicalRecordsSection = () => {
   const addForm = useAppSelector(selectCanonicalRecordAddForm)
   const editForm = useAppSelector(selectCanonicalRecordEditForm)
   const editingId = useAppSelector(selectCanonicalRecordEditingId)
+  const appLocked = useAppSelector(selectAppLocked)
 
   const canAddRecord = addForm.title.trim().length > 0
 
@@ -121,7 +123,7 @@ const CanonicalRecordsSection = () => {
                   }),
                 )
               }
-              disabled={!user}
+              disabled={appLocked || !user}
             />
           </Stack>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
@@ -137,7 +139,7 @@ const CanonicalRecordsSection = () => {
                   }),
                 )
               }
-              disabled={!user}
+              disabled={appLocked || !user}
               multiline
               minRows={2}
             />
@@ -155,7 +157,7 @@ const CanonicalRecordsSection = () => {
                   }),
                 )
               }
-              disabled={!user}
+              disabled={appLocked || !user}
             />
           </Stack>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
@@ -171,13 +173,13 @@ const CanonicalRecordsSection = () => {
                   }),
                 )
               }
-              disabled={!user}
+              disabled={appLocked || !user}
             />
             <Button
               variant="contained"
               startIcon={<AddIcon />}
               onClick={handleAdd}
-              disabled={!user || !canAddRecord || canonicalRecordsStatus === 'saving'}
+              disabled={appLocked || !user || !canAddRecord || canonicalRecordsStatus === 'saving'}
             >
               Add record
             </Button>
@@ -212,6 +214,7 @@ const CanonicalRecordsSection = () => {
                         )
                       }
                       fullWidth
+                      disabled={appLocked}
                     />
                     <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                       <TextField
@@ -226,6 +229,7 @@ const CanonicalRecordsSection = () => {
                           )
                         }
                         fullWidth
+                        disabled={appLocked}
                         multiline
                         minRows={2}
                       />
@@ -242,6 +246,7 @@ const CanonicalRecordsSection = () => {
                         )
                       }
                       fullWidth
+                      disabled={appLocked}
                     />
                     <TextField
                       label="References"
@@ -255,6 +260,7 @@ const CanonicalRecordsSection = () => {
                         )
                       }
                       fullWidth
+                      disabled={appLocked}
                     />
                     <Stack direction="row" spacing={1} justifyContent="flex-end">
                       <Button
@@ -262,6 +268,7 @@ const CanonicalRecordsSection = () => {
                         size="small"
                         startIcon={<SaveIcon />}
                         onClick={handleEditSave}
+                        disabled={appLocked}
                       >
                         Save
                       </Button>
@@ -272,6 +279,7 @@ const CanonicalRecordsSection = () => {
                         onClick={() =>
                           dispatch(canonicalRecordsSlice.actions.canonicalRecordEditCanceled())
                         }
+                        disabled={appLocked}
                       >
                         Cancel
                       </Button>
@@ -293,6 +301,7 @@ const CanonicalRecordsSection = () => {
                               }),
                             )
                           }
+                          disabled={appLocked}
                         >
                           <EditIcon fontSize="small" />
                         </IconButton>
@@ -305,6 +314,7 @@ const CanonicalRecordsSection = () => {
                               }),
                             )
                           }
+                          disabled={appLocked}
                         >
                           <DeleteIcon fontSize="small" />
                         </IconButton>

@@ -4,6 +4,7 @@ import { Avatar, Box, Button, ButtonBase, Menu, MenuItem, Stack, Typography } fr
 
 import { useAppDispatch, useAppSelector } from '../app/hooks'
 import { selectAuthReady, selectAuthStatus, selectAuthUser } from '../features/auth/selectors'
+import { selectAppLocked } from '../features/ui/selectors'
 import { authSlice } from '../features/auth/slice'
 
 type MenuAnchor = HTMLElement | null
@@ -15,6 +16,7 @@ function HeaderMenu() {
   const user = useAppSelector(selectAuthUser)
   const authReady = useAppSelector(selectAuthReady)
   const authStatus = useAppSelector(selectAuthStatus)
+  const appLocked = useAppSelector(selectAppLocked)
 
   const [anchorEl, setAnchorEl] = useState<MenuAnchor>(null)
   const menuOpen = Boolean(anchorEl)
@@ -38,7 +40,7 @@ function HeaderMenu() {
         variant="contained"
         color="secondary"
         onClick={() => dispatch(authSlice.actions.authSignInRequested())}
-        disabled={!authReady || authStatus === 'loading'}
+        disabled={appLocked || !authReady || authStatus === 'loading'}
       >
         Sign in with Google
       </Button>
@@ -49,6 +51,7 @@ function HeaderMenu() {
     <>
       <ButtonBase
         onClick={handleMenuOpen}
+        disabled={appLocked}
         sx={{
           borderRadius: 2,
           px: 1.5,
@@ -74,13 +77,16 @@ function HeaderMenu() {
       <Menu
         id="header-user-menu"
         anchorEl={anchorEl}
-        open={menuOpen}
+        open={menuOpen && !appLocked}
         onClose={handleMenuClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         PaperProps={{ sx: { minWidth: 220 } }}
       >
-        <MenuItem disabled={!authReady || authStatus === 'loading'} onClick={handleSignOut}>
+        <MenuItem
+          disabled={appLocked || !authReady || authStatus === 'loading'}
+          onClick={handleSignOut}
+        >
           Sign out
         </MenuItem>
       </Menu>

@@ -4,27 +4,51 @@ const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#1b3b5f',
+      main: '#1f3448',
     },
     secondary: {
-      main: '#e85d04',
+      main: '#9b6b2f',
     },
     background: {
-      default: '#f6f5f1',
-      paper: '#ffffff',
+      default: '#31475a',
+      paper: '#e9e2d2',
     },
   },
   typography: {
-    fontFamily: '"Space Grotesk", "Segoe UI", sans-serif',
+    fontFamily: '"Libre Baskerville", "Times New Roman", serif',
+    h1: {
+      fontFamily: '"Cinzel", "Times New Roman", serif',
+      fontWeight: 600,
+      letterSpacing: '-0.015em',
+    },
+    h2: {
+      fontFamily: '"Cinzel", "Times New Roman", serif',
+      fontWeight: 600,
+      letterSpacing: '-0.015em',
+    },
     h3: {
+      fontFamily: '"Cinzel", "Times New Roman", serif',
+      fontWeight: 600,
       letterSpacing: '-0.02em',
     },
-    h5: {
+    h4: {
+      fontFamily: '"Cinzel", "Times New Roman", serif',
+      fontWeight: 600,
       letterSpacing: '-0.01em',
+    },
+    h5: {
+      fontFamily: '"Cinzel", "Times New Roman", serif',
+      fontWeight: 600,
+      letterSpacing: '-0.01em',
+    },
+    overline: {
+      fontFamily: '"Libre Franklin", "Segoe UI", sans-serif',
+      fontWeight: 600,
+      letterSpacing: '0.12em',
     },
   },
   shape: {
-    borderRadius: 16,
+    borderRadius: 12,
   },
   components: {
     MuiButton: {
@@ -32,7 +56,7 @@ const theme = createTheme({
         root: {
           borderRadius: 999,
           textTransform: 'none',
-          fontWeight: 600,
+          fontWeight: 700,
         },
       },
     },

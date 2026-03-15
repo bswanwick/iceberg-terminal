@@ -1,32 +1,34 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import type { NewsletterSubscriptionPayload } from './formUtils'
 
 type NewsletterStatus = 'idle' | 'loading' | 'success' | 'error'
 
 type NewsletterState = {
   status: NewsletterStatus
   error: string | null
-  lastEmail: string | null
+  lastSubmission: NewsletterSubscriptionPayload | null
 }
 
 const initialState: NewsletterState = {
   status: 'idle',
   error: null,
-  lastEmail: null,
+  lastSubmission: null,
 }
 
 export const newsletterSlice = createSlice({
   name: 'newsletter',
   initialState,
   reducers: {
-    newsletterSubscribeRequested: (state, _action: PayloadAction<string>) => {
+    newsletterSubscribeRequested: (state, action: PayloadAction<NewsletterSubscriptionPayload>) => {
+      void action
       state.status = 'loading'
       state.error = null
-      state.lastEmail = null
+      state.lastSubmission = null
     },
-    newsletterSubscribeSucceeded: (state, action: PayloadAction<string>) => {
+    newsletterSubscribeSucceeded: (state, action: PayloadAction<NewsletterSubscriptionPayload>) => {
       state.status = 'success'
       state.error = null
-      state.lastEmail = action.payload
+      state.lastSubmission = action.payload
     },
     newsletterSubscribeFailed: (state, action: PayloadAction<string>) => {
       state.status = 'error'
