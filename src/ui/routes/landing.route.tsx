@@ -354,16 +354,17 @@ function LandingRoute() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'linear-gradient(120deg, rgba(6, 17, 27, 0.8), rgba(24, 50, 73, 0.75))',
+              background: `url(${swimmingLogo}) no-repeat center/cover`,
               overflow: 'hidden',
+              minHeight: 240,
             }}
           >
-            <Box
+            {/* <Box
               component="img"
               src={swimmingLogo}
               alt="Swanwick swimming logo"
               sx={{ width: '100%' }}
-            />
+            /> */}
           </Box>
           <Box
             sx={{
@@ -378,16 +379,27 @@ function LandingRoute() {
               WIRE TELEGRAM
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(235, 225, 209, 0.92)', p: 1 }}>
-              Dear Visitor, <br /> <br />
-              We offer both authentic historical artifacts as well as modern reprints. We try our
-              best to clearly separate these two categories on our website, but still...please take
-              care when shopping. Our reprints are clearly labeled. If you have any questions about
-              a piece, please reach out to us before purchasing. We are always happy to provide more
-              information.
+              Dear Traveler,
+              <br /> <br />
+              Do you remember the scene from the movie Titanic where Rose arrives at the Southampton
+              quayside? People everywhere...cars, horses, drivers loading and unloading, gangways
+              watched over by stern men in uniform. It’s hard not to be captivated by that moment. I
+              hope my shop brings you there; not Southampton necessarily, but to that place in your
+              heart where wanderlust lives.
+              <br /> <br />
+              My name is Blaise, and I run this small New England-based outfit with the loving
+              support of my wife and children. It’s my privilege to help catalog, preserve, and
+              share these artifacts of travel history. My focus is on printed travel ephemera from
+              the late 19th century through the mid-20th century: ocean liner brochures, railway and
+              airline timetables, tourist guides, cruise programs, and other materials from the
+              Golden Age of Travel.
+              <br /> <br />
+              If you enjoy discussing these pieces of history, feel free to send a message. I'm
+              always happy to chat collector to collector.
             </Typography>
             <Typography variant="body2" sx={{ color: 'rgba(235, 225, 209, 0.92)', p: 1 }}>
-              Thank you,
-              <br /> Blaise Swanwick
+              Until next time,
+              <br /> Swanwick & Co.
             </Typography>
           </Box>
         </Stack>
