@@ -34,8 +34,7 @@ import {
   validateSubscriptionPayload,
 } from '../../features/newsletter/formUtils'
 import { selectAppLocked } from '../../features/ui/selectors'
-import swimmingLogo from '../../assets/swimming-swan-logo.png'
-import { Padding } from '@mui/icons-material'
+// import swimmingLogo from '../../assets/swimming-swan-logo.png'
 
 type EmailChangeEvent = ChangeEvent<HTMLInputElement>
 
@@ -152,7 +151,7 @@ function LandingRoute() {
   const [carouselStart, setCarouselStart] = useState(0)
   const [form, setForm] = useState<NewsletterFormState>({ firstName: '', email: '', interests: [] })
 
-  const isAuthBusy = !authReady || authStatus === 'loading'
+  const _isAuthBusy = !authReady || authStatus === 'loading' // Use this variable to disable auth-related buttons if needed, e.g. during initial load or sign-in process
   const carouselLength = FEATURED_ITEMS.length
   const canSlide = carouselLength > CAROUSEL_VIEWPORT
 
