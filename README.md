@@ -141,7 +141,7 @@ System shall store high-resolution images suitable for research and inspection
 
 # TODO
 
-1. Timeline View of owned inventory
+1. Timeline View
 2. Ebay search builder (search for "eastern steamship -digital -reprint -postcard -matchbook")
 3. Improve intake processing with forms for taking pictures, scans, and close-ups.
 4. WebTWAIN
@@ -151,3 +151,5 @@ System shall store high-resolution images suitable for research and inspection
 8. Rework the hero page + theming
 9. Use local AI model to parse tags out of scanned images (ship names, people, places, etc) as part of intake process, use those tags to automate Etsy listings.
 10. Let users register for newsletter. as we scale, let users subscribe to specific canonical objects in their possesion. Once a user buys something Cunard, for example, they will recieve sporadic updates from me, content, related to their preferred tags. As I learn, they learn.
+11. Wire telegram style ticker with message from me.
+12. Stub the canonical database from other known sites' lists

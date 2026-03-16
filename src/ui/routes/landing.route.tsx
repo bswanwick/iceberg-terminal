@@ -35,6 +35,7 @@ import {
 } from '../../features/newsletter/formUtils'
 import { selectAppLocked } from '../../features/ui/selectors'
 import swimmingLogo from '../../assets/swimming-swan-logo.png'
+import { Padding } from '@mui/icons-material'
 
 type EmailChangeEvent = ChangeEvent<HTMLInputElement>
 
@@ -246,7 +247,7 @@ function LandingRoute() {
               Swanwick & Company presents:
             </Typography>
             <Typography variant="h4" sx={{ lineHeight: 1 }}>
-              The Vintage Travel Antiquarium
+              The Tourism Antiquarium
             </Typography>
           </Stack>
           <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
@@ -292,7 +293,15 @@ function LandingRoute() {
           >
             Est. in New England
           </Typography>
-          <Typography variant="h1" sx={{ maxWidth: 760, color: '#f8efe0', lineHeight: 1.05 }}>
+          <Typography
+            variant="h1"
+            sx={{
+              maxWidth: 760,
+              color: '#f8efe0',
+              lineHeight: 1.05,
+              fontSize: { xs: 'clamp(2rem, 8.5vw, 3rem)', md: 'clamp(3.5rem, 5vw, 5rem)' },
+            }}
+          >
             Excursions into the Golden Age of Travel
           </Typography>
           <Typography
@@ -312,7 +321,7 @@ function LandingRoute() {
               variant="contained"
               color="primary"
               onClick={() => alert('Catalog search coming soon!')}
-              disabled={appLocked || isAuthBusy}
+              disabled={appLocked}
               size="large"
             >
               Browse our Prints
@@ -333,76 +342,6 @@ function LandingRoute() {
         >
           ✵
         </Box>
-      </Paper>
-
-      <Paper
-        elevation={0}
-        sx={{
-          p: { xs: 2.5, md: 3 },
-          borderRadius: 3,
-          border: '1px solid rgba(201, 169, 113, 0.28)',
-          background:
-            'linear-gradient(120deg, rgba(9, 22, 34, 0.94) 0%, rgba(21, 44, 64, 0.94) 58%, rgba(34, 46, 56, 0.94) 100%)',
-        }}
-      >
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2.5} alignItems="stretch">
-          <Box
-            sx={{
-              flex: { xs: 1, md: '0 0 340px' },
-              borderRadius: 2,
-              border: '1px solid rgba(209, 183, 128, 0.35)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: `url(${swimmingLogo}) no-repeat center/cover`,
-              overflow: 'hidden',
-              minHeight: 240,
-            }}
-          >
-            {/* <Box
-              component="img"
-              src={swimmingLogo}
-              alt="Swanwick swimming logo"
-              sx={{ width: '100%' }}
-            /> */}
-          </Box>
-          <Box
-            sx={{
-              flex: 1,
-              borderRadius: 2,
-              border: '1px solid rgba(209, 183, 128, 0.35)',
-              p: { xs: 2, md: 3 },
-              background: 'linear-gradient(120deg, rgba(6, 17, 27, 0.8), rgba(24, 50, 73, 0.75))',
-            }}
-          >
-            <Typography variant="body1" sx={{ color: '#f4e4bf', mb: 1 }}>
-              WIRE TELEGRAM
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'rgba(235, 225, 209, 0.92)', p: 1 }}>
-              Dear Traveler,
-              <br /> <br />
-              Do you remember the scene from the movie Titanic where Rose arrives at the Southampton
-              quayside? People everywhere...cars, horses, drivers loading and unloading, gangways
-              watched over by stern men in uniform. It’s hard not to be captivated by that moment. I
-              hope my shop brings you there; not Southampton necessarily, but to that place in your
-              heart where wanderlust lives.
-              <br /> <br />
-              My name is Blaise, and I run this small New England-based outfit with the loving
-              support of my wife and children. It’s my privilege to help catalog, preserve, and
-              share these artifacts of travel history. My focus is on printed travel ephemera from
-              the late 19th century through the mid-20th century: ocean liner brochures, railway and
-              airline timetables, tourist guides, cruise programs, and other materials from the
-              Golden Age of Travel.
-              <br /> <br />
-              If you enjoy discussing these pieces of history, feel free to send a message. I'm
-              always happy to chat collector to collector.
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'rgba(235, 225, 209, 0.92)', p: 1 }}>
-              Until next time,
-              <br /> Swanwick & Co.
-            </Typography>
-          </Box>
-        </Stack>
       </Paper>
 
       <Paper
@@ -543,13 +482,14 @@ function LandingRoute() {
       >
         <Stack spacing={2} component="form" onSubmit={handleNewsletterSubmit}>
           <Typography variant="overline" sx={{ letterSpacing: '0.18em' }}>
-            The VTA Dispatch
+            We invite you to join
           </Typography>
-          <Typography variant="h3">Great things are coming.</Typography>
+          <Typography variant="h3">The Tourist's Dispatch</Typography>
           <Typography variant="body1" sx={{ maxWidth: 720 }}>
-            Monthly notes on newly listed objects, restoration stories, and sourcing journals from
-            our New England desk. Side-project updates from Iceberg Terminal are included as a short
-            appendix.
+            Each month, we focus on a new theme related to the history of tourism and travel. Our
+            content is free to subscribers. We will never share your information and you can
+            unsubscribe at any time. Oh, and we promise that all text with our name on it was
+            written by a human. We hope to see you aboard.
           </Typography>
           {newsletterStatus === 'success' && lastSubmission && (
             <Alert severity="success">
