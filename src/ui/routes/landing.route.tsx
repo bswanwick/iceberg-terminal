@@ -34,7 +34,8 @@ import {
   validateSubscriptionPayload,
 } from '../../features/newsletter/formUtils'
 import { selectAppLocked } from '../../features/ui/selectors'
-// import swimmingLogo from '../../assets/swimming-swan-logo.png'
+import TelegramWire from '../TelegramWire'
+import swimmingLogo from '../../assets/swimming-swan-logo.png'
 
 type EmailChangeEvent = ChangeEvent<HTMLInputElement>
 
@@ -138,6 +139,20 @@ const INTEREST_OPTIONS = [
 
 const CAROUSEL_VIEWPORT = 3
 
+const TELEGRAM_WIRE_MESSAGE = [
+  '------------------------------',
+  'TO: All Persons',
+  'FROM: SWANWICK AND COMPANY',
+  '------------------------------',
+  'Welcome to the Tourism Antiquarium STOP',
+  'We sell both historical artifacts STOP',
+  'and modern reproduction prints STOP',
+  'Both are clearly labeled STOP',
+  'Please enjoy your stay STOP',
+  '',
+  'END OF TRANSMISSION',
+]
+
 function LandingRoute() {
   const dispatch = useAppDispatch()
   const user = useAppSelector(selectAuthUser)
@@ -231,6 +246,7 @@ function LandingRoute() {
           p: { xs: 2.5, md: 3 },
           borderRadius: 3,
           border: '1px solid rgba(17, 33, 48, 0.14)',
+          position: 'relative',
           background:
             'linear-gradient(110deg, rgba(248, 245, 236, 0.98) 0%, rgba(236, 229, 210, 0.98) 100%)',
         }}
@@ -246,17 +262,35 @@ function LandingRoute() {
               Swanwick & Company presents:
             </Typography>
             <Typography variant="h4" sx={{ lineHeight: 1 }}>
-              The Tourism Antiquarium
+              <Box component="span" sx={{ display: { xs: 'block', md: 'inline' } }}>
+                The
+              </Box>{' '}
+              <Box component="span" sx={{ display: { xs: 'block', md: 'inline' } }}>
+                Tourism
+              </Box>{' '}
+              <Box component="span" sx={{ display: { xs: 'block', md: 'inline' } }}>
+                Antiquarium
+              </Box>
             </Typography>
           </Stack>
-          <Stack direction="row" spacing={1.5} useFlexGap sx={{ flexWrap: 'wrap' }}>
+          <Stack
+            direction="row"
+            spacing={1.5}
+            useFlexGap
+            sx={{
+              flexWrap: 'wrap',
+              position: { xs: 'absolute', md: 'static' },
+              top: { xs: 16, md: 'auto' },
+              right: { xs: 16, md: 'auto' },
+            }}
+          >
             <Button
               href="#dispatch"
               variant="contained"
               color="secondary"
               onClick={() => dispatch(authSlice.actions.authSignInRequested())}
             >
-              Member Sign-In
+              Sign-in
             </Button>
           </Stack>
         </Stack>
@@ -290,7 +324,7 @@ function LandingRoute() {
             variant="overline"
             sx={{ color: 'rgba(233, 216, 182, 0.9)', letterSpacing: '0.2em' }}
           >
-            Est. in New England
+            Est. 2026 ✵ New England
           </Typography>
           <Typography
             variant="h1"
@@ -314,7 +348,7 @@ function LandingRoute() {
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <Button href="#featured" variant="contained" color="secondary" size="large">
-              Browse Featured Listings
+              Browse the Adored Collection
             </Button>
             <Button
               variant="contained"
@@ -344,6 +378,47 @@ function LandingRoute() {
       </Paper>
 
       <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 3, md: 6 },
+          borderRadius: 3,
+          background:
+            'linear-gradient(140deg, rgba(10, 24, 38, 0.98) 0%, rgba(19, 40, 60, 0.98) 52%, rgba(49, 35, 20, 0.95) 100%)',
+          border: '1px solid rgba(201, 169, 113, 0.35)',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} alignItems="center">
+          <Box
+            component="img"
+            src={swimmingLogo}
+            alt="Swimming Logo"
+            sx={{
+              display: 'block',
+              width: 'auto',
+              maxWidth: { xs: '100%', md: 360 },
+              height: 'auto',
+              mx: 'auto',
+              opacity: 0.72,
+              mixBlendMode: 'screen',
+              WebkitMaskImage: 'radial-gradient(circle at center, black 48%, transparent 96%)',
+              maskImage: 'radial-gradient(circle at center, black 48%, transparent 96%)',
+              flexShrink: 1,
+            }}
+          />
+          <Box sx={{ width: '100%', maxWidth: 640 }}>
+            <TelegramWire
+              message={TELEGRAM_WIRE_MESSAGE}
+              charIntervalMs={26}
+              headerLabel="Tourist Wire Service"
+              headerColor="#b53a2d"
+            />
+          </Box>
+        </Stack>
+      </Paper>
+
+      <Paper
         id="featured"
         elevation={0}
         sx={{
@@ -363,12 +438,13 @@ function LandingRoute() {
           >
             <Stack spacing={1}>
               <Typography variant="overline" sx={{ letterSpacing: '0.18em' }}>
-                Featured Listings
+                Do you romanticize travel as much as we do?
               </Typography>
-              <Typography variant="h3">Worth checking out</Typography>
+              <Typography variant="h3">The Adored Collection</Typography>
               <Typography variant="body1" sx={{ maxWidth: 720 }}>
-                Overwhelmed by our selection? We understand. Here are a few pieces that we think are
-                particularly interesting or unique.
+                Of all the items that pass through our hands, these are the ones that have stolen
+                our hearts. Subscribe to our newsletter to receive sneak peeks at items before they
+                are listed here.
               </Typography>
             </Stack>
             <Stack direction="row" spacing={1}>
@@ -488,7 +564,7 @@ function LandingRoute() {
             Each month, we focus on a new theme related to the history of tourism and travel. Our
             content is free to subscribers. We will never share your information and you can
             unsubscribe at any time. Oh, and we promise that all text with our name on it was
-            written by a human. We hope to see you aboard.
+            written by a human. Fancy that!
           </Typography>
           {newsletterStatus === 'success' && lastSubmission && (
             <Alert severity="success">

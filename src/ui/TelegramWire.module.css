@@ -1,0 +1,76 @@
+.container {
+  position: relative;
+  border: 1px solid #a08c63;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #f5edd9 0%, #ede2c7 100%);
+  box-shadow: 0 4px 12px rgba(22, 18, 12, 0.2);
+  color: #2d2315;
+  padding: 1rem 1.25rem;
+  overflow-wrap: anywhere;
+}
+
+.header {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  opacity: 0.75;
+  margin-bottom: 0.65rem;
+  text-transform: uppercase;
+}
+
+.replayButton {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.45rem;
+  border: 0;
+  background: transparent;
+  color: #2d2315;
+  opacity: 0.45;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.15rem;
+}
+
+.replayButton:hover,
+.replayButton:focus-visible {
+  opacity: 0.82;
+}
+
+.message {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.55;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.98rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.timestamp {
+  margin-top: 0.8rem;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  opacity: 0.62;
+  text-transform: uppercase;
+}
+
+.cursor {
+  display: inline-block;
+  width: 0.6ch;
+  animation: blink 1s steps(1, end) infinite;
+}
+
+@keyframes blink {
+  0%,
+  45% {
+    opacity: 1;
+  }
+
+  46%,
+  100% {
+    opacity: 0;
+  }
+}
