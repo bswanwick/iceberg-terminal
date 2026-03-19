@@ -12,7 +12,7 @@ The core experience of Iceberg Terminal is built on a few foundational capabilit
 
 **Canonical Item Records** form the backbone of the platform. The collectible market lacks the equivalent of ISBN numbers for books, VIN numbers for cars, or manufacturer part numbers for equipment. These identifiers allow systems to aggregate data, track ownership, and analyze markets. Collectibles rarely have such identifiers, even when the objects themselves are well-defined historical artifacts. Iceberg Terminal allows users to create their own canonical records for objects, which can then be linked to the items they own. This creates a structured database of objects that can be enriched with user-generated content and external data sources.
 
-**Personal Inventory Management** allows collectors to manage an inventory of items. Users can link their owned items to canonical records, attach photos or scans, track condition grades, record acquisition details, and organize items with tags or categories. This replaces the spreadsheets and ad-hoc systems collectors commonly use today. Each item in the inventory is connected to a canonical record, creating a structured relationship between the collector’s personal collection and the broader market and historical context.
+**Inventory Management** allows collectors to manage an inventory of items. Users can link their owned items to canonical records, attach photos or scans, track condition grades, record acquisition details, and organize items with tags or categories. This replaces the spreadsheets and ad-hoc systems collectors commonly use today. Each item in the inventory is connected to a canonical record, creating a structured relationship between the collector’s personal collection and the broader market and historical context.
 
 **Taxonomy and Tagging** provides a flexible system for categorizing items. Collectors can apply tags based on themes, subjects, geographic regions, or personal significance. This allows for dynamic organization and discovery within the collection, enabling users to filter and explore their items in ways that are meaningful to them.
 
@@ -65,6 +65,13 @@ Copy `.env.example` to `.env.local` and fill in values from the Firebase Web App
 cp .env.example .env.local
 ```
 
+To restrict Google sign-in to specific people, set one or both allowlists:
+
+- `VITE_AUTH_ALLOWED_EMAILS` comma-separated email list (case-insensitive)
+- `VITE_AUTH_ALLOWED_UIDS` comma-separated Firebase UID list
+
+If both values are empty, any Google account can sign in.
+
 ## Scripts
 
 - `npm run dev` - start Vite dev server
@@ -75,7 +82,7 @@ cp .env.example .env.local
 
 ## Data storage
 
-Canonical records are stored in Firestore under `canonicalRecords` as a shared global catalog. Personal inventory is stored under `users/{uid}/inventory` and locked to the authenticated user via Firestore rules.
+Canonical records are stored in Firestore under `canonicalRecords` as a shared global catalog. Inventory is stored under `users/{uid}/inventory` and locked to the authenticated user via Firestore rules.
 
 # Functional Requirements
 
@@ -87,9 +94,9 @@ System shall allow linking canonical objects to other database records like /inv
 
 System shall support tagging of canonical records.
 
-## Personal Inventory
+## Inventory
 
-System shall allow users to create a personal inventory of collectibles in their possession.
+System shall allow users to create a Inventory of collectibles in their possession.
 
 System shall allow users to link owned items to canonical item records.
 
@@ -107,7 +114,7 @@ System shall allow users to view inventory filtered by any field.
 
 System shall display canonical records along a chronological timeline.
 
-System shall allow users to display their personal inventory on the timeline.
+System shall allow users to display their Inventory on the timeline.
 
 System shall allow filtering of the timeline by category, brand, country, or tag.
 
@@ -131,7 +138,7 @@ System shall maintain a historical record of known appearances or sightings of i
 
 ## Core System Capabilities
 
-System shall provide full-text search across canonical records and personal inventory.
+System shall provide full-text search across canonical records and Inventory.
 
 System shall support quick item lookup by brand, year, or keyword.
 
@@ -153,3 +160,4 @@ System shall store high-resolution images suitable for research and inspection
 10. Let users register for newsletter. as we scale, let users subscribe to specific canonical objects in their possesion. Once a user buys something Cunard, for example, they will recieve sporadic updates from me, content, related to their preferred tags. As I learn, they learn.
 11. Wire telegram style ticker with message from me.
 12. Stub the canonical database from other known sites' lists
+13. `magick mogrify -path jpg -format jpg -quality 75 *.tif` to process tifs for web

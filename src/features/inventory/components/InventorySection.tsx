@@ -325,7 +325,7 @@ const InventorySection = () => {
           >
             <Box>
               <Typography variant="h5" fontWeight={700}>
-                Personal inventory
+                Inventory
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {user

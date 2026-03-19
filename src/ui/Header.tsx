@@ -25,19 +25,10 @@ function Header() {
           justifyContent="space-between"
         >
           <Box>
-            <Typography variant="overline" sx={{ fontFamily: 'IBM Plex Mono' }}>
-              New and Amazing!
-            </Typography>
             <Typography variant="h3" fontWeight={700}>
               Project Iceberg
             </Typography>
-            <Typography variant="subtitle1" sx={{ maxWidth: 520 }}>
-              A tool for cataloging and researching vintage travel ephemera.
-            </Typography>
             <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-              <Typography variant="body2" sx={{ m: 'auto 0' }}>
-                Site Navigation
-              </Typography>
               <Button
                 component={RouterLink}
                 to="/dashboard"
@@ -49,12 +40,21 @@ function Header() {
               </Button>
               <Button
                 component={RouterLink}
+                to="/inventory"
+                variant="outlined"
+                size="small"
+                disabled={appLocked}
+              >
+                Inventory
+              </Button>
+              <Button
+                component={RouterLink}
                 to="/canon"
                 variant="outlined"
                 size="small"
                 disabled={appLocked}
               >
-                Canonical records
+                Canon
               </Button>
               <Button
                 component={RouterLink}

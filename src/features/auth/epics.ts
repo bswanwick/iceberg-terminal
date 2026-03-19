@@ -1,10 +1,11 @@
 import type { Epic } from 'redux-observable'
-import { concat, from, Observable, of } from 'rxjs'
+import { concat, EMPTY, from, Observable, of } from 'rxjs'
 import { catchError, exhaustMap, filter, ignoreElements, mergeMap } from 'rxjs/operators'
 import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth'
 import type { AnyFeatureAction, RootState } from '../../app/store'
 import { auth, googleProvider } from '../../firebase'
 import { screenLock } from '../ui/slice'
+import { isUserAllowed, UNAUTHORIZED_ACCOUNT_ERROR } from './allowlist'
 import slice, { type AuthUser } from './slice'
 
 const toAuthUser = (user: User): AuthUser => ({
@@ -23,10 +24,10 @@ const toErrorMessage = (error: unknown, fallback: string) => {
   return error instanceof Error && error.message ? error.message : fallback
 }
 
-const authState$ = new Observable<AuthUser | null>((subscriber) => {
+const authState$ = new Observable<User | null>((subscriber) => {
   const unsubscribe = onAuthStateChanged(
     auth,
-    (user) => subscriber.next(user ? toAuthUser(user) : null),
+    (user) => subscriber.next(user),
     (error) => subscriber.error(error),
   )
 
@@ -40,7 +41,31 @@ export const authListenerEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
       concat(
         of(screenLock(true)),
         authState$.pipe(
-          mergeMap((user) => of(slice.actions.authStateChanged(user), screenLock(false))),
+          mergeMap((user) => {
+            if (user && !isUserAllowed(user)) {
+              return from(signOut(auth)).pipe(
+                mergeMap(() =>
+                  of(
+                    slice.actions.authStateChanged(null),
+                    slice.actions.authError(UNAUTHORIZED_ACCOUNT_ERROR),
+                    screenLock(false),
+                  ),
+                ),
+                catchError(() =>
+                  of(
+                    slice.actions.authStateChanged(null),
+                    slice.actions.authError(UNAUTHORIZED_ACCOUNT_ERROR),
+                    screenLock(false),
+                  ),
+                ),
+              )
+            }
+
+            return of(
+              slice.actions.authStateChanged(user ? toAuthUser(user) : null),
+              screenLock(false),
+            )
+          }),
           catchError((error) =>
             of(slice.actions.authError(toErrorMessage(error, 'Auth error')), screenLock(false)),
           ),
@@ -54,7 +79,16 @@ export const authSignInEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootState>
     filter(slice.actions.authSignInRequested.match),
     exhaustMap(() =>
       from(signInWithPopup(auth, googleProvider)).pipe(
-        ignoreElements(),
+        mergeMap(({ user }) => {
+          if (isUserAllowed(user)) {
+            return EMPTY
+          }
+
+          return from(signOut(auth)).pipe(
+            mergeMap(() => of(slice.actions.authError(UNAUTHORIZED_ACCOUNT_ERROR))),
+            catchError(() => of(slice.actions.authError(UNAUTHORIZED_ACCOUNT_ERROR))),
+          )
+        }),
         catchError((error) => of(slice.actions.authError(toErrorMessage(error, 'Sign in failed')))),
       ),
     ),

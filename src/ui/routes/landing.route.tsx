@@ -144,8 +144,8 @@ const TELEGRAM_WIRE_MESSAGE = [
   'TO: All Persons',
   'FROM: SWANWICK AND COMPANY',
   '------------------------------',
-  'Welcome to the Tourism Antiquarium STOP',
-  'We sell both historical artifacts STOP',
+  "Welcome to the Tourist's Antiquarium STOP",
+  'We sell both historical artifacts',
   'and modern reproduction prints STOP',
   'Both are clearly labeled STOP',
   'Please enjoy your stay STOP',
@@ -289,6 +289,7 @@ function LandingRoute() {
               variant="contained"
               color="secondary"
               onClick={() => dispatch(authSlice.actions.authSignInRequested())}
+              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
             >
               Sign-in
             </Button>
@@ -339,7 +340,12 @@ function LandingRoute() {
           </Typography>
           <Typography
             variant="h6"
-            sx={{ maxWidth: 680, color: 'rgba(238, 228, 211, 0.92)', fontWeight: 400 }}
+            sx={{
+              maxWidth: 680,
+              color: 'rgba(238, 228, 211, 0.92)',
+              fontWeight: 400,
+              fontSize: { xs: '16px', md: '1rem' },
+            }}
           >
             Our gallery focuses on the history of travel, transportation, and tourism. We carefully
             catalog and care for every piece that comes through our doors and we hope to provide you
@@ -348,7 +354,7 @@ function LandingRoute() {
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <Button href="#featured" variant="contained" color="secondary" size="large">
-              Browse the Adored Collection
+              The Main Gallery
             </Button>
             <Button
               variant="contained"
@@ -410,8 +416,10 @@ function LandingRoute() {
           <Box sx={{ width: '100%', maxWidth: 640 }}>
             <TelegramWire
               message={TELEGRAM_WIRE_MESSAGE}
-              charIntervalMs={26}
-              headerLabel="Tourist Wire Service"
+              fixedLineCount={4}
+              deferredLineCount={2}
+              charIntervalMs={38}
+              headerLabel="Wire Service"
               headerColor="#b53a2d"
             />
           </Box>
