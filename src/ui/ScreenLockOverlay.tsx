@@ -11,13 +11,13 @@ const waitPhrases = [
   'Consulting the Baedeker. Just a tick...',
   'Cabin lights dimmed. Loading the manifest...',
   'Hoisting the gangway. Almost there...',
-  'Mr. Cook approves the itinerary. Please wait...',
+  'Mr. Cook is preparing the itinerary. Please wait...',
   'The baggage van is en route. Hold on...',
 ]
 
 function ScreenLockOverlay() {
   const screenLocked = useAppSelector(selectScreenLocked)
-  const label = screenLocked ? waitPhrases[1] : waitPhrases[0]
+  const label = waitPhrases[1]
 
   return (
     <Backdrop

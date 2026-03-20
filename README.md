@@ -161,3 +161,4 @@ System shall store high-resolution images suitable for research and inspection
 11. Wire telegram style ticker with message from me.
 12. Stub the canonical database from other known sites' lists
 13. `magick mogrify -path jpg -format jpg -quality 75 *.tif` to process tifs for web
+14. screen lock should only appear on dashboard or iceberg terminal pages, not the marketing site.

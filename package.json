@@ -4,13 +4,14 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "build": "tsc -b && vite build",
+    "context": "firebase logout && firebase login && nvm use 20.19.2",
+    "dev": "vite",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "preview": "vite preview",
-    "setenv": "firebase logout && firebase login && nvm use 20.19.2"
+    "deploy": "npm run build && firebase deploy --only hosting"
   },
   "dependencies": {
     "@mui/icons-material": "^7.3.8",

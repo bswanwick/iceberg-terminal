@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import type { StoredFile } from '../../firebase/storage'
 import type { VintagePaperConditionReport } from './condition-report'
 import authSlice from '../auth/slice'
 
@@ -16,15 +17,15 @@ export type InventoryItem = {
   acquisitionSource: string
   notes: string
   tags: string[] // array of tags
+  files: InventoryFile[]
   photos: InventoryPhoto[]
   createdAt: string
   updatedAt?: string
 }
 
-export type InventoryPhoto = {
-  url: string
-  path: string
-}
+export type InventoryPhoto = StoredFile
+
+export type InventoryFile = StoredFile
 
 export type InventoryFormState = {
   title: string
@@ -39,10 +40,11 @@ export type InventoryFormState = {
   acquisitionSource: string
   notes: string
   tags: string // comma-separated list of tags
+  files: InventoryFile[]
   photos: InventoryPhoto[]
 }
 
-type InventoryFormField = Exclude<keyof InventoryFormState, 'conditionReport' | 'photos'>
+type InventoryFormField = Exclude<keyof InventoryFormState, 'conditionReport' | 'files' | 'photos'>
 
 type InventoryFormUpdatePayload = {
   field: InventoryFormField
@@ -72,6 +74,30 @@ type InventoryPhotoUploadFailedPayload = {
   message: string
 }
 
+type InventoryFileUploadRequestedPayload = {
+  form: 'add' | 'edit'
+  file: File
+}
+
+type InventoryFileUploadSucceededPayload = {
+  form: 'add' | 'edit'
+  storedFile: InventoryFile
+}
+
+type InventoryFileUploadFailedPayload = {
+  message: string
+}
+
+type InventoryFileRemoveRequestedPayload = {
+  form: 'add' | 'edit'
+  storedFile: InventoryFile
+}
+
+type InventoryFileRemovedPayload = {
+  form: 'add' | 'edit'
+  storedFile: InventoryFile
+}
+
 type InventoryPhotoRemoveRequestedPayload = {
   form: 'add' | 'edit'
   photo: InventoryPhoto
@@ -98,6 +124,8 @@ type InventoryUiState = {
   addForm: InventoryFormState
   editForm: InventoryFormState
   editingId: string | null
+  fileUploadStatus: 'idle' | 'uploading' | 'error'
+  fileUploadError: string | null
   photoUploadStatus: 'idle' | 'uploading' | 'error'
   photoUploadError: string | null
   conditionReportDialogOpen: boolean
@@ -132,6 +160,7 @@ const createEmptyInventoryForm = (): InventoryFormState => ({
   acquisitionSource: '',
   notes: '',
   tags: '',
+  files: [],
   photos: [],
 })
 
@@ -143,6 +172,8 @@ const initialState: InventoryState = {
     addForm: createEmptyInventoryForm(),
     editForm: createEmptyInventoryForm(),
     editingId: null,
+    fileUploadStatus: 'idle',
+    fileUploadError: null,
     photoUploadStatus: 'idle',
     photoUploadError: null,
     conditionReportDialogOpen: false,
@@ -193,6 +224,13 @@ export const inventorySlice = createSlice({
       state.ui.photoUploadStatus = 'uploading'
       state.ui.photoUploadError = null
     },
+    inventoryFileUploadRequested: (
+      state,
+      _action: PayloadAction<InventoryFileUploadRequestedPayload>,
+    ) => {
+      state.ui.fileUploadStatus = 'uploading'
+      state.ui.fileUploadError = null
+    },
     inventoryPhotoUploadSucceeded: (
       state,
       action: PayloadAction<InventoryPhotoUploadSucceededPayload>,
@@ -202,12 +240,40 @@ export const inventorySlice = createSlice({
       state.ui.photoUploadStatus = 'idle'
       state.ui.photoUploadError = null
     },
+    inventoryFileUploadSucceeded: (
+      state,
+      action: PayloadAction<InventoryFileUploadSucceededPayload>,
+    ) => {
+      const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
+      targetForm.files = [...targetForm.files, action.payload.storedFile]
+      state.ui.fileUploadStatus = 'idle'
+      state.ui.fileUploadError = null
+    },
     inventoryPhotoUploadFailed: (
       state,
       action: PayloadAction<InventoryPhotoUploadFailedPayload>,
     ) => {
       state.ui.photoUploadStatus = 'error'
       state.ui.photoUploadError = action.payload.message
+    },
+    inventoryFileUploadFailed: (state, action: PayloadAction<InventoryFileUploadFailedPayload>) => {
+      state.ui.fileUploadStatus = 'error'
+      state.ui.fileUploadError = action.payload.message
+    },
+    inventoryFileRemoveRequested: (
+      state,
+      _action: PayloadAction<InventoryFileRemoveRequestedPayload>,
+    ) => {
+      state.ui.fileUploadStatus = 'uploading'
+      state.ui.fileUploadError = null
+    },
+    inventoryFileRemoved: (state, action: PayloadAction<InventoryFileRemovedPayload>) => {
+      const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
+      targetForm.files = targetForm.files.filter(
+        (storedFile) => storedFile.path !== action.payload.storedFile.path,
+      )
+      state.ui.fileUploadStatus = 'idle'
+      state.ui.fileUploadError = null
     },
     inventoryPhotoRemoveRequested: (
       state,
@@ -254,6 +320,8 @@ export const inventorySlice = createSlice({
     },
     inventoryAddFormReset: (state) => {
       state.ui.addForm = createEmptyInventoryForm()
+      state.ui.fileUploadStatus = 'idle'
+      state.ui.fileUploadError = null
       state.ui.photoUploadStatus = 'idle'
       state.ui.photoUploadError = null
     },
@@ -277,14 +345,19 @@ export const inventorySlice = createSlice({
         acquisitionSource: item.acquisitionSource,
         notes: item.notes,
         tags: item.tags.join(', '),
+        files: item.files,
         photos: item.photos,
       }
+      state.ui.fileUploadStatus = 'idle'
+      state.ui.fileUploadError = null
       state.ui.photoUploadStatus = 'idle'
       state.ui.photoUploadError = null
     },
     inventoryEditCanceled: (state) => {
       state.ui.editingId = null
       state.ui.editForm = createEmptyInventoryForm()
+      state.ui.fileUploadStatus = 'idle'
+      state.ui.fileUploadError = null
       state.ui.photoUploadStatus = 'idle'
       state.ui.photoUploadError = null
       state.ui.conditionReportDialogOpen = false
@@ -300,6 +373,8 @@ export const inventorySlice = createSlice({
         state.ui.addForm = createEmptyInventoryForm()
         state.ui.editForm = createEmptyInventoryForm()
         state.ui.editingId = null
+        state.ui.fileUploadStatus = 'idle'
+        state.ui.fileUploadError = null
         state.ui.photoUploadStatus = 'idle'
         state.ui.photoUploadError = null
         state.ui.conditionReportDialogOpen = false

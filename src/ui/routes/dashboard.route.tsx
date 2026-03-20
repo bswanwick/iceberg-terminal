@@ -1,7 +1,6 @@
 import {
   Alert,
   Box,
-  Chip,
   Paper,
   Stack,
   Table,
@@ -15,28 +14,13 @@ import {
 import { useMemo } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAppSelector } from '../../app/hooks'
-import {
-  selectAuthError,
-  selectAuthReady,
-  selectAuthStatus,
-  selectAuthUser,
-} from '../../features/auth/selectors'
+import { selectAuthError, selectAuthReady, selectAuthUser } from '../../features/auth/selectors'
 import {
   selectCanonicalRecordMap,
   selectCanonicalRecordsError,
-  selectCanonicalRecordsStatus,
 } from '../../features/canonicalRecords/selectors'
-import {
-  selectInventory,
-  selectInventoryError,
-  selectInventoryStatus,
-} from '../../features/inventory/selectors'
+import { selectInventory, selectInventoryError } from '../../features/inventory/selectors'
 import type { InventoryItem } from '../../features/inventory/slice'
-import {
-  selectAppLocked,
-  selectScreenLocked,
-  selectUiControlsLocked,
-} from '../../features/ui/selectors'
 
 const parseTimestampForSort = (value: string | undefined): number => {
   if (!value) {
@@ -82,17 +66,11 @@ function MetricCard({ label, value, caption }: MetricCardProps) {
 function DashboardRoute() {
   const authError = useAppSelector(selectAuthError)
   const authReady = useAppSelector(selectAuthReady)
-  const authStatus = useAppSelector(selectAuthStatus)
   const user = useAppSelector(selectAuthUser)
-  const appLocked = useAppSelector(selectAppLocked)
-  const screenLocked = useAppSelector(selectScreenLocked)
-  const controlsLocked = useAppSelector(selectUiControlsLocked)
   const inventory = useAppSelector(selectInventory)
   const inventoryError = useAppSelector(selectInventoryError)
-  const inventoryStatus = useAppSelector(selectInventoryStatus)
   const canonicalRecordMap = useAppSelector(selectCanonicalRecordMap)
   const canonicalRecordsError = useAppSelector(selectCanonicalRecordsError)
-  const canonicalRecordsStatus = useAppSelector(selectCanonicalRecordsStatus)
 
   const metrics = useMemo(() => {
     const inventoryCount = inventory.length
@@ -134,10 +112,6 @@ function DashboardRoute() {
     [inventory],
   )
 
-  const appLockLabel = appLocked ? 'locked' : 'unlocked'
-  const screenLockLabel = screenLocked ? 'screen lock on' : 'screen lock off'
-  const controlsLockLabel = controlsLocked ? 'controls locked' : 'controls ready'
-
   if (authReady && !user) {
     return <Navigate to="/" replace />
   }
@@ -149,107 +123,88 @@ function DashboardRoute() {
       {canonicalRecordsError && <Alert severity="error">{canonicalRecordsError}</Alert>}
 
       <Paper
+        id="dashboard-overview"
         elevation={0}
         sx={{
           p: { xs: 3, md: 4 },
           borderRadius: 3,
           background: 'linear-gradient(135deg, rgba(18, 63, 84, 0.08), rgba(250, 241, 223, 0.95))',
-          border: '1px solid rgba(18, 63, 84, 0.15)',
+          border: '3px inset rgba(18, 63, 84, 0.25)',
         }}
       >
         <Stack spacing={2}>
-          <Typography variant="overline" sx={{ fontFamily: 'IBM Plex Mono' }}>
-            Operations hub
-          </Typography>
-          <Typography variant="h4" fontWeight={700}>
-            Dashboard overview
-          </Typography>
-          <Typography variant="body1" sx={{ maxWidth: 780 }}>
-            A shared operations view for business and IT. Inventory metrics are live; order flow,
-            search hits, and reporting modules are staged as soon as their data pipelines land.
-          </Typography>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} useFlexGap flexWrap="wrap">
-            <Chip label={`Auth: ${authStatus}`} variant="outlined" size="small" />
-            <Chip label={`Inventory sync: ${inventoryStatus}`} variant="outlined" size="small" />
-            <Chip
-              label={`Canonical sync: ${canonicalRecordsStatus}`}
-              variant="outlined"
-              size="small"
+          <Box
+            id="dashboard-inventory-metrics"
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                sm: 'repeat(2, minmax(0, 1fr))',
+                lg: 'repeat(4, minmax(0, 1fr))',
+              },
+              gap: 2,
+            }}
+          >
+            <MetricCard
+              label="Inventory count"
+              value={String(metrics.inventoryCount)}
+              caption="Total records currently in managed inventory."
             />
-            <Chip label={`Application: ${appLockLabel}`} variant="outlined" size="small" />
-            <Chip label={screenLockLabel} variant="outlined" size="small" />
-            <Chip label={controlsLockLabel} variant="outlined" size="small" />
-          </Stack>
+            <MetricCard
+              label="Canonical linkage"
+              value={`${metrics.linkedCount} linked`}
+              caption={`${metrics.unlinkedCount} records still need canonical pairing.`}
+            />
+            <MetricCard
+              label="Photo coverage"
+              value={`${metrics.withPhotosCount} with photos`}
+              caption={`${metrics.withoutPhotosCount} records are still missing photos.`}
+            />
+            <MetricCard
+              label="Condition reports"
+              value={`${metrics.withConditionReportCount} completed`}
+              caption={`${metrics.missingConditionReportCount} records still need condition reporting.`}
+            />
+          </Box>
+
+          <Box
+            id="dashboard-listing-readiness"
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: '1fr',
+                md: 'repeat(2, minmax(0, 1fr))',
+                xl: 'repeat(4, minmax(0, 1fr))',
+              },
+              gap: 2,
+            }}
+          >
+            <MetricCard
+              label="Listing readiness"
+              value={`${metrics.listingReadyCount} ready`}
+              caption={`${metrics.needsEnrichmentCount} records still need enrichment.`}
+            />
+            <MetricCard
+              label="Pending orders"
+              value="Data source pending"
+              caption="Order pipeline card will activate when the website starts submitting orders."
+            />
+            <MetricCard
+              label="eBay search hits"
+              value="Data source pending"
+              caption="Inbound search-hit ingestion not wired yet; card is reserved for that feed."
+            />
+            <MetricCard
+              label="Upcoming modules"
+              value="Reporting, SEO, Firestore"
+              caption="Reserved integration slots for additional business and IT intelligence modules."
+            />
+          </Box>
         </Stack>
       </Paper>
 
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, minmax(0, 1fr))',
-            lg: 'repeat(4, minmax(0, 1fr))',
-          },
-          gap: 2,
-        }}
-      >
-        <MetricCard
-          label="Inventory count"
-          value={String(metrics.inventoryCount)}
-          caption="Total records currently in managed inventory."
-        />
-        <MetricCard
-          label="Canonical linkage"
-          value={`${metrics.linkedCount} linked`}
-          caption={`${metrics.unlinkedCount} records still need canonical pairing.`}
-        />
-        <MetricCard
-          label="Photo coverage"
-          value={`${metrics.withPhotosCount} with photos`}
-          caption={`${metrics.withoutPhotosCount} records are still missing photos.`}
-        />
-        <MetricCard
-          label="Condition reports"
-          value={`${metrics.withConditionReportCount} completed`}
-          caption={`${metrics.missingConditionReportCount} records still need condition reporting.`}
-        />
-      </Box>
-
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr',
-            md: 'repeat(2, minmax(0, 1fr))',
-            xl: 'repeat(4, minmax(0, 1fr))',
-          },
-          gap: 2,
-        }}
-      >
-        <MetricCard
-          label="Listing readiness"
-          value={`${metrics.listingReadyCount} ready`}
-          caption={`${metrics.needsEnrichmentCount} records still need enrichment.`}
-        />
-        <MetricCard
-          label="Pending orders"
-          value="Data source pending"
-          caption="Order pipeline card will activate when the website starts submitting orders."
-        />
-        <MetricCard
-          label="eBay search hits"
-          value="Data source pending"
-          caption="Inbound search-hit ingestion not wired yet; card is reserved for that feed."
-        />
-        <MetricCard
-          label="Upcoming modules"
-          value="Reporting, SEO, Firestore"
-          caption="Reserved integration slots for additional business and IT intelligence modules."
-        />
-      </Box>
-
       <Paper
+        id="dashboard-recent-activity"
         elevation={0}
         sx={{
           borderRadius: 3,

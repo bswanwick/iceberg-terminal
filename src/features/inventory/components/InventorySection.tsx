@@ -39,12 +39,14 @@ import {
   selectInventoryAddForm,
   selectInventoryEditForm,
   selectInventoryEditingId,
+  selectInventoryFileUploadError,
+  selectInventoryFileUploadStatus,
   selectInventoryPhotoUploadError,
   selectInventoryPhotoUploadStatus,
   selectInventoryStatus,
 } from '../selectors'
 import ConditionReportDialog from './ConditionReportDialog.tsx'
-import { inventorySlice } from '../slice'
+import { inventorySlice, type InventoryFile } from '../slice'
 
 type InventorySortOrder = 'asc' | 'desc'
 
@@ -104,6 +106,25 @@ const compareStrings = (left: string, right: string) =>
 
 const compareNumbers = (left: number, right: number) => left - right
 
+const formatFileSize = (size: number) => {
+  if (size < 1024) {
+    return `${size} B`
+  }
+
+  if (size < 1024 * 1024) {
+    return `${(size / 1024).toFixed(1)} KB`
+  }
+
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`
+}
+
+const getFileLabel = (storedFile: InventoryFile) => {
+  const fallbackName = storedFile.path.split('/').at(-1) || 'File'
+  const name = storedFile.name.trim() || fallbackName
+
+  return storedFile.size > 0 ? `${name} (${formatFileSize(storedFile.size)})` : name
+}
+
 const sortInventoryRows = (
   rows: InventoryRow[],
   sortBy: InventoryColumnKey,
@@ -153,6 +174,8 @@ const InventorySection = () => {
   const addForm = useAppSelector(selectInventoryAddForm)
   const editForm = useAppSelector(selectInventoryEditForm)
   const editingId = useAppSelector(selectInventoryEditingId)
+  const fileUploadStatus = useAppSelector(selectInventoryFileUploadStatus)
+  const fileUploadError = useAppSelector(selectInventoryFileUploadError)
   const photoUploadStatus = useAppSelector(selectInventoryPhotoUploadStatus)
   const photoUploadError = useAppSelector(selectInventoryPhotoUploadError)
   const appLocked = useAppSelector(selectAppLocked)
@@ -243,6 +266,16 @@ const InventorySection = () => {
     })
   }
 
+  const handleFileUpload = (form: 'add' | 'edit', files: FileList | null) => {
+    if (!files) {
+      return
+    }
+
+    Array.from(files).forEach((file) => {
+      dispatch(inventorySlice.actions.inventoryFileUploadRequested({ form, file }))
+    })
+  }
+
   const handleItemPhotoUpload = (itemId: string, files: FileList | null) => {
     if (!files) {
       return
@@ -272,6 +305,7 @@ const InventorySection = () => {
         acquisitionSource: addForm.acquisitionSource.trim(),
         notes: addForm.notes.trim(),
         tags: splitComma(addForm.tags),
+        files: addForm.files,
         photos: addForm.photos,
       }),
     )
@@ -298,6 +332,7 @@ const InventorySection = () => {
         acquisitionSource: editForm.acquisitionSource.trim(),
         notes: editForm.notes.trim(),
         tags: splitComma(editForm.tags),
+        files: editForm.files,
         photos: editForm.photos,
       }),
     )
@@ -341,7 +376,59 @@ const InventorySection = () => {
 
           {inventoryStatus !== 'idle' && <LinearProgress />}
 
-          <Stack spacing={2}>
+          <Stack id="inventory-add-item" spacing={2}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+              <Button
+                variant="outlined"
+                component="label"
+                disabled={appLocked || !user || fileUploadStatus === 'uploading'}
+              >
+                Upload files
+                <input
+                  hidden
+                  multiple
+                  type="file"
+                  onChange={(event) => handleFileUpload('add', event.target.files)}
+                />
+              </Button>
+              <Typography variant="body2" color="text.secondary">
+                Attach supporting documents or source files to this inventory record. Files are
+                uploaded to Firebase Storage before the item is saved.
+              </Typography>
+            </Stack>
+            {fileUploadError && (
+              <Typography color="error" variant="body2">
+                {fileUploadError}
+              </Typography>
+            )}
+            {addForm.files.length > 0 && (
+              <Stack direction="row" spacing={1} flexWrap="wrap">
+                {addForm.files.map((storedFile) => (
+                  <Chip
+                    key={storedFile.path}
+                    label={getFileLabel(storedFile)}
+                    component="a"
+                    clickable
+                    href={storedFile.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    onDelete={
+                      appLocked
+                        ? undefined
+                        : () =>
+                            dispatch(
+                              inventorySlice.actions.inventoryFileRemoveRequested({
+                                form: 'add',
+                                storedFile,
+                              }),
+                            )
+                    }
+                    disabled={appLocked}
+                    variant="outlined"
+                  />
+                ))}
+              </Stack>
+            )}
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
               <TextField
                 label="Inventory title"
@@ -465,7 +552,11 @@ const InventorySection = () => {
                 disabled={appLocked || !user}
               />
             </Stack>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+            <Stack
+              id="inventory-condition-report"
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+            >
               <TextField
                 label="Condition report"
                 fullWidth
@@ -595,7 +686,12 @@ const InventorySection = () => {
           <Divider />
 
           <Stack spacing={2}>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+            <Stack
+              id="inventory-search"
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              alignItems="center"
+            >
               <TextField
                 label="Search inventory"
                 value={filterText}
@@ -610,6 +706,7 @@ const InventorySection = () => {
             </Stack>
 
             <TableContainer
+              id="inventory-table"
               component={Paper}
               elevation={0}
               sx={{ borderRadius: 2, border: '1px solid rgba(17, 24, 39, 0.08)' }}
@@ -752,6 +849,22 @@ const InventorySection = () => {
               >
                 <Stack spacing={1.5}>
                   <Typography fontWeight={600}>Edit item: {editingItem.title}</Typography>
+                  {editForm.files.length > 0 && (
+                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                      {editForm.files.map((storedFile) => (
+                        <Chip
+                          key={storedFile.path}
+                          label={getFileLabel(storedFile)}
+                          component="a"
+                          clickable
+                          href={storedFile.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          variant="outlined"
+                        />
+                      ))}
+                    </Stack>
+                  )}
                   <TextField
                     label="Inventory title"
                     value={editForm.title}

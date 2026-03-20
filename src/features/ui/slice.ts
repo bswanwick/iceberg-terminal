@@ -12,6 +12,7 @@ const initialState: UiState = {
   appLocked: false,
 }
 
+export const uiIsLoading = createAction<boolean>('UI_IS_LOADING')
 export const screenLock = createAction<boolean>('SCREEN_LOCK')
 export const uiControlsLock = createAction<boolean>('UI_CONTROLS_LOCK')
 
@@ -35,6 +36,9 @@ const uiSlice = createSlice({
   },
 })
 
-export type UiAction = ReturnType<typeof screenLock> | ReturnType<typeof uiControlsLock>
+export type UiAction =
+  | ReturnType<typeof uiIsLoading>
+  | ReturnType<typeof screenLock>
+  | ReturnType<typeof uiControlsLock>
 
 export default uiSlice

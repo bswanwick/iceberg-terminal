@@ -11,7 +11,7 @@ type MenuAnchor = HTMLElement | null
 
 type MenuClickEvent = MouseEvent<HTMLElement>
 
-function HeaderMenu() {
+function SignInAndAvatar() {
   const dispatch = useAppDispatch()
   const user = useAppSelector(selectAuthUser)
   const authReady = useAppSelector(selectAuthReady)
@@ -94,4 +94,4 @@ function HeaderMenu() {
   )
 }
 
-export default HeaderMenu
+export default SignInAndAvatar

@@ -109,7 +109,7 @@ const CanonicalRecordsSection = () => {
 
         {canonicalRecordsStatus !== 'idle' && <LinearProgress />}
 
-        <Stack spacing={2}>
+        <Stack id="canon-add-record" spacing={2}>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
             <TextField
               label="Title"
@@ -188,7 +188,7 @@ const CanonicalRecordsSection = () => {
 
         <Divider />
 
-        <Stack spacing={2}>
+        <Stack id="canon-record-list" spacing={2}>
           {canonicalRecords.map((record) => (
             <Paper
               key={record.id}

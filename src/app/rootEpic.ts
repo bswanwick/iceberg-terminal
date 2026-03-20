@@ -9,6 +9,8 @@ import {
 import {
   inventoryAddEpic,
   inventoryDeleteEpic,
+  inventoryFileRemoveEpic,
+  inventoryFileUploadEpic,
   inventoryFetchEpic,
   inventoryItemPhotoUploadEpic,
   inventoryPhotoDeleteEpic,
@@ -17,11 +19,13 @@ import {
   inventoryUpdateEpic,
 } from '../features/inventory/epics'
 import { newsletterSubscribeEpic } from '../features/newsletter/epics'
+import { uiScreenLockEpic } from '../features/ui/epics.ts'
 
 export const rootEpic = combineEpics(
   authListenerEpic,
   authSignInEpic,
   authSignOutEpic,
+  uiScreenLockEpic,
   canonicalRecordsFetchEpic,
   canonicalRecordAddEpic,
   canonicalRecordUpdateEpic,
@@ -30,6 +34,8 @@ export const rootEpic = combineEpics(
   inventoryAddEpic,
   inventoryUpdateEpic,
   inventoryDeleteEpic,
+  inventoryFileUploadEpic,
+  inventoryFileRemoveEpic,
   inventoryPhotoUploadEpic,
   inventoryPhotoRemoveEpic,
   inventoryPhotoDeleteEpic,

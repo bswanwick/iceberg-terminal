@@ -4,7 +4,7 @@ import { catchError, exhaustMap, filter, ignoreElements, mergeMap } from 'rxjs/o
 import { onAuthStateChanged, signInWithPopup, signOut, type User } from 'firebase/auth'
 import type { AnyFeatureAction, RootState } from '../../app/store'
 import { auth, googleProvider } from '../../firebase'
-import { screenLock } from '../ui/slice'
+import { uiIsLoading } from '../ui/slice'
 import { isUserAllowed, UNAUTHORIZED_ACCOUNT_ERROR } from './allowlist'
 import slice, { type AuthUser } from './slice'
 
@@ -39,7 +39,7 @@ export const authListenerEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
     filter(slice.actions.authStartListening.match),
     exhaustMap(() =>
       concat(
-        of(screenLock(true)),
+        of(uiIsLoading(true)),
         authState$.pipe(
           mergeMap((user) => {
             if (user && !isUserAllowed(user)) {
@@ -48,14 +48,14 @@ export const authListenerEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
                   of(
                     slice.actions.authStateChanged(null),
                     slice.actions.authError(UNAUTHORIZED_ACCOUNT_ERROR),
-                    screenLock(false),
+                    uiIsLoading(false),
                   ),
                 ),
                 catchError(() =>
                   of(
                     slice.actions.authStateChanged(null),
                     slice.actions.authError(UNAUTHORIZED_ACCOUNT_ERROR),
-                    screenLock(false),
+                    uiIsLoading(false),
                   ),
                 ),
               )
@@ -63,11 +63,11 @@ export const authListenerEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
 
             return of(
               slice.actions.authStateChanged(user ? toAuthUser(user) : null),
-              screenLock(false),
+              uiIsLoading(false),
             )
           }),
           catchError((error) =>
-            of(slice.actions.authError(toErrorMessage(error, 'Auth error')), screenLock(false)),
+            of(slice.actions.authError(toErrorMessage(error, 'Auth error')), uiIsLoading(false)),
           ),
         ),
       ),

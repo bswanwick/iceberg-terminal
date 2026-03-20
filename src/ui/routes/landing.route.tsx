@@ -153,6 +153,8 @@ const TELEGRAM_WIRE_MESSAGE = [
   'END OF TRANSMISSION',
 ]
 
+// This route is used as the main marketing page for the business. It includes a newsletter sign-up form and previews of featured items. If the user is already authenticated, they are redirected to the dashboard.
+
 function LandingRoute() {
   const dispatch = useAppDispatch()
   const user = useAppSelector(selectAuthUser)
@@ -266,7 +268,7 @@ function LandingRoute() {
                 The
               </Box>{' '}
               <Box component="span" sx={{ display: { xs: 'block', md: 'inline' } }}>
-                Tourism
+                Tourist's
               </Box>{' '}
               <Box component="span" sx={{ display: { xs: 'block', md: 'inline' } }}>
                 Antiquarium
@@ -325,7 +327,7 @@ function LandingRoute() {
             variant="overline"
             sx={{ color: 'rgba(233, 216, 182, 0.9)', letterSpacing: '0.2em' }}
           >
-            Est. 2026 ✵ New England
+            Est. 2026 in New England
           </Typography>
           <Typography
             variant="h1"
@@ -347,10 +349,10 @@ function LandingRoute() {
               fontSize: { xs: '16px', md: '1rem' },
             }}
           >
-            Our gallery focuses on the history of travel, transportation, and tourism. We carefully
-            catalog and care for every piece that comes through our doors and we hope to provide you
-            with a window into a world that continues to inspire us. Pack your bags, because our
-            Grand Tour starts now.
+            Welcome to our new online gallery! Our focus is the history of travel, transportation,
+            and tourism. We carefully catalog and care for every piece that comes through our doors
+            and we hope to provide you with a window into a world that continues to inspire us. Pack
+            your bags, because our Grand Tour starts now.
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <Button href="#featured" variant="contained" color="secondary" size="large">
@@ -649,7 +651,7 @@ function LandingRoute() {
         sx={{ textAlign: 'center', pb: 1, color: 'rgba(235, 225, 209, 0.92)' }}
       >
         <br /> © {new Date().getFullYear()} Swanwick &amp; Company. All rights reserved.
-        {/* <Link href="/status" underline="hover" color="inherit">
+        {/* <Link href="/platform" underline="hover" color="inherit">
           View project status
         </Link>
         . */}
