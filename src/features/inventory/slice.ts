@@ -8,7 +8,7 @@ export type InventoryItem = {
   title: string
   publisher: string
   canonicalRecordId: string
-  publishDate: string
+  publishYear: string
   format: string
   dimensions: string
   conditionGrade: string
@@ -18,12 +18,9 @@ export type InventoryItem = {
   notes: string
   tags: string[] // array of tags
   files: InventoryFile[]
-  photos: InventoryPhoto[]
   createdAt: string
   updatedAt?: string
 }
-
-export type InventoryPhoto = StoredFile
 
 export type InventoryFile = StoredFile
 
@@ -31,7 +28,7 @@ export type InventoryFormState = {
   title: string
   publisher: string
   canonicalRecordId: string
-  publishDate: string
+  publishYear: string
   format: string
   dimensions: string
   conditionGrade: string
@@ -41,10 +38,9 @@ export type InventoryFormState = {
   notes: string
   tags: string // comma-separated list of tags
   files: InventoryFile[]
-  photos: InventoryPhoto[]
 }
 
-type InventoryFormField = Exclude<keyof InventoryFormState, 'conditionReport' | 'files' | 'photos'>
+type InventoryFormField = Exclude<keyof InventoryFormState, 'conditionReport' | 'files'>
 
 type InventoryFormUpdatePayload = {
   field: InventoryFormField
@@ -58,20 +54,6 @@ type InventoryConditionReportUpdatePayload = {
 
 type InventoryEditStartPayload = {
   id: string
-}
-
-type InventoryPhotoUploadRequestedPayload = {
-  form: 'add' | 'edit'
-  file: File
-}
-
-type InventoryPhotoUploadSucceededPayload = {
-  form: 'add' | 'edit'
-  photo: InventoryPhoto
-}
-
-type InventoryPhotoUploadFailedPayload = {
-  message: string
 }
 
 type InventoryFileUploadRequestedPayload = {
@@ -98,26 +80,6 @@ type InventoryFileRemovedPayload = {
   storedFile: InventoryFile
 }
 
-type InventoryPhotoRemoveRequestedPayload = {
-  form: 'add' | 'edit'
-  photo: InventoryPhoto
-}
-
-type InventoryPhotoRemovedPayload = {
-  form: 'add' | 'edit'
-  photo: InventoryPhoto
-}
-
-type InventoryPhotoDeleteRequestedPayload = {
-  itemId: string
-  photo: InventoryPhoto
-}
-
-type InventoryItemPhotoUploadRequestedPayload = {
-  itemId: string
-  file: File
-}
-
 type InventoryStatus = 'idle' | 'loading' | 'saving'
 
 type InventoryUiState = {
@@ -126,8 +88,9 @@ type InventoryUiState = {
   editingId: string | null
   fileUploadStatus: 'idle' | 'uploading' | 'error'
   fileUploadError: string | null
-  photoUploadStatus: 'idle' | 'uploading' | 'error'
-  photoUploadError: string | null
+  fileUploadInFlightCount: number
+  fileUploadBatchTotal: number
+  fileUploadBatchCompleted: number
   conditionReportDialogOpen: boolean
   conditionReportDialogForm: 'add' | 'edit' | null
 }
@@ -151,7 +114,7 @@ const createEmptyInventoryForm = (): InventoryFormState => ({
   title: '',
   publisher: '',
   canonicalRecordId: '',
-  publishDate: '',
+  publishYear: '',
   format: '',
   dimensions: '',
   conditionGrade: '',
@@ -161,7 +124,6 @@ const createEmptyInventoryForm = (): InventoryFormState => ({
   notes: '',
   tags: '',
   files: [],
-  photos: [],
 })
 
 const initialState: InventoryState = {
@@ -174,8 +136,9 @@ const initialState: InventoryState = {
     editingId: null,
     fileUploadStatus: 'idle',
     fileUploadError: null,
-    photoUploadStatus: 'idle',
-    photoUploadError: null,
+    fileUploadInFlightCount: 0,
+    fileUploadBatchTotal: 0,
+    fileUploadBatchCompleted: 0,
     conditionReportDialogOpen: false,
     conditionReportDialogForm: null,
   },
@@ -210,35 +173,14 @@ export const inventorySlice = createSlice({
       state.status = 'saving'
       state.error = null
     },
-    inventoryItemPhotoUploadRequested: (
-      state,
-      _action: PayloadAction<InventoryItemPhotoUploadRequestedPayload>,
-    ) => {
-      state.status = 'saving'
-      state.error = null
-    },
-    inventoryPhotoUploadRequested: (
-      state,
-      _action: PayloadAction<InventoryPhotoUploadRequestedPayload>,
-    ) => {
-      state.ui.photoUploadStatus = 'uploading'
-      state.ui.photoUploadError = null
-    },
     inventoryFileUploadRequested: (
       state,
       _action: PayloadAction<InventoryFileUploadRequestedPayload>,
     ) => {
       state.ui.fileUploadStatus = 'uploading'
       state.ui.fileUploadError = null
-    },
-    inventoryPhotoUploadSucceeded: (
-      state,
-      action: PayloadAction<InventoryPhotoUploadSucceededPayload>,
-    ) => {
-      const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
-      targetForm.photos = [...targetForm.photos, action.payload.photo]
-      state.ui.photoUploadStatus = 'idle'
-      state.ui.photoUploadError = null
+      state.ui.fileUploadInFlightCount += 1
+      state.ui.fileUploadBatchTotal += 1
     },
     inventoryFileUploadSucceeded: (
       state,
@@ -246,19 +188,21 @@ export const inventorySlice = createSlice({
     ) => {
       const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
       targetForm.files = [...targetForm.files, action.payload.storedFile]
-      state.ui.fileUploadStatus = 'idle'
+      state.ui.fileUploadBatchCompleted += 1
+      state.ui.fileUploadInFlightCount = Math.max(0, state.ui.fileUploadInFlightCount - 1)
+      state.ui.fileUploadStatus = state.ui.fileUploadInFlightCount > 0 ? 'uploading' : 'idle'
       state.ui.fileUploadError = null
-    },
-    inventoryPhotoUploadFailed: (
-      state,
-      action: PayloadAction<InventoryPhotoUploadFailedPayload>,
-    ) => {
-      state.ui.photoUploadStatus = 'error'
-      state.ui.photoUploadError = action.payload.message
+      if (state.ui.fileUploadStatus === 'idle') {
+        state.ui.fileUploadBatchTotal = 0
+        state.ui.fileUploadBatchCompleted = 0
+      }
     },
     inventoryFileUploadFailed: (state, action: PayloadAction<InventoryFileUploadFailedPayload>) => {
       state.ui.fileUploadStatus = 'error'
       state.ui.fileUploadError = action.payload.message
+      state.ui.fileUploadInFlightCount = 0
+      state.ui.fileUploadBatchTotal = 0
+      state.ui.fileUploadBatchCompleted = 0
     },
     inventoryFileRemoveRequested: (
       state,
@@ -274,28 +218,6 @@ export const inventorySlice = createSlice({
       )
       state.ui.fileUploadStatus = 'idle'
       state.ui.fileUploadError = null
-    },
-    inventoryPhotoRemoveRequested: (
-      state,
-      _action: PayloadAction<InventoryPhotoRemoveRequestedPayload>,
-    ) => {
-      state.ui.photoUploadStatus = 'uploading'
-      state.ui.photoUploadError = null
-    },
-    inventoryPhotoRemoved: (state, action: PayloadAction<InventoryPhotoRemovedPayload>) => {
-      const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
-      targetForm.photos = targetForm.photos.filter(
-        (photo) => photo.path !== action.payload.photo.path,
-      )
-      state.ui.photoUploadStatus = 'idle'
-      state.ui.photoUploadError = null
-    },
-    inventoryPhotoDeleteRequested: (
-      state,
-      _action: PayloadAction<InventoryPhotoDeleteRequestedPayload>,
-    ) => {
-      state.status = 'saving'
-      state.error = null
     },
     inventoryAddFormUpdated: (state, action: PayloadAction<InventoryFormUpdatePayload>) => {
       state.ui.addForm[action.payload.field] = action.payload.value
@@ -322,8 +244,9 @@ export const inventorySlice = createSlice({
       state.ui.addForm = createEmptyInventoryForm()
       state.ui.fileUploadStatus = 'idle'
       state.ui.fileUploadError = null
-      state.ui.photoUploadStatus = 'idle'
-      state.ui.photoUploadError = null
+      state.ui.fileUploadInFlightCount = 0
+      state.ui.fileUploadBatchTotal = 0
+      state.ui.fileUploadBatchCompleted = 0
     },
     inventoryEditStarted: (state, action: PayloadAction<InventoryEditStartPayload>) => {
       const item = state.items.find((entry) => entry.id === action.payload.id)
@@ -336,7 +259,7 @@ export const inventorySlice = createSlice({
         title: item.title,
         publisher: item.publisher,
         canonicalRecordId: item.canonicalRecordId,
-        publishDate: item.publishDate,
+        publishYear: item.publishYear,
         format: item.format,
         dimensions: item.dimensions,
         conditionGrade: item.conditionGrade,
@@ -346,20 +269,21 @@ export const inventorySlice = createSlice({
         notes: item.notes,
         tags: item.tags.join(', '),
         files: item.files,
-        photos: item.photos,
       }
       state.ui.fileUploadStatus = 'idle'
       state.ui.fileUploadError = null
-      state.ui.photoUploadStatus = 'idle'
-      state.ui.photoUploadError = null
+      state.ui.fileUploadInFlightCount = 0
+      state.ui.fileUploadBatchTotal = 0
+      state.ui.fileUploadBatchCompleted = 0
     },
     inventoryEditCanceled: (state) => {
       state.ui.editingId = null
       state.ui.editForm = createEmptyInventoryForm()
       state.ui.fileUploadStatus = 'idle'
       state.ui.fileUploadError = null
-      state.ui.photoUploadStatus = 'idle'
-      state.ui.photoUploadError = null
+      state.ui.fileUploadInFlightCount = 0
+      state.ui.fileUploadBatchTotal = 0
+      state.ui.fileUploadBatchCompleted = 0
       state.ui.conditionReportDialogOpen = false
       state.ui.conditionReportDialogForm = null
     },
@@ -375,8 +299,9 @@ export const inventorySlice = createSlice({
         state.ui.editingId = null
         state.ui.fileUploadStatus = 'idle'
         state.ui.fileUploadError = null
-        state.ui.photoUploadStatus = 'idle'
-        state.ui.photoUploadError = null
+        state.ui.fileUploadInFlightCount = 0
+        state.ui.fileUploadBatchTotal = 0
+        state.ui.fileUploadBatchCompleted = 0
         state.ui.conditionReportDialogOpen = false
         state.ui.conditionReportDialogForm = null
       }

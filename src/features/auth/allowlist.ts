@@ -1,5 +1,3 @@
-import type { User } from 'firebase/auth'
-
 const parseCsv = (value?: string): string[] => {
   if (!value) {
     return []
@@ -15,17 +13,12 @@ const allowedEmails = parseCsv(import.meta.env.VITE_AUTH_ALLOWED_EMAILS).map((em
   email.toLowerCase(),
 )
 
-const allowedUids = parseCsv(import.meta.env.VITE_AUTH_ALLOWED_UIDS)
+export const getAdminEmails = (): string[] => allowedEmails
 
-export const isUserAllowed = (user: User): boolean => {
-  if (allowedEmails.length === 0 && allowedUids.length === 0) {
-    return true
+export const isAdminEmail = (email: string | null | undefined): boolean => {
+  if (!email) {
+    return false
   }
 
-  const normalizedEmail = user.email?.toLowerCase() ?? ''
-
-  return allowedUids.includes(user.uid) || allowedEmails.includes(normalizedEmail)
+  return allowedEmails.includes(email.toLowerCase())
 }
-
-export const UNAUTHORIZED_ACCOUNT_ERROR =
-  'This Google account is not authorized to access this application.'

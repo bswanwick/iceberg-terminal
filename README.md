@@ -65,12 +65,26 @@ Copy `.env.example` to `.env.local` and fill in values from the Firebase Web App
 cp .env.example .env.local
 ```
 
-To restrict Google sign-in to specific people, set one or both allowlists:
+### Roles
 
-- `VITE_AUTH_ALLOWED_EMAILS` comma-separated email list (case-insensitive)
-- `VITE_AUTH_ALLOWED_UIDS` comma-separated Firebase UID list
+- `VITE_AUTH_ALLOWED_EMAILS` is the Admin email allowlist (case-insensitive).
+- Users not in the admin email list sign in as `guest` by default.
+- `staff` is assigned by Admins only.
+- Admins and Staff have elevated Firebase access. Guests are limited to their own user inventory data.
 
-If both values are empty, any Google account can sign in.
+### Functions environment
+
+The Functions runtime enforces admin role authority with `AUTH_ALLOWED_ADMIN_EMAILS`.
+
+1. Copy `functions/.env.example` to `functions/.env`.
+2. Set `AUTH_ALLOWED_ADMIN_EMAILS` to the same comma-separated list used by `VITE_AUTH_ALLOWED_EMAILS`.
+3. Optional: set `AUTH_ALLOWED_ORIGINS` (comma-separated) to explicitly allow callable origins such as `http://localhost:5173`.
+
+Optional frontend setting:
+
+- `VITE_FIREBASE_FUNCTIONS_REGION` defaults to `us-central1` if omitted.
+
+Keeping both values in sync ensures role behavior is consistent in UI and server-side rules.
 
 ## Scripts
 
@@ -152,13 +166,14 @@ System shall store high-resolution images suitable for research and inspection
 2. Ebay search builder (search for "eastern steamship -digital -reprint -postcard -matchbook")
 3. Improve intake processing with forms for taking pictures, scans, and close-ups.
 4. WebTWAIN
-5. Daily feed of new listings to review
-6. Google Blaze plan for billing + storage
-7. datatables for listing canonical records and inventory
-8. Rework the hero page + theming
-9. Use local AI model to parse tags out of scanned images (ship names, people, places, etc) as part of intake process, use those tags to automate Etsy listings.
-10. Let users register for newsletter. as we scale, let users subscribe to specific canonical objects in their possesion. Once a user buys something Cunard, for example, they will recieve sporadic updates from me, content, related to their preferred tags. As I learn, they learn.
-11. Wire telegram style ticker with message from me.
-12. Stub the canonical database from other known sites' lists
-13. `magick mogrify -path jpg -format jpg -quality 75 *.tif` to process tifs for web
-14. screen lock should only appear on dashboard or iceberg terminal pages, not the marketing site.
+5. Daily feed of new listings to review\
+6. Use local AI model to parse tags out of scanned images (ship names, people, places, etc) as part of intake process, use those tags to automate Etsy listings.
+7. Stub the canonical database from other known sites' lists
+8. `magick mogrify -path jpg -format jpg -quality 75 *.tif` to process tifs for web
+9. screen lock should only appear on dashboard or iceberg terminal pages, not the marketing site.
+10. hasElevatedAccess isn't mine, replace with better.
+11. Test Auth and Roles
+12. Fix the file upload bug, it uploads but doesn't attach to the inventory item.
+13. Autocomplete for the "Format" so I don't have to retype Brochure a million times.
+14. If Admin or Staff, then Files get uploaded to /assets not /user. Assets are protected company images and high-res scans.
+15. Remove the superflous Upload Photo button on the inventory form, we have upload file now.

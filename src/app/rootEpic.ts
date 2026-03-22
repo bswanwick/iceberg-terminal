@@ -12,10 +12,6 @@ import {
   inventoryFileRemoveEpic,
   inventoryFileUploadEpic,
   inventoryFetchEpic,
-  inventoryItemPhotoUploadEpic,
-  inventoryPhotoDeleteEpic,
-  inventoryPhotoRemoveEpic,
-  inventoryPhotoUploadEpic,
   inventoryUpdateEpic,
 } from '../features/inventory/epics'
 import { newsletterSubscribeEpic } from '../features/newsletter/epics'
@@ -36,9 +32,5 @@ export const rootEpic = combineEpics(
   inventoryDeleteEpic,
   inventoryFileUploadEpic,
   inventoryFileRemoveEpic,
-  inventoryPhotoUploadEpic,
-  inventoryPhotoRemoveEpic,
-  inventoryPhotoDeleteEpic,
-  inventoryItemPhotoUploadEpic,
   newsletterSubscribeEpic,
 )

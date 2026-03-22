@@ -77,13 +77,13 @@ function DashboardRoute() {
     const linkedCount = inventory.filter(
       (item) => item.canonicalRecordId && canonicalRecordMap.has(item.canonicalRecordId),
     ).length
-    const withPhotosCount = inventory.filter((item) => item.photos.length > 0).length
+    const withFilesCount = inventory.filter((item) => item.files.length > 0).length
     const withConditionReportCount = inventory.filter((item) => item.conditionReport).length
     const listingReadyCount = inventory.filter(
       (item) =>
         item.canonicalRecordId &&
         canonicalRecordMap.has(item.canonicalRecordId) &&
-        item.photos.length > 0 &&
+        item.files.length > 0 &&
         item.conditionGrade.trim().length > 0,
     ).length
 
@@ -91,8 +91,8 @@ function DashboardRoute() {
       inventoryCount,
       linkedCount,
       unlinkedCount: Math.max(inventoryCount - linkedCount, 0),
-      withPhotosCount,
-      withoutPhotosCount: Math.max(inventoryCount - withPhotosCount, 0),
+      withFilesCount,
+      withoutFilesCount: Math.max(inventoryCount - withFilesCount, 0),
       withConditionReportCount,
       missingConditionReportCount: Math.max(inventoryCount - withConditionReportCount, 0),
       listingReadyCount,
@@ -156,9 +156,9 @@ function DashboardRoute() {
               caption={`${metrics.unlinkedCount} records still need canonical pairing.`}
             />
             <MetricCard
-              label="Photo coverage"
-              value={`${metrics.withPhotosCount} with photos`}
-              caption={`${metrics.withoutPhotosCount} records are still missing photos.`}
+              label="File coverage"
+              value={`${metrics.withFilesCount} with files`}
+              caption={`${metrics.withoutFilesCount} records are still missing files.`}
             />
             <MetricCard
               label="Condition reports"
@@ -237,7 +237,7 @@ function DashboardRoute() {
                 const hasCanonical =
                   item.canonicalRecordId && canonicalRecordMap.has(item.canonicalRecordId)
                 const listingReady =
-                  hasCanonical && item.photos.length > 0 && item.conditionGrade.trim().length > 0
+                  hasCanonical && item.files.length > 0 && item.conditionGrade.trim().length > 0
 
                 return (
                   <TableRow key={item.id} hover>

@@ -53,7 +53,8 @@ import {
   type SurfaceAssessment,
   type VintagePaperConditionReport,
 } from './condition-report'
-import slice, { type InventoryFile, type InventoryItem, type InventoryPhoto } from './slice'
+import { coercePublishYear, normalizePublishYear, validatePublishYear } from './formUtils'
+import slice, { type InventoryFile, type InventoryItem } from './slice'
 
 const inventoryCollection = (uid: string) => collection(db, 'users', uid, 'inventory')
 
@@ -101,8 +102,6 @@ const toStoredFileArray = (value: unknown): StoredFile[] =>
         })
         .filter((item): item is StoredFile => item !== null)
     : []
-
-const toPhotoArray = (value: unknown): InventoryPhoto[] => toStoredFileArray(value)
 
 const toFileArray = (value: unknown): InventoryFile[] => toStoredFileArray(value)
 
@@ -406,7 +405,7 @@ const toInventoryItem = (docSnap: {
     title: typeof data.title === 'string' ? data.title : '',
     publisher: typeof data.publisher === 'string' ? data.publisher : '',
     canonicalRecordId: typeof data.canonicalRecordId === 'string' ? data.canonicalRecordId : '',
-    publishDate: typeof data.publishDate === 'string' ? data.publishDate : '',
+    publishYear: coercePublishYear(data.publishYear ?? data.publishDate),
     format: typeof data.format === 'string' ? data.format : '',
     dimensions: typeof data.dimensions === 'string' ? data.dimensions : '',
     conditionGrade: typeof data.conditionGrade === 'string' ? data.conditionGrade : '',
@@ -415,8 +414,7 @@ const toInventoryItem = (docSnap: {
     acquisitionSource: typeof data.acquisitionSource === 'string' ? data.acquisitionSource : '',
     notes: typeof data.notes === 'string' ? data.notes : '',
     tags: toStringArray(data.tags),
-    files: toFileArray(data.files),
-    photos: toPhotoArray(data.photos),
+    files: toFileArray(data.files ?? data.photos),
     createdAt: toTimestampLabel(data.createdAt),
     updatedAt: data.updatedAt ? toTimestampLabel(data.updatedAt) : undefined,
   }
@@ -424,7 +422,7 @@ const toInventoryItem = (docSnap: {
 
 const requireUid = (state: RootState) => state.auth.user?.uid
 
-const uploadInventoryStoredFile = (uid: string, scope: 'files' | 'photos', file: File) =>
+const uploadInventoryStoredFile = (uid: string, scope: 'files', file: File) =>
   uploadStorageFile({
     file,
     path: buildUserStoragePath({ uid, scope: ['inventory', scope], fileName: file.name }),
@@ -467,7 +465,7 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
         title,
         publisher,
         canonicalRecordId,
-        publishDate,
+        publishYear,
         format,
         dimensions,
         conditionGrade,
@@ -477,11 +475,15 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
         notes,
         tags,
         files,
-        photos,
       } = payload
       const uid = requireUid(state)
       if (!uid) {
         return of(slice.actions.inventoryFetchFailed('Sign in to add inventory.'))
+      }
+
+      const publishYearError = validatePublishYear(publishYear)
+      if (publishYearError) {
+        return of(slice.actions.inventoryFetchFailed(publishYearError))
       }
 
       const sanitizedConditionReport = sanitizeConditionReport(conditionReport)
@@ -491,7 +493,7 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
           title,
           publisher,
           canonicalRecordId,
-          publishDate,
+          publishYear: normalizePublishYear(publishYear),
           format,
           dimensions,
           conditionGrade,
@@ -501,7 +503,6 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
           notes,
           tags,
           files,
-          photos,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         }),
@@ -527,7 +528,7 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
         title,
         publisher,
         canonicalRecordId,
-        publishDate,
+        publishYear,
         format,
         dimensions,
         conditionGrade,
@@ -537,11 +538,15 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
         notes,
         tags,
         files,
-        photos,
       } = action.payload
       const uid = requireUid(state)
       if (!uid) {
         return of(slice.actions.inventoryFetchFailed('Sign in to update inventory.'))
+      }
+
+      const publishYearError = validatePublishYear(publishYear)
+      if (publishYearError) {
+        return of(slice.actions.inventoryFetchFailed(publishYearError))
       }
 
       const sanitizedConditionReport = sanitizeConditionReport(conditionReport)
@@ -551,7 +556,7 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
           title,
           publisher,
           canonicalRecordId,
-          publishDate,
+          publishYear: normalizePublishYear(publishYear),
           format,
           dimensions,
           conditionGrade,
@@ -561,48 +566,12 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
           notes,
           tags,
           files,
-          photos,
           updatedAt: serverTimestamp(),
         }),
       ).pipe(
         map(() => slice.actions.inventoryFetchRequested()),
         catchError((error) =>
           of(slice.actions.inventoryFetchFailed(toErrorMessage(error, 'Update failed'))),
-        ),
-      )
-    }),
-  )
-
-export const inventoryPhotoUploadEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootState> = (
-  action$,
-  state$,
-) =>
-  action$.pipe(
-    filter(slice.actions.inventoryPhotoUploadRequested.match),
-    withLatestFrom(state$),
-    mergeMap(([action, state]) => {
-      const uid = requireUid(state)
-      if (!uid) {
-        return of(
-          slice.actions.inventoryPhotoUploadFailed({
-            message: 'Sign in to upload photos.',
-          }),
-        )
-      }
-
-      return from(uploadInventoryStoredFile(uid, 'photos', action.payload.file)).pipe(
-        map((photo) =>
-          slice.actions.inventoryPhotoUploadSucceeded({
-            form: action.payload.form,
-            photo,
-          }),
-        ),
-        catchError((error) =>
-          of(
-            slice.actions.inventoryPhotoUploadFailed({
-              message: toErrorMessage(error, 'Upload failed'),
-            }),
-          ),
         ),
       )
     }),
@@ -643,78 +612,6 @@ export const inventoryFileUploadEpic: Epic<AnyFeatureAction, AnyFeatureAction, R
     }),
   )
 
-export const inventoryItemPhotoUploadEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootState> = (
-  action$,
-  state$,
-) =>
-  action$.pipe(
-    filter(slice.actions.inventoryItemPhotoUploadRequested.match),
-    withLatestFrom(state$),
-    mergeMap(([action, state]) => {
-      const uid = requireUid(state)
-      if (!uid) {
-        return of(slice.actions.inventoryFetchFailed('Sign in to upload photos.'))
-      }
-
-      const item = state.inventory.items.find((entry) => entry.id === action.payload.itemId)
-      if (!item) {
-        return of(slice.actions.inventoryFetchFailed('Inventory item not found.'))
-      }
-
-      return from(uploadInventoryStoredFile(uid, 'photos', action.payload.file)).pipe(
-        mergeMap((photo) => {
-          const updatedPhotos = [...item.photos, photo]
-          const itemRef = doc(db, 'users', uid, 'inventory', item.id)
-          return from(
-            updateDoc(itemRef, {
-              photos: updatedPhotos,
-              updatedAt: serverTimestamp(),
-            }),
-          )
-        }),
-        map(() => slice.actions.inventoryFetchRequested()),
-        catchError((error) =>
-          of(slice.actions.inventoryFetchFailed(toErrorMessage(error, 'Upload failed'))),
-        ),
-      )
-    }),
-  )
-
-export const inventoryPhotoRemoveEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootState> = (
-  action$,
-  state$,
-) =>
-  action$.pipe(
-    filter(slice.actions.inventoryPhotoRemoveRequested.match),
-    withLatestFrom(state$),
-    mergeMap(([action, state]) => {
-      const uid = requireUid(state)
-      if (!uid) {
-        return of(
-          slice.actions.inventoryPhotoUploadFailed({
-            message: 'Sign in to delete photos.',
-          }),
-        )
-      }
-
-      return from(deleteStorageFile(action.payload.photo.path)).pipe(
-        map(() =>
-          slice.actions.inventoryPhotoRemoved({
-            form: action.payload.form,
-            photo: action.payload.photo,
-          }),
-        ),
-        catchError((error) =>
-          of(
-            slice.actions.inventoryPhotoUploadFailed({
-              message: toErrorMessage(error, 'Delete failed'),
-            }),
-          ),
-        ),
-      )
-    }),
-  )
-
 export const inventoryFileRemoveEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootState> = (
   action$,
   state$,
@@ -745,44 +642,6 @@ export const inventoryFileRemoveEpic: Epic<AnyFeatureAction, AnyFeatureAction, R
               message: toErrorMessage(error, 'Delete failed'),
             }),
           ),
-        ),
-      )
-    }),
-  )
-
-export const inventoryPhotoDeleteEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootState> = (
-  action$,
-  state$,
-) =>
-  action$.pipe(
-    filter(slice.actions.inventoryPhotoDeleteRequested.match),
-    withLatestFrom(state$),
-    mergeMap(([action, state]) => {
-      const uid = requireUid(state)
-      if (!uid) {
-        return of(slice.actions.inventoryFetchFailed('Sign in to delete photos.'))
-      }
-
-      const item = state.inventory.items.find((entry) => entry.id === action.payload.itemId)
-      if (!item) {
-        return of(slice.actions.inventoryFetchFailed('Inventory item not found.'))
-      }
-
-      const updatedPhotos = item.photos.filter((photo) => photo.path !== action.payload.photo.path)
-      const itemRef = doc(db, 'users', uid, 'inventory', item.id)
-
-      return from(deleteStorageFile(action.payload.photo.path)).pipe(
-        mergeMap(() =>
-          from(
-            updateDoc(itemRef, {
-              photos: updatedPhotos,
-              updatedAt: serverTimestamp(),
-            }),
-          ),
-        ),
-        map(() => slice.actions.inventoryFetchRequested()),
-        catchError((error) =>
-          of(slice.actions.inventoryFetchFailed(toErrorMessage(error, 'Delete failed'))),
         ),
       )
     }),

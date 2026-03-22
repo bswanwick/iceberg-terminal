@@ -1,10 +1,12 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import type { AuthRole } from './roles'
 
 export type AuthUser = {
   uid: string
   displayName: string | null
   email: string | null
   photoURL: string | null
+  roles: AuthRole[]
 }
 
 type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated'

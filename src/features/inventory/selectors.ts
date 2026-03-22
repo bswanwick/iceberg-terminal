@@ -10,10 +10,12 @@ export const selectInventoryFileUploadStatus = (state: RootState) =>
   state.inventory.ui.fileUploadStatus
 export const selectInventoryFileUploadError = (state: RootState) =>
   state.inventory.ui.fileUploadError
-export const selectInventoryPhotoUploadStatus = (state: RootState) =>
-  state.inventory.ui.photoUploadStatus
-export const selectInventoryPhotoUploadError = (state: RootState) =>
-  state.inventory.ui.photoUploadError
+export const selectInventoryFileUploadInFlightCount = (state: RootState) =>
+  state.inventory.ui.fileUploadInFlightCount
+export const selectInventoryFileUploadBatchTotal = (state: RootState) =>
+  state.inventory.ui.fileUploadBatchTotal
+export const selectInventoryFileUploadBatchCompleted = (state: RootState) =>
+  state.inventory.ui.fileUploadBatchCompleted
 export const selectInventoryConditionReportDialogOpen = (state: RootState) =>
   state.inventory.ui.conditionReportDialogOpen
 export const selectInventoryConditionReportDialogForm = (state: RootState) =>
