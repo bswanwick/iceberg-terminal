@@ -52,7 +52,15 @@ function ScreenLockOverlay() {
             },
           }}
         />
-        <Typography variant="subtitle1" sx={{ fontFamily: 'IBM Plex Mono' }}>
+        <Typography
+          variant="h5"
+          sx={{
+            fontFamily: 'IBM Plex Mono',
+            background: 'linear-gradient(90deg, #f7f4ee, #e9e2d2)',
+            backgroundClip: 'text',
+            color: 'transparent',
+          }}
+        >
           {label}
         </Typography>
       </Stack>

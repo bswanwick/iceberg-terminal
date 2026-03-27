@@ -15,13 +15,14 @@ import {
   inventoryUpdateEpic,
 } from '../features/inventory/epics'
 import { newsletterSubscribeEpic } from '../features/newsletter/epics'
-import { uiScreenLockEpic } from '../features/ui/epics.ts'
+import { uiScreenLockEpic, uiToastAutoDismissEpic } from '../features/ui/epics.ts'
 
 export const rootEpic = combineEpics(
   authListenerEpic,
   authSignInEpic,
   authSignOutEpic,
   uiScreenLockEpic,
+  uiToastAutoDismissEpic,
   canonicalRecordsFetchEpic,
   canonicalRecordAddEpic,
   canonicalRecordUpdateEpic,

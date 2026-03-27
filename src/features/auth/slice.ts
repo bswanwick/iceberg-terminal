@@ -1,6 +1,13 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { AuthRole } from './roles'
 
+export const AUTH_SIGN_OUT_REASON_USER_CLICKED = 'UserClickedSignout'
+export const AUTH_SIGN_OUT_REASON_NOT_YET_ALLOWED = 'NotYetAllowed'
+
+export type AuthSignOutReason =
+  | typeof AUTH_SIGN_OUT_REASON_USER_CLICKED
+  | typeof AUTH_SIGN_OUT_REASON_NOT_YET_ALLOWED
+
 export type AuthUser = {
   uid: string
   displayName: string | null
@@ -16,6 +23,7 @@ type AuthState = {
   status: AuthStatus
   error: string | null
   ready: boolean
+  signOutReason: AuthSignOutReason | null
 }
 
 const initialState: AuthState = {
@@ -23,6 +31,7 @@ const initialState: AuthState = {
   status: 'idle',
   error: null,
   ready: false,
+  signOutReason: null,
 }
 
 export const authSlice = createSlice({
@@ -33,8 +42,9 @@ export const authSlice = createSlice({
     authSignInRequested: (state) => {
       state.status = 'loading'
       state.error = null
+      state.signOutReason = null
     },
-    authSignOutRequested: (state) => {
+    authSignOutRequested: (state, _action: PayloadAction<{ reason: AuthSignOutReason }>) => {
       state.status = 'loading'
       state.error = null
     },
@@ -43,6 +53,9 @@ export const authSlice = createSlice({
       state.ready = true
       state.status = action.payload ? 'authenticated' : 'unauthenticated'
       state.error = null
+      if (action.payload) {
+        state.signOutReason = null
+      }
     },
     authError: (state, action: PayloadAction<string>) => {
       state.error = action.payload
@@ -50,6 +63,9 @@ export const authSlice = createSlice({
     },
     authClearError: (state) => {
       state.error = null
+    },
+    authSignOutReasonSet: (state, action: PayloadAction<AuthSignOutReason | null>) => {
+      state.signOutReason = action.payload
     },
   },
 })

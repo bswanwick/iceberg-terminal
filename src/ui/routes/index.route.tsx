@@ -4,6 +4,7 @@ import DashboardRoute from './dashboard.route'
 import PlatformRoute from './status.route'
 import CanonRoute from './canon.route'
 import InventoryRoute from './inventory.route'
+import RegisterRoute from './register.route'
 
 function IndexRoute() {
   return (
@@ -11,6 +12,7 @@ function IndexRoute() {
       <Route path="/" element={<LandingRoute />} />
       <Route path="/iceberg-welcome" element={<Navigate to="/" replace />} />
       <Route path="/dashboard" element={<DashboardRoute />} />
+      <Route path="/register" element={<RegisterRoute />} />
       <Route path="/inventory" element={<InventoryRoute />} />
       <Route path="/canon" element={<CanonRoute />} />
       <Route path="/platform" element={<PlatformRoute />} />

@@ -134,7 +134,7 @@ System shall allow filtering of the timeline by category, brand, country, or tag
 
 System shall allow zooming between decade, year, and detailed views.
 
-## Routes and Destinations
+## Travel Routes and Destinations
 
 System shall display "Routes and Destinations" on a world map.
 

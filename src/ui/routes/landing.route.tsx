@@ -17,10 +17,7 @@ import {
 } from '@mui/material'
 import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded'
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
-import { Navigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
-import { selectAuthReady, selectAuthStatus, selectAuthUser } from '../../features/auth/selectors'
-import { authSlice } from '../../features/auth/slice'
 import {
   selectNewsletterError,
   selectNewsletterLastSubmission,
@@ -34,6 +31,7 @@ import {
   validateSubscriptionPayload,
 } from '../../features/newsletter/formUtils'
 import { selectAppLocked } from '../../features/ui/selectors'
+import SignInAndAvatar from '../SignInAndAvatar'
 import TelegramWire from '../TelegramWire'
 import swimmingLogo from '../../assets/swimming-swan-logo.png'
 
@@ -157,9 +155,6 @@ const TELEGRAM_WIRE_MESSAGE = [
 
 function LandingRoute() {
   const dispatch = useAppDispatch()
-  const user = useAppSelector(selectAuthUser)
-  const authReady = useAppSelector(selectAuthReady)
-  const authStatus = useAppSelector(selectAuthStatus)
   const newsletterStatus = useAppSelector(selectNewsletterStatus)
   const newsletterError = useAppSelector(selectNewsletterError)
   const lastSubmission = useAppSelector(selectNewsletterLastSubmission)
@@ -167,8 +162,6 @@ function LandingRoute() {
 
   const [carouselStart, setCarouselStart] = useState(0)
   const [form, setForm] = useState<NewsletterFormState>({ firstName: '', email: '', interests: [] })
-
-  const _isAuthBusy = !authReady || authStatus === 'loading' // Use this variable to disable auth-related buttons if needed, e.g. during initial load or sign-in process
   const carouselLength = FEATURED_ITEMS.length
   const canSlide = carouselLength > CAROUSEL_VIEWPORT
 
@@ -185,10 +178,6 @@ function LandingRoute() {
     }
     return items
   }, [canSlide, carouselLength, carouselStart])
-
-  if (authReady && user) {
-    return <Navigate to="/dashboard" replace />
-  }
 
   const updateFormStatus = () => {
     if (newsletterStatus !== 'idle') {
@@ -286,15 +275,9 @@ function LandingRoute() {
               right: { xs: 16, md: 'auto' },
             }}
           >
-            <Button
-              href="#dispatch"
-              variant="contained"
-              color="secondary"
-              onClick={() => dispatch(authSlice.actions.authSignInRequested())}
-              sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
-            >
-              Sign-in
-            </Button>
+            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+              <SignInAndAvatar />
+            </Box>
           </Stack>
         </Stack>
       </Paper>

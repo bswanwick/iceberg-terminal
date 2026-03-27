@@ -8,7 +8,7 @@ import { uiIsLoading } from '../ui/slice'
 import { isAdminEmail } from './allowlist'
 import { syncMyUserRole } from './roleApi'
 import { AUTH_ROLE_ADMIN, AUTH_ROLE_GUEST, parseRolesFromClaims, type AuthRole } from './roles'
-import slice, { type AuthUser } from './slice'
+import slice, { AUTH_SIGN_OUT_REASON_NOT_YET_ALLOWED, type AuthUser } from './slice'
 
 const getUserRoles = async (user: User): Promise<AuthRole[]> => {
   try {
@@ -66,8 +66,19 @@ export const authListenerEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
         of(uiIsLoading(true)),
         authState$.pipe(
           mergeMap((user) => {
+            // TODO - Once we have the backend in place for registering and role managmenet, then we will allow more users in.
+            // For now, we are only allowing users with admin emails to log in.
             if (!user) {
               return of(slice.actions.authStateChanged(null), uiIsLoading(false))
+            }
+
+            if (!isAdminEmail(user.email)) {
+              return of(
+                slice.actions.authSignOutReasonSet(AUTH_SIGN_OUT_REASON_NOT_YET_ALLOWED),
+                slice.actions.authSignOutRequested({
+                  reason: AUTH_SIGN_OUT_REASON_NOT_YET_ALLOWED,
+                }),
+              )
             }
 
             return from(getUserRoles(user)).pipe(
