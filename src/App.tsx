@@ -7,6 +7,7 @@ import { selectAuthReady, selectAuthSignOutReason, selectAuthUser } from './feat
 
 import { AUTH_SIGN_OUT_REASON_NOT_YET_ALLOWED, authSlice } from './features/auth/slice'
 import { canonicalRecordsSlice } from './features/canonicalRecords/slice'
+import { featuredInventorySlice } from './features/featuredInventory/slice'
 import { inventorySlice } from './features/inventory/slice'
 import IndexRoute from './ui/routes/index.route'
 import Header from './ui/Header'
@@ -28,6 +29,10 @@ function App() {
 
   useEffect(() => {
     dispatch(authSlice.actions.authStartListening())
+  }, [dispatch])
+
+  useEffect(() => {
+    dispatch(featuredInventorySlice.actions.featuredInventoryFetchRequested())
   }, [dispatch])
 
   useEffect(() => {

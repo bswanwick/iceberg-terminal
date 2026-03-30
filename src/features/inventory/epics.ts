@@ -10,16 +10,19 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  setDoc,
   updateDoc,
 } from 'firebase/firestore'
 import type { AnyFeatureAction, RootState } from '../../app/store'
 import { db } from '../../firebase'
+import { featuredInventorySlice } from '../featuredInventory/slice'
 import {
   buildUserStoragePath,
   deleteStorageFile,
   uploadStorageFile,
   type StoredFile,
 } from '../../firebase/storage'
+import { getFeaturedInventoryImage } from './fileUtils'
 import {
   collectorConditionCategoryOptions,
   completenessStatusOptions,
@@ -57,6 +60,7 @@ import { coercePublishYear, normalizePublishYear, validatePublishYear } from './
 import slice, { type InventoryFile, type InventoryItem } from './slice'
 
 const inventoryCollection = (uid: string) => collection(db, 'users', uid, 'inventory')
+const featuredInventoryCollection = collection(db, 'featuredInventory')
 
 const toErrorMessage = (error: unknown, fallback: string) => {
   if (import.meta.env.DEV) {
@@ -72,9 +76,17 @@ const toStringArray = (value: unknown) =>
 const toStoredFileArray = (value: unknown): StoredFile[] =>
   Array.isArray(value)
     ? value
-        .map((item) => {
+        .map((item, index) => {
           if (typeof item === 'string') {
-            return { url: item, path: '', name: '', contentType: '', size: 0 }
+            return {
+              url: item,
+              path: '',
+              name: '',
+              contentType: '',
+              size: 0,
+              displayOrder: index,
+              isHero: false,
+            }
           }
 
           if (!item || typeof item !== 'object') {
@@ -87,6 +99,8 @@ const toStoredFileArray = (value: unknown): StoredFile[] =>
             name?: unknown
             contentType?: unknown
             size?: unknown
+            displayOrder?: unknown
+            isHero?: unknown
           }
           if (typeof record.url !== 'string' || typeof record.path !== 'string') {
             return null
@@ -98,6 +112,8 @@ const toStoredFileArray = (value: unknown): StoredFile[] =>
             name: typeof record.name === 'string' ? record.name : '',
             contentType: typeof record.contentType === 'string' ? record.contentType : '',
             size: typeof record.size === 'number' ? record.size : 0,
+            displayOrder: typeof record.displayOrder === 'number' ? record.displayOrder : index,
+            isHero: typeof record.isHero === 'boolean' ? record.isHero : false,
           }
         })
         .filter((item): item is StoredFile => item !== null)
@@ -121,6 +137,21 @@ const toOptionalString = (value: unknown) => (typeof value === 'string' ? value 
 const toOptionalNumber = (value: unknown) => (typeof value === 'number' ? value : undefined)
 
 const toOptionalBoolean = (value: unknown) => (typeof value === 'boolean' ? value : undefined)
+
+const toMoneyAmount = (value: unknown) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.round(value * 100) / 100
+  }
+
+  if (typeof value === 'string') {
+    const parsedValue = Number(value.trim().replace(/[$,]/g, ''))
+    return Number.isFinite(parsedValue) && parsedValue >= 0
+      ? Math.round(parsedValue * 100) / 100
+      : null
+  }
+
+  return null
+}
 
 const isStringOption = <T extends readonly string[]>(
   options: T,
@@ -405,6 +436,7 @@ const toInventoryItem = (docSnap: {
     title: typeof data.title === 'string' ? data.title : '',
     publisher: typeof data.publisher === 'string' ? data.publisher : '',
     canonicalRecordId: typeof data.canonicalRecordId === 'string' ? data.canonicalRecordId : '',
+    featured: toOptionalBoolean(data.featured) ?? false,
     publishYear: coercePublishYear(data.publishYear ?? data.publishDate),
     format: typeof data.format === 'string' ? data.format : '',
     dimensions: typeof data.dimensions === 'string' ? data.dimensions : '',
@@ -412,6 +444,8 @@ const toInventoryItem = (docSnap: {
     conditionReport: toConditionReport(data.conditionReport) ?? null,
     acquisitionDate: typeof data.acquisitionDate === 'string' ? data.acquisitionDate : '',
     acquisitionSource: typeof data.acquisitionSource === 'string' ? data.acquisitionSource : '',
+    acquisitionCost: toMoneyAmount(data.acquisitionCost),
+    retailPrice: toMoneyAmount(data.retailPrice),
     notes: typeof data.notes === 'string' ? data.notes : '',
     tags: toStringArray(data.tags),
     files: toFileArray(data.files ?? data.photos),
@@ -422,11 +456,62 @@ const toInventoryItem = (docSnap: {
 
 const requireUid = (state: RootState) => state.auth.user?.uid
 
+const buildFeaturedInventoryDocId = (uid: string, inventoryId: string) => `${uid}__${inventoryId}`
+
+const syncFeaturedInventoryDocument = (
+  uid: string,
+  item: Pick<
+    InventoryItem,
+    | 'id'
+    | 'title'
+    | 'publisher'
+    | 'canonicalRecordId'
+    | 'featured'
+    | 'format'
+    | 'notes'
+    | 'tags'
+    | 'files'
+    | 'retailPrice'
+  >,
+  state: RootState,
+) => {
+  const featuredDocRef = doc(featuredInventoryCollection, buildFeaturedInventoryDocId(uid, item.id))
+
+  if (!item.featured) {
+    return deleteDoc(featuredDocRef)
+  }
+
+  const canonicalRecord = state.canonicalRecords.items.find(
+    (record) => record.id === item.canonicalRecordId,
+  )
+  const title = canonicalRecord?.title.trim() || item.title.trim() || 'Untitled item'
+  const collection = item.publisher.trim() || item.format.trim() || 'Featured listing'
+  const summary = canonicalRecord?.description.trim() || item.notes.trim() || 'Curated inventory.'
+  const tags = item.tags.length > 0 ? item.tags : (canonicalRecord?.tags ?? [])
+  const imageUrl = getFeaturedInventoryImage(item.files)
+
+  return setDoc(featuredDocRef, {
+    inventoryId: item.id,
+    ownerId: uid,
+    canonicalRecordId: item.canonicalRecordId,
+    title,
+    collection,
+    summary,
+    tags,
+    retailPrice: item.retailPrice,
+    imageUrl,
+    updatedAt: serverTimestamp(),
+  })
+}
+
 const uploadInventoryStoredFile = (uid: string, scope: 'files', file: File) =>
   uploadStorageFile({
     file,
     path: buildUserStoragePath({ uid, scope: ['inventory', scope], fileName: file.name }),
   })
+
+const deleteInventoryStoredFiles = (files: InventoryFile[]) =>
+  Promise.all(files.map((storedFile) => deleteStorageFile(storedFile.path)))
 
 export const inventoryFetchEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootState> = (
   action$,
@@ -465,6 +550,7 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
         title,
         publisher,
         canonicalRecordId,
+        featured,
         publishYear,
         format,
         dimensions,
@@ -472,10 +558,13 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
         conditionReport,
         acquisitionDate,
         acquisitionSource,
+        acquisitionCost,
+        retailPrice,
         notes,
         tags,
         files,
       } = payload
+      const filesPendingRemoval = state.inventory.ui.addFilesPendingRemoval
       const uid = requireUid(state)
       if (!uid) {
         return of(slice.actions.inventoryFetchFailed('Sign in to add inventory.'))
@@ -493,6 +582,7 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
           title,
           publisher,
           canonicalRecordId,
+          featured,
           publishYear: normalizePublishYear(publishYear),
           format,
           dimensions,
@@ -500,6 +590,8 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
           conditionReport: sanitizedConditionReport,
           acquisitionDate,
           acquisitionSource,
+          acquisitionCost,
+          retailPrice,
           notes,
           tags,
           files,
@@ -507,7 +599,35 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
           updatedAt: serverTimestamp(),
         }),
       ).pipe(
-        map(() => slice.actions.inventoryFetchRequested()),
+        mergeMap((docRef) =>
+          from(
+            syncFeaturedInventoryDocument(
+              uid,
+              {
+                id: docRef.id,
+                title,
+                publisher,
+                canonicalRecordId,
+                featured,
+                format,
+                notes,
+                tags,
+                files,
+                retailPrice,
+              },
+              state,
+            ),
+          ).pipe(
+            mergeMap(() => from(deleteInventoryStoredFiles(filesPendingRemoval))),
+            mergeMap(() =>
+              of(
+                slice.actions.inventoryFileRemovalsCleared({ form: 'add' }),
+                featuredInventorySlice.actions.featuredInventoryFetchRequested(),
+                slice.actions.inventoryFetchRequested(),
+              ),
+            ),
+          ),
+        ),
         catchError((error) =>
           of(slice.actions.inventoryFetchFailed(toErrorMessage(error, 'Add failed'))),
         ),
@@ -528,6 +648,7 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
         title,
         publisher,
         canonicalRecordId,
+        featured,
         publishYear,
         format,
         dimensions,
@@ -535,10 +656,13 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
         conditionReport,
         acquisitionDate,
         acquisitionSource,
+        acquisitionCost,
+        retailPrice,
         notes,
         tags,
         files,
       } = action.payload
+      const filesPendingRemoval = state.inventory.ui.editFilesPendingRemoval
       const uid = requireUid(state)
       if (!uid) {
         return of(slice.actions.inventoryFetchFailed('Sign in to update inventory.'))
@@ -556,6 +680,7 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
           title,
           publisher,
           canonicalRecordId,
+          featured,
           publishYear: normalizePublishYear(publishYear),
           format,
           dimensions,
@@ -563,13 +688,43 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
           conditionReport: sanitizedConditionReport,
           acquisitionDate,
           acquisitionSource,
+          acquisitionCost,
+          retailPrice,
           notes,
           tags,
           files,
           updatedAt: serverTimestamp(),
         }),
       ).pipe(
-        map(() => slice.actions.inventoryFetchRequested()),
+        mergeMap(() =>
+          from(
+            syncFeaturedInventoryDocument(
+              uid,
+              {
+                id,
+                title,
+                publisher,
+                canonicalRecordId,
+                featured,
+                format,
+                notes,
+                tags,
+                files,
+                retailPrice,
+              },
+              state,
+            ),
+          ).pipe(
+            mergeMap(() => from(deleteInventoryStoredFiles(filesPendingRemoval))),
+            mergeMap(() =>
+              of(
+                slice.actions.inventoryFileRemovalsCleared({ form: 'edit' }),
+                featuredInventorySlice.actions.featuredInventoryFetchRequested(),
+                slice.actions.inventoryFetchRequested(),
+              ),
+            ),
+          ),
+        ),
         catchError((error) =>
           of(slice.actions.inventoryFetchFailed(toErrorMessage(error, 'Update failed'))),
         ),
@@ -612,41 +767,6 @@ export const inventoryFileUploadEpic: Epic<AnyFeatureAction, AnyFeatureAction, R
     }),
   )
 
-export const inventoryFileRemoveEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootState> = (
-  action$,
-  state$,
-) =>
-  action$.pipe(
-    filter(slice.actions.inventoryFileRemoveRequested.match),
-    withLatestFrom(state$),
-    mergeMap(([action, state]) => {
-      const uid = requireUid(state)
-      if (!uid) {
-        return of(
-          slice.actions.inventoryFileUploadFailed({
-            message: 'Sign in to delete files.',
-          }),
-        )
-      }
-
-      return from(deleteStorageFile(action.payload.storedFile.path)).pipe(
-        map(() =>
-          slice.actions.inventoryFileRemoved({
-            form: action.payload.form,
-            storedFile: action.payload.storedFile,
-          }),
-        ),
-        catchError((error) =>
-          of(
-            slice.actions.inventoryFileUploadFailed({
-              message: toErrorMessage(error, 'Delete failed'),
-            }),
-          ),
-        ),
-      )
-    }),
-  )
-
 export const inventoryDeleteEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootState> = (
   action$,
   state$,
@@ -663,7 +783,20 @@ export const inventoryDeleteEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
 
       const itemRef = doc(db, 'users', uid, 'inventory', payload.id)
       return from(deleteDoc(itemRef)).pipe(
-        map(() => slice.actions.inventoryFetchRequested()),
+        mergeMap(() =>
+          from(
+            deleteDoc(
+              doc(featuredInventoryCollection, buildFeaturedInventoryDocId(uid, payload.id)),
+            ),
+          ).pipe(
+            mergeMap(() =>
+              of(
+                featuredInventorySlice.actions.featuredInventoryFetchRequested(),
+                slice.actions.inventoryFetchRequested(),
+              ),
+            ),
+          ),
+        ),
         catchError((error) =>
           of(slice.actions.inventoryFetchFailed(toErrorMessage(error, 'Delete failed'))),
         ),

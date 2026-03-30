@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { DragEvent } from 'react'
+import type { DragEvent, ReactNode } from 'react'
 import {
   Box,
   Button,
@@ -22,13 +22,21 @@ import customParseFormat from 'dayjs/plugin/customParseFormat'
 import AddIcon from '@mui/icons-material/Add'
 import CloseIcon from '@mui/icons-material/Close'
 import SaveIcon from '@mui/icons-material/Save'
+import StarBorderIcon from '@mui/icons-material/StarBorder'
+import StarIcon from '@mui/icons-material/Star'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
 import { splitComma } from '../../../app/formUtils'
 import { selectAuthUser } from '../../auth/selectors'
 import { selectCanonicalRecords } from '../../canonicalRecords/selectors'
 import CanonicalRecordAddForm from '../../canonicalRecords/components/CanonicalRecordAddForm.tsx'
 import { selectAppLocked } from '../../ui/selectors'
-import { normalizePublishYear, validatePublishYear } from '../formUtils'
+import { getInventoryFileLabel, sortInventoryFiles } from '../fileUtils'
+import {
+  normalizePublishYear,
+  parseMoneyInput,
+  validateMoneyInput,
+  validatePublishYear,
+} from '../formUtils'
 import {
   selectInventory,
   selectInventoryAddForm,
@@ -42,32 +50,36 @@ import {
   selectInventoryStatus,
 } from '../selectors'
 import ConditionReportDialog from './ConditionReportDialog.tsx'
-import { inventorySlice, type InventoryFile } from '../slice'
+import InventoryFilesDialog from './InventoryFilesDialog.tsx'
+import { inventorySlice, type InventoryFormState } from '../slice'
 
 type InventoryDragEvent = DragEvent<HTMLElement>
 
 type InventoryFormTarget = 'add' | 'edit'
 
+type InventoryTextField = Exclude<
+  keyof InventoryFormState,
+  'conditionReport' | 'files' | 'featured'
+>
+
+type InventoryFormValidationState = {
+  publishYear: string | null
+  acquisitionCost: string | null
+  retailPrice: string | null
+}
+
+type InventoryFormRenderOptions = {
+  disabled: boolean
+  uploadButtonLabel: string
+  submitLabel: string
+  submitIcon: ReactNode
+  submitSize?: 'small' | 'medium' | 'large'
+  canSubmit: boolean
+  onSubmit: () => void
+  onCancel?: () => void
+}
+
 dayjs.extend(customParseFormat)
-
-const formatFileSize = (size: number) => {
-  if (size < 1024) {
-    return `${size} B`
-  }
-
-  if (size < 1024 * 1024) {
-    return `${(size / 1024).toFixed(1)} KB`
-  }
-
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`
-}
-
-const getFileLabel = (storedFile: InventoryFile) => {
-  const fallbackName = storedFile.path.split('/').at(-1) || 'File'
-  const name = storedFile.name.trim() || fallbackName
-
-  return storedFile.size > 0 ? `${name} (${formatFileSize(storedFile.size)})` : name
-}
 
 const uploadedFileChipSx = {
   width: '100%',
@@ -103,12 +115,27 @@ const InventoryFormsSection = () => {
 
   const canAddInventory = addForm.canonicalRecordId.trim().length > 0
   const monthYearFormat = 'MM/YYYY'
-  const addPublishYearError = validatePublishYear(addForm.publishYear)
-  const editPublishYearError = validatePublishYear(editForm.publishYear)
+  const addValidation: InventoryFormValidationState = {
+    publishYear: validatePublishYear(addForm.publishYear),
+    acquisitionCost: validateMoneyInput(addForm.acquisitionCost, 'Acquisition cost'),
+    retailPrice: validateMoneyInput(addForm.retailPrice, 'Retail price'),
+  }
+  const editValidation: InventoryFormValidationState = {
+    publishYear: validatePublishYear(editForm.publishYear),
+    acquisitionCost: validateMoneyInput(editForm.acquisitionCost, 'Acquisition cost'),
+    retailPrice: validateMoneyInput(editForm.retailPrice, 'Retail price'),
+  }
   const editingItem = editingId ? inventory.find((entry) => entry.id === editingId) : null
-  const canSubmitAddInventory = canAddInventory && !addPublishYearError
+  const canSubmitAddInventory =
+    canAddInventory &&
+    !addValidation.publishYear &&
+    !addValidation.acquisitionCost &&
+    !addValidation.retailPrice
+  const canSubmitEditInventory =
+    !editValidation.publishYear && !editValidation.acquisitionCost && !editValidation.retailPrice
   const uploadProgress =
     fileUploadBatchTotal > 0 ? (fileUploadBatchCompleted / fileUploadBatchTotal) * 100 : 0
+  const isEditingInventory = Boolean(editingId && editingItem)
 
   const toMonthYearValue = (value: string) => {
     const parsed = dayjs(value, monthYearFormat, true)
@@ -117,19 +144,42 @@ const InventoryFormsSection = () => {
 
   const toMonthYearString = (value: Dayjs | null) => (value ? value.format(monthYearFormat) : '')
 
-  const updateAcquisitionDate = (form: InventoryFormTarget, value: Dayjs | null) => {
-    const action =
-      form === 'add'
-        ? inventorySlice.actions.inventoryAddFormUpdated({
-            field: 'acquisitionDate',
-            value: toMonthYearString(value),
-          })
-        : inventorySlice.actions.inventoryEditFormUpdated({
-            field: 'acquisitionDate',
-            value: toMonthYearString(value),
-          })
+  const getForm = (formTarget: InventoryFormTarget) => (formTarget === 'add' ? addForm : editForm)
 
-    dispatch(action)
+  const getValidation = (formTarget: InventoryFormTarget) =>
+    formTarget === 'add' ? addValidation : editValidation
+
+  const updateTextField = (
+    formTarget: InventoryFormTarget,
+    field: InventoryTextField,
+    value: string,
+  ) => {
+    dispatch(
+      inventorySlice.actions.inventoryFormUpdated({
+        form: formTarget,
+        field,
+        value,
+      }),
+    )
+  }
+
+  const updateFeatured = (formTarget: InventoryFormTarget, value: boolean) => {
+    dispatch(
+      inventorySlice.actions.inventoryFormFeaturedUpdated({
+        form: formTarget,
+        value,
+      }),
+    )
+  }
+
+  const updateAcquisitionDate = (form: InventoryFormTarget, value: Dayjs | null) => {
+    dispatch(
+      inventorySlice.actions.inventoryFormUpdated({
+        form,
+        field: 'acquisitionDate',
+        value: toMonthYearString(value),
+      }),
+    )
   }
 
   const handleFileUpload = (form: 'add' | 'edit', files: FileList | null) => {
@@ -181,8 +231,369 @@ const InventoryFormsSection = () => {
     setCanonicalDialogOpen(false)
   }
 
+  const renderDropOverlay = (formTarget: InventoryFormTarget) => {
+    if (!isDropOverlayVisible(formTarget)) {
+      return null
+    }
+
+    return (
+      <Box
+        sx={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 3,
+          borderRadius: 2,
+          backgroundColor: 'rgba(15, 23, 42, 0.35)',
+          border: '2px dashed rgba(255, 255, 255, 0.55)',
+          boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.15)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          gap: 1,
+          p: 2,
+          pointerEvents: 'none',
+          animation: 'inventoryDropPulse 1.35s ease-in-out infinite',
+          '@keyframes inventoryDropPulse': {
+            '0%, 100%': {
+              backgroundColor: 'rgba(15, 23, 42, 0.32)',
+              borderColor: 'rgba(255, 255, 255, 0.5)',
+              boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.12)',
+            },
+            '50%': {
+              backgroundColor: 'rgba(15, 23, 42, 0.42)',
+              borderColor: 'rgba(255, 255, 255, 0.75)',
+              boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.28)',
+            },
+          },
+        }}
+      >
+        <Typography variant="h6" color="common.white" fontWeight={700}>
+          Drop files here
+        </Typography>
+        <Typography variant="body2" color="rgba(255, 255, 255, 0.9)">
+          Files are sent to server immediately.
+        </Typography>
+        {fileUploadStatus === 'uploading' && (
+          <Box sx={{ width: '100%', maxWidth: 360 }}>
+            <LinearProgress
+              variant={fileUploadBatchTotal > 0 ? 'determinate' : 'indeterminate'}
+              value={uploadProgress}
+              sx={{ height: 8, borderRadius: 999 }}
+            />
+            <Typography
+              variant="caption"
+              color="rgba(255, 255, 255, 0.95)"
+              sx={{ display: 'block', mt: 0.75, textAlign: 'center' }}
+            >
+              Uploading {fileUploadBatchCompleted}/{fileUploadBatchTotal} file
+              {fileUploadBatchTotal === 1 ? '' : 's'}
+              {fileUploadInFlightCount > 0 ? ` (${fileUploadInFlightCount} in flight)` : ''}
+            </Typography>
+          </Box>
+        )}
+      </Box>
+    )
+  }
+
+  const renderStoredFiles = (formTarget: InventoryFormTarget) => {
+    const form = getForm(formTarget)
+    if (form.files.length === 0) {
+      return null
+    }
+
+    return (
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
+          columnGap: 1,
+          rowGap: 1.25,
+          mt: 0.5,
+        }}
+      >
+        {sortInventoryFiles(form.files).map((storedFile) => (
+          <Chip
+            key={storedFile.path}
+            label={
+              storedFile.isHero
+                ? `Hero • ${getInventoryFileLabel(storedFile)}`
+                : getInventoryFileLabel(storedFile)
+            }
+            variant="outlined"
+            color={storedFile.isHero ? 'warning' : 'default'}
+            sx={uploadedFileChipSx}
+          />
+        ))}
+      </Box>
+    )
+  }
+
+  const handleOpenFileManager = (formTarget: InventoryFormTarget) => {
+    dispatch(inventorySlice.actions.inventoryFileManagerOpened({ form: formTarget }))
+  }
+
+  const renderInventoryForm = (
+    formTarget: InventoryFormTarget,
+    options: InventoryFormRenderOptions,
+  ) => {
+    const form = getForm(formTarget)
+    const validation = getValidation(formTarget)
+    const submitDisabled = options.disabled || !options.canSubmit || inventoryStatus === 'saving'
+
+    return (
+      <Stack spacing={formTarget === 'edit' ? 1.5 : 2}>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Button
+              variant="outlined"
+              component="label"
+              disabled={options.disabled || fileUploadStatus === 'uploading'}
+            >
+              {options.uploadButtonLabel}
+              <input
+                hidden
+                multiple
+                type="file"
+                onChange={(event) => handleFileUpload(formTarget, event.target.files)}
+              />
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => handleOpenFileManager(formTarget)}
+              disabled={options.disabled || form.files.length === 0}
+            >
+              Manage files
+            </Button>
+          </Stack>
+          <Typography variant="body2" color="text.secondary">
+            Files are sent to server immediately.
+          </Typography>
+        </Stack>
+        {fileUploadError && (
+          <Typography color="error" variant="body2">
+            {fileUploadError}
+          </Typography>
+        )}
+        {renderStoredFiles(formTarget)}
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+          <TextField
+            label="Inventory title"
+            value={form.title}
+            onChange={(event) => updateTextField(formTarget, 'title', event.target.value)}
+            fullWidth
+            disabled={options.disabled}
+            sx={formTarget === 'add' ? { width: '49%' } : undefined}
+          />
+          <Stack direction="row" spacing={1} sx={{ flex: 1, alignItems: 'stretch' }}>
+            <TextField
+              select
+              label="Canonical record"
+              value={form.canonicalRecordId}
+              onChange={(event) =>
+                updateTextField(formTarget, 'canonicalRecordId', event.target.value)
+              }
+              fullWidth
+              disabled={options.disabled}
+              sx={{ flex: 1 }}
+            >
+              {canonicalRecords.map((record) => (
+                <MenuItem key={record.id} value={record.id}>
+                  {record.title}
+                </MenuItem>
+              ))}
+            </TextField>
+            <IconButton
+              aria-label="Add canonical record"
+              onClick={handleCanonicalDialogOpen}
+              disabled={options.disabled}
+              sx={{
+                flex: '0 0 auto',
+                width: 56,
+                borderRadius: 1.5,
+                border: '1px solid rgba(17, 24, 39, 0.16)',
+              }}
+            >
+              <AddIcon />
+            </IconButton>
+          </Stack>
+        </Stack>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+          <TextField
+            label="Publish year"
+            fullWidth
+            value={form.publishYear}
+            onChange={(event) => updateTextField(formTarget, 'publishYear', event.target.value)}
+            disabled={options.disabled}
+            inputProps={{
+              inputMode: 'numeric',
+              maxLength: 4,
+              pattern: '\\d{4}',
+            }}
+            error={Boolean(validation.publishYear)}
+            helperText={validation.publishYear}
+          />
+          <DatePicker
+            label="Acquisition date"
+            views={['year', 'month']}
+            format={monthYearFormat}
+            value={toMonthYearValue(form.acquisitionDate)}
+            onChange={(value, context) => {
+              if (context.validationError) {
+                return
+              }
+
+              updateAcquisitionDate(formTarget, value)
+            }}
+            slotProps={{
+              textField: {
+                fullWidth: true,
+                disabled: options.disabled,
+                placeholder: monthYearFormat,
+              },
+            }}
+          />
+        </Stack>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+          <TextField
+            label="Acquisition cost"
+            fullWidth
+            value={form.acquisitionCost}
+            onChange={(event) => updateTextField(formTarget, 'acquisitionCost', event.target.value)}
+            disabled={options.disabled}
+            error={Boolean(validation.acquisitionCost)}
+            helperText={validation.acquisitionCost}
+            inputProps={{ inputMode: 'decimal' }}
+          />
+          <TextField
+            label="Retail price"
+            fullWidth
+            value={form.retailPrice}
+            onChange={(event) => updateTextField(formTarget, 'retailPrice', event.target.value)}
+            disabled={options.disabled}
+            error={Boolean(validation.retailPrice)}
+            helperText={validation.retailPrice}
+            inputProps={{ inputMode: 'decimal' }}
+          />
+        </Stack>
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <IconButton
+            aria-label="Feature on The Adored Collection"
+            onClick={() => updateFeatured(formTarget, !form.featured)}
+            disabled={options.disabled}
+            color={form.featured ? 'warning' : 'default'}
+            sx={{
+              border: '1px solid rgba(17, 24, 39, 0.16)',
+              backgroundColor: form.featured ? 'rgba(245, 158, 11, 0.12)' : 'transparent',
+            }}
+          >
+            {form.featured ? <StarIcon /> : <StarBorderIcon />}
+          </IconButton>
+          <Stack spacing={0.25}>
+            <Typography fontWeight={600}>The Adored Collection</Typography>
+            <Typography variant="body2" color="text.secondary">
+              Star this item to list it on the public landing page.
+            </Typography>
+          </Stack>
+        </Stack>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+          <TextField
+            label="Format"
+            fullWidth
+            value={form.format}
+            onChange={(event) => updateTextField(formTarget, 'format', event.target.value)}
+            disabled={options.disabled}
+            sx={{ flex: 1 }}
+          />
+          <TextField
+            label="Dimensions"
+            fullWidth
+            value={form.dimensions}
+            onChange={(event) => updateTextField(formTarget, 'dimensions', event.target.value)}
+            disabled={options.disabled}
+            sx={{ flex: 1 }}
+          />
+        </Stack>
+        <Stack id="inventory-condition-report" direction={{ xs: 'column', md: 'row' }} spacing={2}>
+          <TextField
+            label="Condition grade"
+            fullWidth
+            value={form.conditionGrade}
+            onChange={(event) => updateTextField(formTarget, 'conditionGrade', event.target.value)}
+            disabled={options.disabled}
+            sx={{ flex: 1 }}
+          />
+          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+            <Button
+              variant="outlined"
+              onClick={() =>
+                dispatch(inventorySlice.actions.conditionReportDialogOpened({ form: formTarget }))
+              }
+              disabled={options.disabled}
+            >
+              Edit report
+            </Button>
+          </Box>
+        </Stack>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+          <TextField
+            label="Acquisition source"
+            fullWidth
+            value={form.acquisitionSource}
+            onChange={(event) =>
+              updateTextField(formTarget, 'acquisitionSource', event.target.value)
+            }
+            disabled={options.disabled}
+            sx={formTarget === 'edit' ? { width: '50%' } : undefined}
+          />
+          <TextField
+            label="Notes"
+            fullWidth
+            value={form.notes}
+            onChange={(event) => updateTextField(formTarget, 'notes', event.target.value)}
+            disabled={options.disabled}
+            sx={formTarget === 'edit' ? { width: '50%' } : undefined}
+          />
+        </Stack>
+        <TextField
+          label="Tags (comma-separated)"
+          fullWidth
+          value={form.tags}
+          onChange={(event) => updateTextField(formTarget, 'tags', event.target.value)}
+          disabled={options.disabled}
+        />
+        <Stack
+          direction="row"
+          spacing={1}
+          justifyContent={options.onCancel ? 'flex-end' : 'flex-start'}
+        >
+          <Button
+            variant="contained"
+            size={options.submitSize}
+            startIcon={options.submitIcon}
+            onClick={options.onSubmit}
+            disabled={submitDisabled}
+          >
+            {options.submitLabel}
+          </Button>
+          {options.onCancel && (
+            <Button
+              variant="text"
+              size="small"
+              startIcon={<CloseIcon />}
+              onClick={options.onCancel}
+              disabled={options.disabled}
+            >
+              Cancel
+            </Button>
+          )}
+        </Stack>
+      </Stack>
+    )
+  }
+
   const handleAdd = () => {
-    if (!canAddInventory) {
+    if (!canSubmitAddInventory) {
       return
     }
 
@@ -191,6 +602,7 @@ const InventoryFormsSection = () => {
         title: addForm.title.trim(),
         publisher: addForm.publisher.trim(),
         canonicalRecordId: addForm.canonicalRecordId,
+        featured: addForm.featured,
         publishYear: normalizePublishYear(addForm.publishYear),
         format: addForm.format.trim(),
         dimensions: addForm.dimensions.trim(),
@@ -198,6 +610,8 @@ const InventoryFormsSection = () => {
         conditionReport: addForm.conditionReport,
         acquisitionDate: addForm.acquisitionDate.trim(),
         acquisitionSource: addForm.acquisitionSource.trim(),
+        acquisitionCost: parseMoneyInput(addForm.acquisitionCost),
+        retailPrice: parseMoneyInput(addForm.retailPrice),
         notes: addForm.notes.trim(),
         tags: splitComma(addForm.tags),
         files: addForm.files,
@@ -207,7 +621,7 @@ const InventoryFormsSection = () => {
   }
 
   const handleEditSave = () => {
-    if (!editingId) {
+    if (!editingId || !canSubmitEditInventory) {
       return
     }
 
@@ -217,6 +631,7 @@ const InventoryFormsSection = () => {
         title: editForm.title.trim(),
         publisher: editForm.publisher.trim(),
         canonicalRecordId: editForm.canonicalRecordId,
+        featured: editForm.featured,
         publishYear: normalizePublishYear(editForm.publishYear),
         format: editForm.format.trim(),
         dimensions: editForm.dimensions.trim(),
@@ -224,6 +639,8 @@ const InventoryFormsSection = () => {
         conditionReport: editForm.conditionReport,
         acquisitionDate: editForm.acquisitionDate.trim(),
         acquisitionSource: editForm.acquisitionSource.trim(),
+        acquisitionCost: parseMoneyInput(editForm.acquisitionCost),
+        retailPrice: parseMoneyInput(editForm.retailPrice),
         notes: editForm.notes.trim(),
         tags: splitComma(editForm.tags),
         files: editForm.files,
@@ -235,360 +652,34 @@ const InventoryFormsSection = () => {
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <>
-        <Stack
-          id="inventory-add-item"
-          spacing={2}
-          sx={{ position: 'relative' }}
-          onDragOver={handleFormDragOver('add')}
-          onDragLeave={handleFormDragLeave('add')}
-          onDrop={handleFormDrop('add')}
-        >
-          {isDropOverlayVisible('add') && (
-            <Box
-              sx={{
-                position: 'absolute',
-                inset: 0,
-                zIndex: 3,
-                borderRadius: 2,
-                backgroundColor: 'rgba(15, 23, 42, 0.35)',
-                border: '2px dashed rgba(255, 255, 255, 0.55)',
-                boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.15)',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                alignItems: 'center',
-                gap: 1,
-                p: 2,
-                pointerEvents: 'none',
-                animation: 'inventoryDropPulse 1.35s ease-in-out infinite',
-                '@keyframes inventoryDropPulse': {
-                  '0%, 100%': {
-                    backgroundColor: 'rgba(15, 23, 42, 0.32)',
-                    borderColor: 'rgba(255, 255, 255, 0.5)',
-                    boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.12)',
-                  },
-                  '50%': {
-                    backgroundColor: 'rgba(15, 23, 42, 0.42)',
-                    borderColor: 'rgba(255, 255, 255, 0.75)',
-                    boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.28)',
-                  },
-                },
-              }}
-            >
-              <Typography variant="h6" color="common.white" fontWeight={700}>
-                Drop files here
-              </Typography>
-              <Typography variant="body2" color="rgba(255, 255, 255, 0.9)">
-                Files are sent to server immediately.
-              </Typography>
-              {fileUploadStatus === 'uploading' && (
-                <Box sx={{ width: '100%', maxWidth: 360 }}>
-                  <LinearProgress
-                    variant={fileUploadBatchTotal > 0 ? 'determinate' : 'indeterminate'}
-                    value={uploadProgress}
-                    sx={{ height: 8, borderRadius: 999 }}
-                  />
-                  <Typography
-                    variant="caption"
-                    color="rgba(255, 255, 255, 0.95)"
-                    sx={{ display: 'block', mt: 0.75, textAlign: 'center' }}
-                  >
-                    Uploading {fileUploadBatchCompleted}/{fileUploadBatchTotal} file
-                    {fileUploadBatchTotal === 1 ? '' : 's'}
-                    {fileUploadInFlightCount > 0 ? ` (${fileUploadInFlightCount} in flight)` : ''}
-                  </Typography>
-                </Box>
-              )}
-            </Box>
-          )}
-
-          <Typography fontWeight={600}>Fill this out to add a new inventory item.</Typography>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <TextField
-              label="Inventory title"
-              value={addForm.title}
-              onChange={(event) =>
-                dispatch(
-                  inventorySlice.actions.inventoryAddFormUpdated({
-                    field: 'title',
-                    value: event.target.value,
-                  }),
-                )
-              }
-              disabled={appLocked || !user}
-              sx={{ width: '49%' }}
-            />
-            <Stack direction="row" spacing={1} sx={{ flex: 1, alignItems: 'stretch' }}>
-              <TextField
-                select
-                label="Canonical record"
-                value={addForm.canonicalRecordId}
-                onChange={(event) =>
-                  dispatch(
-                    inventorySlice.actions.inventoryAddFormUpdated({
-                      field: 'canonicalRecordId',
-                      value: event.target.value,
-                    }),
-                  )
-                }
-                disabled={appLocked || !user}
-                sx={{ flex: 1 }}
-              >
-                {canonicalRecords.map((record) => (
-                  <MenuItem key={record.id} value={record.id}>
-                    {record.title}
-                  </MenuItem>
-                ))}
-              </TextField>
-              <IconButton
-                aria-label="Add canonical record"
-                onClick={handleCanonicalDialogOpen}
-                disabled={appLocked || !user}
-                sx={{
-                  flex: '0 0 auto',
-                  width: 56,
-                  borderRadius: 1.5,
-                  border: '1px solid rgba(17, 24, 39, 0.16)',
-                }}
-              >
-                <AddIcon />
-              </IconButton>
-            </Stack>
-          </Stack>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <TextField
-              label="Publish year"
-              fullWidth
-              value={addForm.publishYear}
-              onChange={(event) =>
-                dispatch(
-                  inventorySlice.actions.inventoryAddFormUpdated({
-                    field: 'publishYear',
-                    value: event.target.value,
-                  }),
-                )
-              }
-              disabled={appLocked || !user}
-              inputProps={{
-                inputMode: 'numeric',
-                maxLength: 4,
-                pattern: '\\d{4}',
-              }}
-              error={Boolean(addPublishYearError)}
-              helperText={addPublishYearError}
-            />
-            <DatePicker
-              label="Acquisition date"
-              views={['year', 'month']}
-              format={monthYearFormat}
-              value={toMonthYearValue(addForm.acquisitionDate)}
-              onChange={(value, context) => {
-                if (context.validationError) {
-                  return
-                }
-
-                updateAcquisitionDate('add', value)
-              }}
-              slotProps={{
-                textField: {
-                  fullWidth: true,
-                  disabled: appLocked || !user,
-                  placeholder: monthYearFormat,
-                },
-              }}
-            />
-          </Stack>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <TextField
-              label="Format"
-              fullWidth
-              value={addForm.format}
-              onChange={(event) =>
-                dispatch(
-                  inventorySlice.actions.inventoryAddFormUpdated({
-                    field: 'format',
-                    value: event.target.value,
-                  }),
-                )
-              }
-              disabled={appLocked || !user}
-              sx={{ flex: 1 }}
-            />
-            <TextField
-              label="Dimensions"
-              fullWidth
-              value={addForm.dimensions}
-              onChange={(event) =>
-                dispatch(
-                  inventorySlice.actions.inventoryAddFormUpdated({
-                    field: 'dimensions',
-                    value: event.target.value,
-                  }),
-                )
-              }
-              disabled={appLocked || !user}
-              sx={{ flex: 1 }}
-            />
-          </Stack>
+        {!isEditingInventory && (
           <Stack
-            id="inventory-condition-report"
-            direction={{ xs: 'column', md: 'row' }}
+            id="inventory-add-item"
             spacing={2}
+            sx={{ position: 'relative' }}
+            onDragOver={handleFormDragOver('add')}
+            onDragLeave={handleFormDragLeave('add')}
+            onDrop={handleFormDrop('add')}
           >
-            <TextField
-              label="Condition grade"
-              fullWidth
-              value={addForm.conditionGrade}
-              onChange={(event) =>
-                dispatch(
-                  inventorySlice.actions.inventoryAddFormUpdated({
-                    field: 'conditionGrade',
-                    value: event.target.value,
-                  }),
-                )
-              }
-              disabled={appLocked || !user}
-              sx={{ flex: 1 }}
-            />
-            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-              <Button
-                variant="outlined"
-                onClick={() =>
-                  dispatch(inventorySlice.actions.conditionReportDialogOpened({ form: 'add' }))
-                }
-                disabled={appLocked || !user}
-              >
-                Edit report
-              </Button>
-            </Box>
-          </Stack>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <TextField
-              label="Acquisition source"
-              fullWidth
-              value={addForm.acquisitionSource}
-              onChange={(event) =>
-                dispatch(
-                  inventorySlice.actions.inventoryAddFormUpdated({
-                    field: 'acquisitionSource',
-                    value: event.target.value,
-                  }),
-                )
-              }
-              disabled={appLocked || !user}
-            />
-            <TextField
-              label="Notes"
-              fullWidth
-              value={addForm.notes}
-              onChange={(event) =>
-                dispatch(
-                  inventorySlice.actions.inventoryAddFormUpdated({
-                    field: 'notes',
-                    value: event.target.value,
-                  }),
-                )
-              }
-              disabled={appLocked || !user}
-            />
-          </Stack>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <TextField
-              label="Tags (comma-separated)"
-              fullWidth
-              value={addForm.tags}
-              onChange={(event) =>
-                dispatch(
-                  inventorySlice.actions.inventoryAddFormUpdated({
-                    field: 'tags',
-                    value: event.target.value,
-                  }),
-                )
-              }
-              disabled={appLocked || !user}
-              sx={{ flex: 1 }}
-            />
-            <Stack direction="column" spacing={1} justifyContent="center" sx={{ flex: 1 }}>
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
-                <Button
-                  variant="outlined"
-                  component="label"
-                  disabled={appLocked || !user || fileUploadStatus === 'uploading'}
-                >
-                  Attach Files
-                  <input
-                    hidden
-                    multiple
-                    type="file"
-                    onChange={(event) => handleFileUpload('add', event.target.files)}
-                  />
-                </Button>
-                <Typography variant="body2" color="text.secondary">
-                  Files are sent to server immediately.
-                </Typography>
-              </Stack>
-              {fileUploadError && (
-                <Typography color="error" variant="body2">
-                  {fileUploadError}
-                </Typography>
-              )}
+            {renderDropOverlay('add')}
 
-              {addForm.files.length > 0 && (
-                <Box
-                  sx={{
-                    display: 'grid',
-                    gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
-                    columnGap: 1,
-                    rowGap: 1.25,
-                    mt: 0.5,
-                  }}
-                >
-                  {addForm.files.map((storedFile) => (
-                    <Chip
-                      key={storedFile.path}
-                      label={getFileLabel(storedFile)}
-                      component="a"
-                      clickable
-                      href={storedFile.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      onDelete={
-                        appLocked
-                          ? undefined
-                          : () =>
-                              dispatch(
-                                inventorySlice.actions.inventoryFileRemoveRequested({
-                                  form: 'add',
-                                  storedFile,
-                                }),
-                              )
-                      }
-                      disabled={appLocked}
-                      variant="outlined"
-                      sx={uploadedFileChipSx}
-                    />
-                  ))}
-                </Box>
-              )}
-            </Stack>
+            <Typography fontWeight={600}>Fill this out to add a new inventory item.</Typography>
+            {renderInventoryForm('add', {
+              disabled: appLocked || !user,
+              uploadButtonLabel: 'Attach Files',
+              submitLabel: 'Add item',
+              submitIcon: <AddIcon />,
+              submitSize: 'medium',
+              canSubmit: canSubmitAddInventory,
+              onSubmit: handleAdd,
+            })}
           </Stack>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={handleAdd}
-              disabled={
-                appLocked || !user || !canSubmitAddInventory || inventoryStatus === 'saving'
-              }
-            >
-              Add item
-            </Button>
-          </Stack>
-        </Stack>
+        )}
 
         <Stack spacing={2}>
-          {editingId && editingItem && (
+          {isEditingInventory && editingItem && (
             <Paper
+              id="inventory-edit-item"
               elevation={0}
               sx={{
                 p: 2,
@@ -600,333 +691,22 @@ const InventoryFormsSection = () => {
               onDragLeave={handleFormDragLeave('edit')}
               onDrop={handleFormDrop('edit')}
             >
-              {isDropOverlayVisible('edit') && (
-                <Box
-                  sx={{
-                    position: 'absolute',
-                    inset: 0,
-                    zIndex: 3,
-                    borderRadius: 2,
-                    backgroundColor: 'rgba(15, 23, 42, 0.35)',
-                    border: '2px dashed rgba(255, 255, 255, 0.55)',
-                    boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.15)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: 1,
-                    p: 2,
-                    pointerEvents: 'none',
-                    animation: 'inventoryDropPulse 1.35s ease-in-out infinite',
-                    '@keyframes inventoryDropPulse': {
-                      '0%, 100%': {
-                        backgroundColor: 'rgba(15, 23, 42, 0.32)',
-                        borderColor: 'rgba(255, 255, 255, 0.5)',
-                        boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.12)',
-                      },
-                      '50%': {
-                        backgroundColor: 'rgba(15, 23, 42, 0.42)',
-                        borderColor: 'rgba(255, 255, 255, 0.75)',
-                        boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.28)',
-                      },
-                    },
-                  }}
-                >
-                  <Typography variant="h6" color="common.white" fontWeight={700}>
-                    Drop files here
-                  </Typography>
-                  <Typography variant="body2" color="rgba(255, 255, 255, 0.9)">
-                    Files are sent to server immediately.
-                  </Typography>
-                  {fileUploadStatus === 'uploading' && (
-                    <Box sx={{ width: '100%', maxWidth: 360 }}>
-                      <LinearProgress
-                        variant={fileUploadBatchTotal > 0 ? 'determinate' : 'indeterminate'}
-                        value={uploadProgress}
-                        sx={{ height: 8, borderRadius: 999 }}
-                      />
-                      <Typography
-                        variant="caption"
-                        color="rgba(255, 255, 255, 0.95)"
-                        sx={{ display: 'block', mt: 0.75, textAlign: 'center' }}
-                      >
-                        Uploading {fileUploadBatchCompleted}/{fileUploadBatchTotal} file
-                        {fileUploadBatchTotal === 1 ? '' : 's'}
-                        {fileUploadInFlightCount > 0
-                          ? ` (${fileUploadInFlightCount} in flight)`
-                          : ''}
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-              )}
+              {renderDropOverlay('edit')}
               <Stack spacing={1.5}>
                 <Typography fontWeight={600}>Edit item: {editingItem.title}</Typography>
-                {editForm.files.length > 0 && (
-                  <Box
-                    sx={{
-                      display: 'grid',
-                      gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
-                      columnGap: 1,
-                      rowGap: 1.25,
-                      mt: 0.5,
-                    }}
-                  >
-                    {editForm.files.map((storedFile) => (
-                      <Chip
-                        key={storedFile.path}
-                        label={getFileLabel(storedFile)}
-                        component="a"
-                        clickable
-                        href={storedFile.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        variant="outlined"
-                        sx={uploadedFileChipSx}
-                      />
-                    ))}
-                  </Box>
-                )}
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
-                  <Button
-                    variant="outlined"
-                    component="label"
-                    disabled={appLocked || !user || fileUploadStatus === 'uploading'}
-                  >
-                    Upload files
-                    <input
-                      hidden
-                      multiple
-                      type="file"
-                      onChange={(event) => handleFileUpload('edit', event.target.files)}
-                    />
-                  </Button>
-                  {fileUploadError && (
-                    <Typography color="error" variant="body2">
-                      {fileUploadError}
-                    </Typography>
-                  )}
-                </Stack>
-                <TextField
-                  label="Inventory title"
-                  value={editForm.title}
-                  onChange={(event) =>
-                    dispatch(
-                      inventorySlice.actions.inventoryEditFormUpdated({
-                        field: 'title',
-                        value: event.target.value,
-                      }),
-                    )
-                  }
-                  fullWidth
-                  disabled={appLocked}
-                />
-                <Stack direction="row" spacing={1} sx={{ alignItems: 'stretch' }}>
-                  <TextField
-                    select
-                    label="Canonical record"
-                    fullWidth
-                    value={editForm.canonicalRecordId}
-                    onChange={(event) =>
-                      dispatch(
-                        inventorySlice.actions.inventoryEditFormUpdated({
-                          field: 'canonicalRecordId',
-                          value: event.target.value,
-                        }),
-                      )
-                    }
-                    disabled={appLocked}
-                    sx={{ flex: 1 }}
-                  >
-                    {canonicalRecords.map((entry) => (
-                      <MenuItem key={entry.id} value={entry.id}>
-                        {entry.title}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                  <IconButton
-                    aria-label="Add canonical record"
-                    onClick={handleCanonicalDialogOpen}
-                    disabled={appLocked}
-                    sx={{
-                      flex: '0 0 auto',
-                      width: 56,
-                      borderRadius: 1.5,
-                      border: '1px solid rgba(17, 24, 39, 0.16)',
-                    }}
-                  >
-                    <AddIcon />
-                  </IconButton>
-                </Stack>
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                  <TextField
-                    label="Publish year"
-                    value={editForm.publishYear}
-                    onChange={(event) =>
-                      dispatch(
-                        inventorySlice.actions.inventoryEditFormUpdated({
-                          field: 'publishYear',
-                          value: event.target.value,
-                        }),
-                      )
-                    }
-                    fullWidth
-                    disabled={appLocked}
-                    inputProps={{
-                      inputMode: 'numeric',
-                      maxLength: 4,
-                      pattern: '\\d{4}',
-                    }}
-                    error={Boolean(editPublishYearError)}
-                    helperText={editPublishYearError}
-                  />
-                  <DatePicker
-                    label="Acquisition date"
-                    views={['year', 'month']}
-                    format={monthYearFormat}
-                    value={toMonthYearValue(editForm.acquisitionDate)}
-                    onChange={(value, context) => {
-                      if (context.validationError) {
-                        return
-                      }
-
-                      updateAcquisitionDate('edit', value)
-                    }}
-                    slotProps={{
-                      textField: {
-                        fullWidth: true,
-                        disabled: appLocked,
-                        placeholder: monthYearFormat,
-                      },
-                    }}
-                  />
-                </Stack>
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                  <TextField
-                    label="Format"
-                    value={editForm.format}
-                    onChange={(event) =>
-                      dispatch(
-                        inventorySlice.actions.inventoryEditFormUpdated({
-                          field: 'format',
-                          value: event.target.value,
-                        }),
-                      )
-                    }
-                    fullWidth
-                    disabled={appLocked}
-                    sx={{ flex: 1 }}
-                  />
-                  <TextField
-                    label="Dimensions"
-                    value={editForm.dimensions}
-                    onChange={(event) =>
-                      dispatch(
-                        inventorySlice.actions.inventoryEditFormUpdated({
-                          field: 'dimensions',
-                          value: event.target.value,
-                        }),
-                      )
-                    }
-                    fullWidth
-                    disabled={appLocked}
-                    sx={{ flex: 1 }}
-                  />
-                </Stack>
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                  <TextField
-                    label="Condition grade"
-                    value={editForm.conditionGrade}
-                    onChange={(event) =>
-                      dispatch(
-                        inventorySlice.actions.inventoryEditFormUpdated({
-                          field: 'conditionGrade',
-                          value: event.target.value,
-                        }),
-                      )
-                    }
-                    fullWidth
-                    disabled={appLocked}
-                    sx={{ flex: 1 }}
-                  />
-                  <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-                    <Button
-                      variant="outlined"
-                      onClick={() =>
-                        dispatch(
-                          inventorySlice.actions.conditionReportDialogOpened({ form: 'edit' }),
-                        )
-                      }
-                      disabled={appLocked}
-                    >
-                      Edit report
-                    </Button>
-                  </Box>
-                </Stack>
-                <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                  <TextField
-                    label="Acquisition source"
-                    value={editForm.acquisitionSource}
-                    onChange={(event) =>
-                      dispatch(
-                        inventorySlice.actions.inventoryEditFormUpdated({
-                          field: 'acquisitionSource',
-                          value: event.target.value,
-                        }),
-                      )
-                    }
-                    sx={{ width: '50%' }}
-                    disabled={appLocked}
-                  />
-                  <TextField
-                    label="Notes"
-                    value={editForm.notes}
-                    onChange={(event) =>
-                      dispatch(
-                        inventorySlice.actions.inventoryEditFormUpdated({
-                          field: 'notes',
-                          value: event.target.value,
-                        }),
-                      )
-                    }
-                    sx={{ width: '50%' }}
-                    disabled={appLocked}
-                  />
-                </Stack>
-                <TextField
-                  label="Tags"
-                  value={editForm.tags}
-                  onChange={(event) =>
-                    dispatch(
-                      inventorySlice.actions.inventoryEditFormUpdated({
-                        field: 'tags',
-                        value: event.target.value,
-                      }),
-                    )
-                  }
-                  fullWidth
-                  disabled={appLocked}
-                />
-                <Stack direction="row" spacing={1} justifyContent="flex-end">
-                  <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={<SaveIcon />}
-                    onClick={handleEditSave}
-                    disabled={appLocked || Boolean(editPublishYearError)}
-                  >
-                    Save
-                  </Button>
-                  <Button
-                    variant="text"
-                    size="small"
-                    startIcon={<CloseIcon />}
-                    onClick={() => dispatch(inventorySlice.actions.inventoryEditCanceled())}
-                    disabled={appLocked}
-                  >
-                    Cancel
-                  </Button>
-                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  The add form is hidden until you save or cancel this edit.
+                </Typography>
+                {renderInventoryForm('edit', {
+                  disabled: appLocked,
+                  uploadButtonLabel: 'Upload files',
+                  submitLabel: 'Save',
+                  submitIcon: <SaveIcon />,
+                  submitSize: 'small',
+                  canSubmit: canSubmitEditInventory,
+                  onSubmit: handleEditSave,
+                  onCancel: () => dispatch(inventorySlice.actions.inventoryEditCanceled()),
+                })}
               </Stack>
             </Paper>
           )}
@@ -949,6 +729,7 @@ const InventoryFormsSection = () => {
             <CanonicalRecordAddForm />
           </DialogContent>
         </Dialog>
+        <InventoryFilesDialog />
         <ConditionReportDialog />
       </>
     </LocalizationProvider>

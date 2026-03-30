@@ -1,58 +1,24 @@
-import { useState } from 'react'
-import type { ChangeEvent, FormEvent } from 'react'
 import {
   Alert,
+  Box,
   Button,
-  Card,
-  Checkbox,
-  FormControlLabel,
-  FormGroup,
   Paper,
   Stack,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from '@mui/material'
-import { Navigate, useLocation } from 'react-router-dom'
-import { useAppDispatch, useAppSelector } from '../../app/hooks'
-import {
-  AUTH_SIGN_OUT_REASON_NOT_YET_ALLOWED,
-  type AuthSignOutReason,
-} from '../../features/auth/slice'
+import { Navigate } from 'react-router-dom'
+import { useAppSelector } from '../../app/hooks'
+import logoImage from '../../assets/logo.png'
 import { selectAuthReady, selectAuthUser } from '../../features/auth/selectors'
 import {
-  normalizeEmail,
-  normalizeFirstName,
-  normalizeInterests,
-  validateSubscriptionPayload,
+  SIGNUP_COMMUNICATION_PREFERENCE_EMAIL,
+  SIGNUP_COMMUNICATION_PREFERENCE_TEXT,
+  type SignupCommunicationPreference,
 } from '../../features/newsletter/formUtils'
-import {
-  selectNewsletterError,
-  selectNewsletterLastSubmission,
-  selectNewsletterStatus,
-} from '../../features/newsletter/selectors'
-import { newsletterSlice } from '../../features/newsletter/slice'
-
-type EmailChangeEvent = ChangeEvent<HTMLInputElement>
-
-type RegisterSubmitEvent = FormEvent<HTMLFormElement>
-
-type RegisterFormState = {
-  firstName: string
-  email: string
-  interests: string[]
-}
-
-type RegisterRouteLocationState = {
-  reason?: AuthSignOutReason
-}
-
-const INTEREST_OPTIONS = [
-  'Ocean liners',
-  'Rail travel',
-  'Destination posters',
-  'Passenger records',
-  'Luxury hospitality',
-]
+import { useSignupForm } from '../../features/newsletter/useSIgnupForm'
 
 const registerFieldSx = {
   '& .MuiInputLabel-root': {
@@ -85,59 +51,35 @@ const registerFieldSx = {
 }
 
 function RegisterRoute() {
-  const dispatch = useAppDispatch()
-  const location = useLocation()
   const authReady = useAppSelector(selectAuthReady)
   const user = useAppSelector(selectAuthUser)
-  const newsletterStatus = useAppSelector(selectNewsletterStatus)
-  const newsletterError = useAppSelector(selectNewsletterError)
-  const lastSubmission = useAppSelector(selectNewsletterLastSubmission)
-  const [form, setForm] = useState<RegisterFormState>({ firstName: '', email: '', interests: [] })
+  const {
+    form,
+    handleFieldChange,
+    handleCommunicationPreferenceChange,
+    handleSubmit,
+    newsletterStatus,
+    newsletterError,
+    lastSubmission,
+  } = useSignupForm({ kind: 'access' })
 
-  const locationState = location.state as RegisterRouteLocationState | null
-  const deniedAccess = locationState?.reason === AUTH_SIGN_OUT_REASON_NOT_YET_ALLOWED
+  const preferredContact =
+    lastSubmission?.communicationPreference === 'text' ? 'text message' : 'email'
+  const preferredDestination =
+    lastSubmission?.communicationPreference === 'text'
+      ? lastSubmission?.cell
+      : lastSubmission?.email
+  const isEmailPreferred = form.communicationPreference === SIGNUP_COMMUNICATION_PREFERENCE_EMAIL
 
-  const updateFormStatus = () => {
-    if (newsletterStatus !== 'idle') {
-      dispatch(newsletterSlice.actions.newsletterClearStatus())
-    }
-  }
-
-  const handleFieldChange = (event: EmailChangeEvent) => {
-    const { name, value } = event.target
-    setForm((previous) => ({ ...previous, [name]: value }))
-    updateFormStatus()
-  }
-
-  const handleInterestToggle = (option: string) => {
-    setForm((previous) => {
-      const interests = previous.interests.includes(option)
-        ? previous.interests.filter((item) => item !== option)
-        : [...previous.interests, option]
-
-      return { ...previous, interests }
-    })
-
-    updateFormStatus()
-  }
-
-  const handleRegisterSubmit = (event: RegisterSubmitEvent) => {
-    event.preventDefault()
-
-    const payload = {
-      email: normalizeEmail(form.email),
-      firstName: normalizeFirstName(form.firstName),
-      interests: normalizeInterests(form.interests),
-    }
-
-    const validationError = validateSubscriptionPayload(payload)
-    if (validationError) {
-      dispatch(newsletterSlice.actions.newsletterSubscribeFailed(validationError))
+  const handleCommunicationToggle = (
+    _event: React.MouseEvent<HTMLElement>,
+    value: SignupCommunicationPreference | null,
+  ) => {
+    if (!value) {
       return
     }
 
-    dispatch(newsletterSlice.actions.newsletterSubscribeRequested(payload))
-    setForm({ firstName: '', email: '', interests: [] })
+    handleCommunicationPreferenceChange(value)
   }
 
   if (authReady && user) {
@@ -160,19 +102,34 @@ function RegisterRoute() {
           direction={{ xs: 'column', md: 'row' }}
           justifyContent="space-between"
           alignItems={{ xs: 'flex-start', md: 'center' }}
-          spacing={2}
+          spacing={{ xs: 2.5, md: 4 }}
         >
-          <Stack spacing={0.5}>
-            <Typography variant="overline" sx={{ letterSpacing: '0.18em' }}>
-              Project Iceberg
-            </Typography>
-            <Typography variant="h3">Join the waiting list</Typography>
+          <Stack spacing={0.5} sx={{ flex: 1, maxWidth: 680 }}>
+            <Typography variant="h3">Project Iceberg</Typography>
             <Typography variant="body1" sx={{ maxWidth: 640 }}>
-              Sign-up for our waitlist and be one of the first to access our image archives and
-              research database. Members are also given a sneak preview of upcoming listings before
-              they go live on the site.
+              We are building an online archive of vintage tourism ephemera. Many organizations have
+              already done amazing work building enormous databases full of railway, oceanliner,
+              airline, and advertising materials, but rarely is tourism ephemera the primary focus.
+              Travel brochures, guidebooks, promotional booklets, and destination literature remain
+              scattered, uncataloged, and often overlooked. We want to change that. Thomas Cook is
+              just the tip of the iceberg. We'd like to study the rest, share it, and make it
+              accessible to everyone.
             </Typography>
           </Stack>
+
+          <Box
+            component="img"
+            src={logoImage}
+            alt="Swanwick & Co. logo"
+            sx={{
+              width: { xs: '100%', md: 280 },
+              maxWidth: 320,
+              alignSelf: { xs: 'center', md: 'stretch' },
+              borderRadius: 2.5,
+              objectFit: 'cover',
+              boxShadow: '0 20px 40px rgba(17, 33, 48, 0.16)',
+            }}
+          />
         </Stack>
       </Paper>
 
@@ -181,87 +138,153 @@ function RegisterRoute() {
         sx={{
           p: { xs: 3, md: 5 },
           borderRadius: 3,
+          width: '100%',
+          maxWidth: { xl: 900 },
+          mx: 'auto',
           background:
             'linear-gradient(140deg, rgba(10, 24, 38, 0.98) 0%, rgba(19, 40, 60, 0.98) 52%, rgba(49, 35, 20, 0.95) 100%)',
           border: '1px solid rgba(201, 169, 113, 0.35)',
         }}
       >
-        <Stack spacing={3} component="form" onSubmit={handleRegisterSubmit}>
+        <Stack spacing={3} component="form" onSubmit={handleSubmit}>
           {newsletterStatus === 'error' && newsletterError && (
             <Alert severity="error">{newsletterError}</Alert>
           )}
-          {newsletterStatus === 'success' && lastSubmission && (
-            <Alert severity="success">
-              Thanks, {lastSubmission.firstName}. We have your request and will reach out after we
-              review it.
+
+          {/* Just show the info alert if there isn't already an error */}
+          {!newsletterError && (
+            <Alert severity="info">
+              We are looking for help testing the beta. If you would like to be considered for early
+              access, please fill out the form below.
             </Alert>
           )}
-
+          {newsletterStatus === 'success' && lastSubmission && (
+            <Alert severity="success">
+              Thanks, {lastSubmission.name}. We have your request and will follow up by{' '}
+              {preferredContact}
+              {preferredDestination ? ` at ${preferredDestination}.` : '.'}
+            </Alert>
+          )}
           <Stack spacing={1}>
             <Typography variant="h4" sx={{ color: '#f8efe0' }}>
-              Tell us who you are
+              Your Particulars Please
             </Typography>
             <Typography variant="body1" sx={{ color: 'rgba(238, 228, 211, 0.92)', maxWidth: 720 }}>
-              You'll get an email once we're ready.
+              Tell us how best to reach you, and a little about yourself...
             </Typography>
           </Stack>
-
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+          <Stack spacing={2}>
             <TextField
               fullWidth
               required
-              name="firstName"
-              label="First name"
-              value={form.firstName}
+              name="name"
+              label="Name"
+              value={form.name}
               onChange={handleFieldChange}
-              autoComplete="given-name"
-              variant="filled"
-              sx={registerFieldSx}
-            />
-            <TextField
-              fullWidth
-              required
-              name="email"
-              label="Email"
-              type="email"
-              value={form.email}
-              onChange={handleFieldChange}
-              autoComplete="email"
+              autoComplete="name"
               variant="filled"
               sx={registerFieldSx}
             />
           </Stack>
-
-          <Card
-            variant="outlined"
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}
+            justifyContent="space-between"
+            alignItems={{ xs: 'flex-start', md: 'center' }}
             sx={{
-              p: 2.5,
+              px: 2.5,
+              py: 2,
               borderRadius: 3,
-              background:
-                'linear-gradient(140deg, rgba(244, 236, 219, 0.98), rgba(231, 223, 204, 0.98))',
-              borderColor: 'rgba(201, 169, 113, 0.35)',
+              background: 'rgba(248, 239, 224, 0.08)',
+              border: '1px solid rgba(248, 239, 224, 0.12)',
             }}
           >
-            <Stack spacing={2}>
-              <Typography variant="h6">Collecting interests</Typography>
-              <FormGroup>
-                {INTEREST_OPTIONS.map((option) => (
-                  <FormControlLabel
-                    key={option}
-                    control={
-                      <Checkbox
-                        checked={form.interests.includes(option)}
-                        onChange={() => handleInterestToggle(option)}
-                        sx={{ color: 'rgba(31, 52, 72, 0.7)' }}
-                      />
-                    }
-                    label={option}
-                  />
-                ))}
-              </FormGroup>
-            </Stack>
-          </Card>
-
+            <Box>
+              <Typography variant="h6" sx={{ color: '#f8efe0' }}>
+                Preferred communication
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(238, 228, 211, 0.8)' }}>
+                Choose whether you want a reply by email or text message.
+              </Typography>
+            </Box>
+            <ToggleButtonGroup
+              exclusive
+              value={form.communicationPreference}
+              onChange={handleCommunicationToggle}
+              aria-label="Preferred communication"
+              sx={{
+                backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                borderRadius: 999,
+                border: '1px solid rgba(173, 216, 255, 0.2)',
+                p: 0.5,
+                '& .MuiToggleButtonGroup-grouped': {
+                  border: 0,
+                  borderRadius: 999,
+                  color: 'rgba(238, 228, 211, 0.92)',
+                  fontWeight: 600,
+                  px: 2,
+                  py: 1,
+                  textTransform: 'none',
+                },
+                '& .MuiToggleButtonGroup-grouped:not(:first-of-type)': {
+                  marginLeft: 0.5,
+                  borderLeft: 0,
+                },
+                '& .Mui-selected': {
+                  color: '#08263d',
+                  background:
+                    'linear-gradient(135deg, rgba(190, 232, 255, 1), rgba(126, 201, 255, 1))',
+                  boxShadow: '0 8px 20px rgba(62, 148, 209, 0.28)',
+                },
+                '& .Mui-selected:hover': {
+                  background:
+                    'linear-gradient(135deg, rgba(205, 239, 255, 1), rgba(145, 212, 255, 1))',
+                },
+              }}
+            >
+              <ToggleButton value={SIGNUP_COMMUNICATION_PREFERENCE_EMAIL} aria-label="Email">
+                Email
+              </ToggleButton>
+              <ToggleButton value={SIGNUP_COMMUNICATION_PREFERENCE_TEXT} aria-label="Text message">
+                Text message
+              </ToggleButton>
+            </ToggleButtonGroup>
+            <TextField
+              fullWidth
+              required
+              name={isEmailPreferred ? 'email' : 'cell'}
+              label={isEmailPreferred ? 'Email' : 'Cell'}
+              type={isEmailPreferred ? 'email' : 'tel'}
+              value={isEmailPreferred ? form.email : form.cell}
+              onChange={handleFieldChange}
+              autoComplete={isEmailPreferred ? 'email' : 'tel'}
+              variant="filled"
+              helperText={
+                isEmailPreferred ? 'We will reply by email.' : 'We will reply by text message.'
+              }
+              sx={{
+                ...registerFieldSx,
+                width: '100%',
+                maxWidth: { md: 320 },
+              }}
+            />
+          </Stack>
+          <TextField
+            fullWidth
+            required
+            name="message"
+            label="Message"
+            value={form.message}
+            onChange={handleFieldChange}
+            variant="filled"
+            multiline
+            minRows={5}
+            sx={registerFieldSx}
+          />
+          <Typography variant="body2" sx={{ color: 'rgba(238, 228, 211, 0.8)' }}>
+            Share what you collect, what you are researching, or how you would like to use the
+            members area.
+          </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="space-between">
             <Button
               href="/"

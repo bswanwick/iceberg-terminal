@@ -6,10 +6,13 @@ import type { AnyFeatureAction, RootState } from '../../app/store'
 import { db } from '../../firebase'
 import slice from './slice'
 import {
+  SIGNUP_REQUESTS_COLLECTION,
+  normalizeCell,
   normalizeEmail,
-  normalizeFirstName,
+  normalizeMessage,
+  normalizeName,
   normalizeInterests,
-  validateSubscriptionPayload,
+  validateSignupPayload,
 } from './formUtils'
 
 const toErrorMessage = (error: unknown, fallback: string) => {
@@ -27,20 +30,28 @@ export const newsletterSubscribeEpic: Epic<AnyFeatureAction, AnyFeatureAction, R
     filter(slice.actions.newsletterSubscribeRequested.match),
     mergeMap((action) => {
       const payload = {
+        kind: action.payload.kind,
         email: normalizeEmail(action.payload.email),
-        firstName: normalizeFirstName(action.payload.firstName),
+        name: normalizeName(action.payload.name),
+        cell: normalizeCell(action.payload.cell),
+        communicationPreference: action.payload.communicationPreference,
+        message: normalizeMessage(action.payload.message),
         interests: normalizeInterests(action.payload.interests),
       }
 
-      const validationError = validateSubscriptionPayload(payload)
+      const validationError = validateSignupPayload(payload)
       if (validationError) {
         return of(slice.actions.newsletterSubscribeFailed(validationError))
       }
 
       return from(
-        addDoc(collection(db, 'NewsletterSubscriptions'), {
+        addDoc(collection(db, SIGNUP_REQUESTS_COLLECTION), {
+          kind: payload.kind,
           email: payload.email,
-          firstName: payload.firstName,
+          name: payload.name,
+          cell: payload.cell,
+          communicationPreference: payload.communicationPreference,
+          message: payload.message,
           interests: payload.interests,
           createdAt: serverTimestamp(),
         }),

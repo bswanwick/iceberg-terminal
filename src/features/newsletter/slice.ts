@@ -1,12 +1,12 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { NewsletterSubscriptionPayload } from './formUtils'
+import type { SignupSubmissionPayload } from './formUtils'
 
 type NewsletterStatus = 'idle' | 'loading' | 'success' | 'error'
 
 type NewsletterState = {
   status: NewsletterStatus
   error: string | null
-  lastSubmission: NewsletterSubscriptionPayload | null
+  lastSubmission: SignupSubmissionPayload | null
 }
 
 const initialState: NewsletterState = {
@@ -19,13 +19,13 @@ export const newsletterSlice = createSlice({
   name: 'newsletter',
   initialState,
   reducers: {
-    newsletterSubscribeRequested: (state, action: PayloadAction<NewsletterSubscriptionPayload>) => {
+    newsletterSubscribeRequested: (state, action: PayloadAction<SignupSubmissionPayload>) => {
       void action
       state.status = 'loading'
       state.error = null
       state.lastSubmission = null
     },
-    newsletterSubscribeSucceeded: (state, action: PayloadAction<NewsletterSubscriptionPayload>) => {
+    newsletterSubscribeSucceeded: (state, action: PayloadAction<SignupSubmissionPayload>) => {
       state.status = 'success'
       state.error = null
       state.lastSubmission = action.payload

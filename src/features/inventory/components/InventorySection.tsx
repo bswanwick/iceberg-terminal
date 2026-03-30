@@ -23,10 +23,8 @@ import {
 import DeleteIcon from '@mui/icons-material/DeleteOutline'
 import EditIcon from '@mui/icons-material/Edit'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
-import { selectCanonicalRecordMap } from '../../canonicalRecords/selectors'
 import { selectAppLocked } from '../../ui/selectors'
 import { selectInventory, selectInventoryStatus } from '../selectors'
-import InventoryFilesDialog from './InventoryFilesDialog.tsx'
 import InventoryFormsSection from './InventoryFormsSection.tsx'
 import { inventorySlice, type InventoryFile } from '../slice'
 
@@ -34,13 +32,12 @@ type InventorySortOrder = 'asc' | 'desc'
 
 type InventoryColumnKey =
   | 'title'
-  | 'canonicalTitle'
+  | 'featured'
   | 'publishYear'
-  | 'format'
-  | 'conditionGrade'
-  | 'tags'
+  | 'acquisitionCost'
+  | 'retailPrice'
   | 'filesCount'
-  | 'createdAt'
+  | 'daysInInventory'
 
 type InventoryColumnAlign = 'left' | 'center' | 'right'
 
@@ -55,14 +52,13 @@ type InventoryColumn = {
 type InventoryRow = {
   id: string
   title: string
-  canonicalTitle: string
+  featured: boolean
   publishYear: string
-  format: string
-  conditionGrade: string
-  tags: string[]
+  acquisitionCost: number | null
+  retailPrice: number | null
   filesCount: number
   files: InventoryFile[]
-  createdAt: string
+  daysInInventory: number | null
 }
 
 type InventoryFilterEvent = ChangeEvent<HTMLInputElement>
@@ -73,40 +69,50 @@ type InventorySortClickEvent = MouseEvent<HTMLElement>
 
 const inventoryColumns: InventoryColumn[] = [
   { id: 'title', label: 'Title', sortable: true, align: 'left', minWidth: 180 },
-  { id: 'canonicalTitle', label: 'Canonical record', sortable: true, align: 'left', minWidth: 180 },
-  { id: 'publishYear', label: 'Publish year', sortable: true, align: 'left', minWidth: 120 },
-  { id: 'format', label: 'Format', sortable: true, align: 'left', minWidth: 120 },
-  { id: 'conditionGrade', label: 'Condition', sortable: true, align: 'left', minWidth: 120 },
-  { id: 'tags', label: 'Tags', sortable: false, align: 'left', minWidth: 140 },
+  { id: 'publishYear', label: 'Year', sortable: true, align: 'left', minWidth: 96 },
+  { id: 'featured', label: 'Featured', sortable: true, align: 'center', minWidth: 110 },
+  { id: 'acquisitionCost', label: 'Acq. Cost', sortable: true, align: 'right', minWidth: 120 },
+  { id: 'retailPrice', label: 'Retail', sortable: true, align: 'right', minWidth: 120 },
   { id: 'filesCount', label: 'Files', sortable: true, align: 'center', minWidth: 80 },
-  { id: 'createdAt', label: 'Created', sortable: true, align: 'left', minWidth: 140 },
+  {
+    id: 'daysInInventory',
+    label: 'Days in Inventory',
+    sortable: true,
+    align: 'right',
+    minWidth: 140,
+  },
 ]
 
 const normalizeFilter = (value: string) => value.trim().toLowerCase()
+
+const currencyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 2,
+})
+
+const formatCurrency = (value: number | null) =>
+  value === null ? '—' : currencyFormatter.format(value)
+
+const toDaysInInventory = (createdAt: string) => {
+  if (!createdAt || createdAt === 'Just now') {
+    return 0
+  }
+
+  const createdDate = new Date(createdAt)
+  const createdTime = createdDate.getTime()
+  if (Number.isNaN(createdTime)) {
+    return null
+  }
+
+  const elapsedMs = Date.now() - createdTime
+  return Math.max(0, Math.floor(elapsedMs / (1000 * 60 * 60 * 24)))
+}
 
 const compareStrings = (left: string, right: string) =>
   left.localeCompare(right, undefined, { sensitivity: 'base' })
 
 const compareNumbers = (left: number, right: number) => left - right
-
-const formatFileSize = (size: number) => {
-  if (size < 1024) {
-    return `${size} B`
-  }
-
-  if (size < 1024 * 1024) {
-    return `${(size / 1024).toFixed(1)} KB`
-  }
-
-  return `${(size / (1024 * 1024)).toFixed(1)} MB`
-}
-
-const getFileLabel = (storedFile: InventoryFile) => {
-  const fallbackName = storedFile.path.split('/').at(-1) || 'File'
-  const name = storedFile.name.trim() || fallbackName
-
-  return storedFile.size > 0 ? `${name} (${formatFileSize(storedFile.size)})` : name
-}
 
 const sortInventoryRows = (
   rows: InventoryRow[],
@@ -117,12 +123,24 @@ const sortInventoryRows = (
     const leftValue = left[sortBy]
     const rightValue = right[sortBy]
 
-    if (typeof leftValue === 'number' && typeof rightValue === 'number') {
-      return compareNumbers(leftValue, rightValue)
+    if (typeof leftValue === 'boolean' && typeof rightValue === 'boolean') {
+      return compareNumbers(Number(leftValue), Number(rightValue))
     }
 
-    if (Array.isArray(leftValue) && Array.isArray(rightValue)) {
-      return compareStrings(leftValue.join(', '), rightValue.join(', '))
+    if (leftValue === null && rightValue === null) {
+      return 0
+    }
+
+    if (leftValue === null) {
+      return -1
+    }
+
+    if (rightValue === null) {
+      return 1
+    }
+
+    if (typeof leftValue === 'number' && typeof rightValue === 'number') {
+      return compareNumbers(leftValue, rightValue)
     }
 
     return compareStrings(String(leftValue), String(rightValue))
@@ -131,26 +149,21 @@ const sortInventoryRows = (
   return sortOrder === 'asc' ? sorted : sorted.reverse()
 }
 
-const buildInventoryRows = (
-  records: ReturnType<typeof selectInventory>,
-  canonicalMap: ReturnType<typeof selectCanonicalRecordMap>,
-): InventoryRow[] =>
+const buildInventoryRows = (records: ReturnType<typeof selectInventory>): InventoryRow[] =>
   records.map((item) => ({
     id: item.id,
     title: item.title || 'Untitled item',
-    canonicalTitle: canonicalMap.get(item.canonicalRecordId)?.title ?? 'Unlinked',
+    featured: item.featured,
     publishYear: item.publishYear || 'No publish year',
-    format: item.format || 'Format not set',
-    conditionGrade: item.conditionGrade || 'No grade',
-    tags: item.tags,
+    acquisitionCost: item.acquisitionCost,
+    retailPrice: item.retailPrice,
     filesCount: item.files.length,
     files: item.files,
-    createdAt: item.createdAt || 'Unknown',
+    daysInInventory: toDaysInInventory(item.createdAt),
   }))
 
 const InventorySection = () => {
   const dispatch = useAppDispatch()
-  const canonicalRecordMap = useAppSelector(selectCanonicalRecordMap)
   const inventory = useAppSelector(selectInventory)
   const inventoryStatus = useAppSelector(selectInventoryStatus)
   const appLocked = useAppSelector(selectAppLocked)
@@ -158,15 +171,10 @@ const InventorySection = () => {
   const [filterText, setFilterText] = useState('')
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(8)
-  const [sortBy, setSortBy] = useState<InventoryColumnKey>('createdAt')
+  const [sortBy, setSortBy] = useState<InventoryColumnKey>('daysInInventory')
   const [sortOrder, setSortOrder] = useState<InventorySortOrder>('desc')
-  const [filesExplorerOpen, setFilesExplorerOpen] = useState(false)
-  const [filesExplorerRow, setFilesExplorerRow] = useState<InventoryRow | null>(null)
 
-  const inventoryRows = useMemo(
-    () => buildInventoryRows(inventory, canonicalRecordMap),
-    [inventory, canonicalRecordMap],
-  )
+  const inventoryRows = useMemo(() => buildInventoryRows(inventory), [inventory])
 
   const filteredRows = useMemo(() => {
     const normalizedFilter = normalizeFilter(filterText)
@@ -177,11 +185,10 @@ const InventorySection = () => {
     return inventoryRows.filter((row) => {
       const haystack = [
         row.title,
-        row.canonicalTitle,
         row.publishYear,
-        row.format,
-        row.conditionGrade,
-        row.tags.join(' '),
+        row.featured ? 'featured adored collection' : 'not featured',
+        formatCurrency(row.acquisitionCost),
+        formatCurrency(row.retailPrice),
       ]
         .join(' ')
         .toLowerCase()
@@ -223,13 +230,15 @@ const InventorySection = () => {
   }
 
   const handleFilesCellClick = (row: InventoryRow) => {
-    setFilesExplorerRow(row)
-    setFilesExplorerOpen(true)
-  }
+    dispatch(inventorySlice.actions.inventoryEditStarted({ id: row.id }))
+    dispatch(inventorySlice.actions.inventoryFileManagerOpened({ form: 'edit' }))
 
-  const handleFilesExplorerClose = () => {
-    setFilesExplorerOpen(false)
-    setFilesExplorerRow(null)
+    requestAnimationFrame(() => {
+      document.getElementById('inventory-edit-item')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
   }
 
   return (
@@ -305,36 +314,29 @@ const InventorySection = () => {
               {pagedRows.map((row) => (
                 <TableRow key={row.id} hover>
                   <TableCell>{row.title}</TableCell>
-                  <TableCell>{row.canonicalTitle}</TableCell>
                   <TableCell>{row.publishYear}</TableCell>
-                  <TableCell>{row.format}</TableCell>
-                  <TableCell>{row.conditionGrade}</TableCell>
-                  <TableCell>
-                    {row.tags.length > 0 ? (
-                      <Stack direction="row" spacing={0.5} flexWrap="wrap">
-                        {row.tags.slice(0, 2).map((tag) => (
-                          <Chip key={tag} size="small" label={tag} />
-                        ))}
-                        {row.tags.length > 2 && (
-                          <Chip size="small" label={`+${row.tags.length - 2}`} variant="outlined" />
-                        )}
-                      </Stack>
-                    ) : (
-                      <Typography variant="body2" color="text.secondary">
-                        No tags
-                      </Typography>
-                    )}
+                  <TableCell align="center">
+                    <Chip
+                      size="small"
+                      label={row.featured ? 'Yes' : 'No'}
+                      color={row.featured ? 'warning' : 'default'}
+                      variant={row.featured ? 'filled' : 'outlined'}
+                    />
                   </TableCell>
+                  <TableCell align="right">{formatCurrency(row.acquisitionCost)}</TableCell>
+                  <TableCell align="right">{formatCurrency(row.retailPrice)}</TableCell>
                   <TableCell
                     align="center"
                     onClick={() => handleFilesCellClick(row)}
                     sx={{ cursor: 'pointer' }}
                   >
-                    <Tooltip title="Open file explorer">
+                    <Tooltip title="Edit files">
                       <Chip size="small" label={row.filesCount} variant="outlined" />
                     </Tooltip>
                   </TableCell>
-                  <TableCell>{row.createdAt}</TableCell>
+                  <TableCell align="right">
+                    {row.daysInInventory === null ? '—' : row.daysInInventory}
+                  </TableCell>
                   <TableCell align="right">
                     <Stack direction="row" spacing={1} justifyContent="flex-end">
                       <IconButton
@@ -387,13 +389,6 @@ const InventorySection = () => {
 
         <InventoryFormsSection />
       </Stack>
-      <InventoryFilesDialog
-        key={filesExplorerRow?.id ?? 'inventory-files-dialog'}
-        open={filesExplorerOpen}
-        row={filesExplorerRow}
-        onClose={handleFilesExplorerClose}
-        getFileLabel={getFileLabel}
-      />
     </Paper>
   )
 }

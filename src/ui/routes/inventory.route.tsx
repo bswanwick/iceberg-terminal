@@ -1,17 +1,17 @@
 import { Alert } from '@mui/material'
 import { Navigate } from 'react-router-dom'
 import { useAppSelector } from '../../app/hooks'
-import { selectAuthError, selectAuthReady, selectAuthUser } from '../../features/auth/selectors'
+import { selectAuthError } from '../../features/auth/selectors'
 import InventorySection from '../../features/inventory/components/InventorySection'
 import { selectInventoryError } from '../../features/inventory/selectors'
+import { useRequireAuthenticatedRoute } from './useRequireAuthenticatedRoute'
 
 function InventoryRoute() {
   const authError = useAppSelector(selectAuthError)
-  const authReady = useAppSelector(selectAuthReady)
-  const user = useAppSelector(selectAuthUser)
   const inventoryError = useAppSelector(selectInventoryError)
+  const shouldRedirectHome = useRequireAuthenticatedRoute()
 
-  if (authReady && !user) {
+  if (shouldRedirectHome) {
     return <Navigate to="/" replace />
   }
 

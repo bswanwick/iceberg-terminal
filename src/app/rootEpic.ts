@@ -6,10 +6,10 @@ import {
   canonicalRecordUpdateEpic,
   canonicalRecordsFetchEpic,
 } from '../features/canonicalRecords/epics'
+import { featuredInventoryFetchEpic } from '../features/featuredInventory/epics'
 import {
   inventoryAddEpic,
   inventoryDeleteEpic,
-  inventoryFileRemoveEpic,
   inventoryFileUploadEpic,
   inventoryFetchEpic,
   inventoryUpdateEpic,
@@ -27,11 +27,11 @@ export const rootEpic = combineEpics(
   canonicalRecordAddEpic,
   canonicalRecordUpdateEpic,
   canonicalRecordDeleteEpic,
+  featuredInventoryFetchEpic,
   inventoryFetchEpic,
   inventoryAddEpic,
   inventoryUpdateEpic,
   inventoryDeleteEpic,
   inventoryFileUploadEpic,
-  inventoryFileRemoveEpic,
   newsletterSubscribeEpic,
 )

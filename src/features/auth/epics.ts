@@ -42,7 +42,6 @@ const toAuthUser = (user: User, roles: AuthRole[]): AuthUser => ({
 const toErrorMessage = (error: unknown, fallback: string) => {
   if (import.meta.env.DEV) {
     console.error('[auth:error]', error)
-    throw error
   }
 
   return error instanceof Error && error.message ? error.message : fallback

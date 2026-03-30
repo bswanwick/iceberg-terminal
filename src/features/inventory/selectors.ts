@@ -6,6 +6,10 @@ export const selectInventoryError = (state: RootState) => state.inventory.error
 export const selectInventoryAddForm = (state: RootState) => state.inventory.ui.addForm
 export const selectInventoryEditForm = (state: RootState) => state.inventory.ui.editForm
 export const selectInventoryEditingId = (state: RootState) => state.inventory.ui.editingId
+export const selectInventoryFileManagerOpen = (state: RootState) =>
+  state.inventory.ui.fileManagerOpen
+export const selectInventoryFileManagerForm = (state: RootState) =>
+  state.inventory.ui.fileManagerForm
 export const selectInventoryFileUploadStatus = (state: RootState) =>
   state.inventory.ui.fileUploadStatus
 export const selectInventoryFileUploadError = (state: RootState) =>

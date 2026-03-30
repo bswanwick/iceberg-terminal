@@ -13,6 +13,8 @@ export type StoredFile = {
   name: string
   contentType: string
   size: number
+  displayOrder: number
+  isHero: boolean
 }
 
 type BuildUserStoragePathInput = {
@@ -66,6 +68,8 @@ export const uploadStorageFile = async ({
     name: file.name,
     contentType: file.type || metadata?.contentType || '',
     size: file.size,
+    displayOrder: 0,
+    isHero: false,
   }
 }
 

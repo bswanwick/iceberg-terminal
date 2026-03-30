@@ -2,12 +2,14 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import type { StoredFile } from '../../firebase/storage'
 import type { VintagePaperConditionReport } from './condition-report'
 import authSlice from '../auth/slice'
+import { formatMoneyInput } from './formUtils'
 
 export type InventoryItem = {
   id: string
   title: string
   publisher: string
   canonicalRecordId: string
+  featured: boolean
   publishYear: string
   format: string
   dimensions: string
@@ -15,6 +17,8 @@ export type InventoryItem = {
   conditionReport: VintagePaperConditionReport | null
   acquisitionDate: string
   acquisitionSource: string
+  acquisitionCost: number | null
+  retailPrice: number | null
   notes: string
   tags: string[] // array of tags
   files: InventoryFile[]
@@ -28,6 +32,7 @@ export type InventoryFormState = {
   title: string
   publisher: string
   canonicalRecordId: string
+  featured: boolean
   publishYear: string
   format: string
   dimensions: string
@@ -35,16 +40,27 @@ export type InventoryFormState = {
   conditionReport: VintagePaperConditionReport | null
   acquisitionDate: string
   acquisitionSource: string
+  acquisitionCost: string
+  retailPrice: string
   notes: string
   tags: string // comma-separated list of tags
   files: InventoryFile[]
 }
 
-type InventoryFormField = Exclude<keyof InventoryFormState, 'conditionReport' | 'files'>
+type InventoryFormField = Exclude<
+  keyof InventoryFormState,
+  'conditionReport' | 'files' | 'featured'
+>
 
 type InventoryFormUpdatePayload = {
+  form: 'add' | 'edit'
   field: InventoryFormField
   value: string
+}
+
+type InventoryFeaturedUpdatePayload = {
+  form: 'add' | 'edit'
+  value: boolean
 }
 
 type InventoryConditionReportUpdatePayload = {
@@ -70,14 +86,28 @@ type InventoryFileUploadFailedPayload = {
   message: string
 }
 
-type InventoryFileRemoveRequestedPayload = {
+type InventoryFileRemovalStagedPayload = {
   form: 'add' | 'edit'
   storedFile: InventoryFile
 }
 
-type InventoryFileRemovedPayload = {
+type InventoryFileRemovalsClearedPayload = {
   form: 'add' | 'edit'
-  storedFile: InventoryFile
+}
+
+type InventoryFileManagerOpenPayload = {
+  form: 'add' | 'edit'
+}
+
+type InventoryFileHeroSelectedPayload = {
+  form: 'add' | 'edit'
+  path: string
+}
+
+type InventoryFilesReorderedPayload = {
+  form: 'add' | 'edit'
+  sourcePath: string
+  destinationPath: string
 }
 
 type InventoryStatus = 'idle' | 'loading' | 'saving'
@@ -85,7 +115,11 @@ type InventoryStatus = 'idle' | 'loading' | 'saving'
 type InventoryUiState = {
   addForm: InventoryFormState
   editForm: InventoryFormState
+  addFilesPendingRemoval: InventoryFile[]
+  editFilesPendingRemoval: InventoryFile[]
   editingId: string | null
+  fileManagerOpen: boolean
+  fileManagerForm: 'add' | 'edit' | null
   fileUploadStatus: 'idle' | 'uploading' | 'error'
   fileUploadError: string | null
   fileUploadInFlightCount: number
@@ -114,6 +148,7 @@ const createEmptyInventoryForm = (): InventoryFormState => ({
   title: '',
   publisher: '',
   canonicalRecordId: '',
+  featured: false,
   publishYear: '',
   format: '',
   dimensions: '',
@@ -121,10 +156,87 @@ const createEmptyInventoryForm = (): InventoryFormState => ({
   conditionReport: null,
   acquisitionDate: '',
   acquisitionSource: '',
+  acquisitionCost: '',
+  retailPrice: '',
   notes: '',
   tags: '',
   files: [],
 })
+
+const imageFileExtensions = new Set([
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'bmp',
+  'svg',
+  'avif',
+  'tif',
+  'tiff',
+])
+
+const isImageFile = (storedFile: InventoryFile) => {
+  if (storedFile.contentType.toLowerCase().startsWith('image/')) {
+    return true
+  }
+
+  const name = storedFile.name || storedFile.path
+  const extension = name.split('.').at(-1)?.toLowerCase() ?? ''
+  return imageFileExtensions.has(extension)
+}
+
+const normalizeInventoryFiles = (files: InventoryFile[]) => {
+  const sortedFiles = [...files].sort((left, right) => {
+    const leftOrder = Number.isFinite(left.displayOrder)
+      ? left.displayOrder
+      : Number.MAX_SAFE_INTEGER
+    const rightOrder = Number.isFinite(right.displayOrder)
+      ? right.displayOrder
+      : Number.MAX_SAFE_INTEGER
+
+    if (leftOrder !== rightOrder) {
+      return leftOrder - rightOrder
+    }
+
+    return left.path.localeCompare(right.path)
+  })
+
+  let heroAssigned = false
+
+  return sortedFiles.map((storedFile, index) => {
+    const image = isImageFile(storedFile)
+    const isHero = image && storedFile.isHero && !heroAssigned
+
+    if (isHero) {
+      heroAssigned = true
+    }
+
+    return {
+      ...storedFile,
+      displayOrder: index,
+      isHero,
+    }
+  })
+}
+
+const moveInventoryFile = (files: InventoryFile[], sourcePath: string, destinationPath: string) => {
+  const orderedFiles = normalizeInventoryFiles(files)
+  const sourceIndex = orderedFiles.findIndex((storedFile) => storedFile.path === sourcePath)
+  const destinationIndex = orderedFiles.findIndex(
+    (storedFile) => storedFile.path === destinationPath,
+  )
+
+  if (sourceIndex < 0 || destinationIndex < 0 || sourceIndex === destinationIndex) {
+    return orderedFiles
+  }
+
+  const reorderedFiles = [...orderedFiles]
+  const [movedFile] = reorderedFiles.splice(sourceIndex, 1)
+  reorderedFiles.splice(destinationIndex, 0, movedFile)
+
+  return normalizeInventoryFiles(reorderedFiles)
+}
 
 const initialState: InventoryState = {
   items: [],
@@ -133,7 +245,11 @@ const initialState: InventoryState = {
   ui: {
     addForm: createEmptyInventoryForm(),
     editForm: createEmptyInventoryForm(),
+    addFilesPendingRemoval: [],
+    editFilesPendingRemoval: [],
     editingId: null,
+    fileManagerOpen: false,
+    fileManagerForm: null,
     fileUploadStatus: 'idle',
     fileUploadError: null,
     fileUploadInFlightCount: 0,
@@ -187,7 +303,14 @@ export const inventorySlice = createSlice({
       action: PayloadAction<InventoryFileUploadSucceededPayload>,
     ) => {
       const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
-      targetForm.files = [...targetForm.files, action.payload.storedFile]
+      targetForm.files = normalizeInventoryFiles([
+        ...targetForm.files,
+        {
+          ...action.payload.storedFile,
+          displayOrder: targetForm.files.length,
+          isHero: false,
+        },
+      ])
       state.ui.fileUploadBatchCompleted += 1
       state.ui.fileUploadInFlightCount = Math.max(0, state.ui.fileUploadInFlightCount - 1)
       state.ui.fileUploadStatus = state.ui.fileUploadInFlightCount > 0 ? 'uploading' : 'idle'
@@ -204,26 +327,73 @@ export const inventorySlice = createSlice({
       state.ui.fileUploadBatchTotal = 0
       state.ui.fileUploadBatchCompleted = 0
     },
-    inventoryFileRemoveRequested: (
+    inventoryFileRemovalStaged: (
       state,
-      _action: PayloadAction<InventoryFileRemoveRequestedPayload>,
+      action: PayloadAction<InventoryFileRemovalStagedPayload>,
     ) => {
-      state.ui.fileUploadStatus = 'uploading'
-      state.ui.fileUploadError = null
-    },
-    inventoryFileRemoved: (state, action: PayloadAction<InventoryFileRemovedPayload>) => {
       const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
-      targetForm.files = targetForm.files.filter(
-        (storedFile) => storedFile.path !== action.payload.storedFile.path,
+      const pendingRemovalTarget =
+        action.payload.form === 'add'
+          ? state.ui.addFilesPendingRemoval
+          : state.ui.editFilesPendingRemoval
+
+      targetForm.files = normalizeInventoryFiles(
+        targetForm.files.filter((storedFile) => storedFile.path !== action.payload.storedFile.path),
       )
-      state.ui.fileUploadStatus = 'idle'
-      state.ui.fileUploadError = null
+      if (
+        !pendingRemovalTarget.some(
+          (storedFile) => storedFile.path === action.payload.storedFile.path,
+        )
+      ) {
+        pendingRemovalTarget.push(action.payload.storedFile)
+      }
     },
-    inventoryAddFormUpdated: (state, action: PayloadAction<InventoryFormUpdatePayload>) => {
-      state.ui.addForm[action.payload.field] = action.payload.value
+    inventoryFileRemovalsCleared: (
+      state,
+      action: PayloadAction<InventoryFileRemovalsClearedPayload>,
+    ) => {
+      if (action.payload.form === 'add') {
+        state.ui.addFilesPendingRemoval = []
+        return
+      }
+
+      state.ui.editFilesPendingRemoval = []
     },
-    inventoryEditFormUpdated: (state, action: PayloadAction<InventoryFormUpdatePayload>) => {
-      state.ui.editForm[action.payload.field] = action.payload.value
+    inventoryFileManagerOpened: (state, action: PayloadAction<InventoryFileManagerOpenPayload>) => {
+      state.ui.fileManagerOpen = true
+      state.ui.fileManagerForm = action.payload.form
+    },
+    inventoryFileManagerClosed: (state) => {
+      state.ui.fileManagerOpen = false
+      state.ui.fileManagerForm = null
+    },
+    inventoryFileHeroSelected: (state, action: PayloadAction<InventoryFileHeroSelectedPayload>) => {
+      const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
+      targetForm.files = normalizeInventoryFiles(
+        targetForm.files.map((storedFile) => ({
+          ...storedFile,
+          isHero: storedFile.path === action.payload.path && isImageFile(storedFile),
+        })),
+      )
+    },
+    inventoryFilesReordered: (state, action: PayloadAction<InventoryFilesReorderedPayload>) => {
+      const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
+      targetForm.files = moveInventoryFile(
+        targetForm.files,
+        action.payload.sourcePath,
+        action.payload.destinationPath,
+      )
+    },
+    inventoryFormUpdated: (state, action: PayloadAction<InventoryFormUpdatePayload>) => {
+      const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
+      targetForm[action.payload.field] = action.payload.value
+    },
+    inventoryFormFeaturedUpdated: (
+      state,
+      action: PayloadAction<InventoryFeaturedUpdatePayload>,
+    ) => {
+      const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
+      targetForm.featured = action.payload.value
     },
     inventoryConditionReportSaved: (
       state,
@@ -242,6 +412,9 @@ export const inventorySlice = createSlice({
     },
     inventoryAddFormReset: (state) => {
       state.ui.addForm = createEmptyInventoryForm()
+      state.ui.addFilesPendingRemoval = []
+      state.ui.fileManagerOpen = false
+      state.ui.fileManagerForm = null
       state.ui.fileUploadStatus = 'idle'
       state.ui.fileUploadError = null
       state.ui.fileUploadInFlightCount = 0
@@ -259,6 +432,7 @@ export const inventorySlice = createSlice({
         title: item.title,
         publisher: item.publisher,
         canonicalRecordId: item.canonicalRecordId,
+        featured: item.featured,
         publishYear: item.publishYear,
         format: item.format,
         dimensions: item.dimensions,
@@ -266,10 +440,15 @@ export const inventorySlice = createSlice({
         conditionReport: item.conditionReport ?? null,
         acquisitionDate: item.acquisitionDate,
         acquisitionSource: item.acquisitionSource,
+        acquisitionCost: formatMoneyInput(item.acquisitionCost),
+        retailPrice: formatMoneyInput(item.retailPrice),
         notes: item.notes,
         tags: item.tags.join(', '),
-        files: item.files,
+        files: normalizeInventoryFiles(item.files),
       }
+      state.ui.editFilesPendingRemoval = []
+      state.ui.fileManagerOpen = false
+      state.ui.fileManagerForm = null
       state.ui.fileUploadStatus = 'idle'
       state.ui.fileUploadError = null
       state.ui.fileUploadInFlightCount = 0
@@ -279,6 +458,9 @@ export const inventorySlice = createSlice({
     inventoryEditCanceled: (state) => {
       state.ui.editingId = null
       state.ui.editForm = createEmptyInventoryForm()
+      state.ui.editFilesPendingRemoval = []
+      state.ui.fileManagerOpen = false
+      state.ui.fileManagerForm = null
       state.ui.fileUploadStatus = 'idle'
       state.ui.fileUploadError = null
       state.ui.fileUploadInFlightCount = 0
@@ -296,7 +478,11 @@ export const inventorySlice = createSlice({
         state.error = null
         state.ui.addForm = createEmptyInventoryForm()
         state.ui.editForm = createEmptyInventoryForm()
+        state.ui.addFilesPendingRemoval = []
+        state.ui.editFilesPendingRemoval = []
         state.ui.editingId = null
+        state.ui.fileManagerOpen = false
+        state.ui.fileManagerForm = null
         state.ui.fileUploadStatus = 'idle'
         state.ui.fileUploadError = null
         state.ui.fileUploadInFlightCount = 0

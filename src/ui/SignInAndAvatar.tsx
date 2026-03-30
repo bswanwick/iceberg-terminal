@@ -36,7 +36,6 @@ function AuthProviderSignIn({ disabled, onGoogleSignIn }: AuthProviderSignInProp
 
   const handleRegister = () => {
     handleMenuClose()
-    console.log('Register clicked')
   }
 
   return (
@@ -139,7 +138,7 @@ function SignInAndAvatar() {
         PaperProps={{ sx: { minWidth: 220 } }}
       >
         <MenuItem component={RouterLink} to="/dashboard" onClick={handleMenuClose}>
-          Captain's Quarters
+          Dashboard
         </MenuItem>
         <MenuItem
           disabled={appLocked || !authReady || authStatus === 'loading'}

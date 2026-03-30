@@ -14,13 +14,14 @@ import {
 import { useMemo } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAppSelector } from '../../app/hooks'
-import { selectAuthError, selectAuthReady, selectAuthUser } from '../../features/auth/selectors'
+import { selectAuthError } from '../../features/auth/selectors'
 import {
   selectCanonicalRecordMap,
   selectCanonicalRecordsError,
 } from '../../features/canonicalRecords/selectors'
 import { selectInventory, selectInventoryError } from '../../features/inventory/selectors'
 import type { InventoryItem } from '../../features/inventory/slice'
+import { useRequireAuthenticatedRoute } from './useRequireAuthenticatedRoute'
 
 const parseTimestampForSort = (value: string | undefined): number => {
   if (!value) {
@@ -65,12 +66,11 @@ function MetricCard({ label, value, caption }: MetricCardProps) {
 
 function DashboardRoute() {
   const authError = useAppSelector(selectAuthError)
-  const authReady = useAppSelector(selectAuthReady)
-  const user = useAppSelector(selectAuthUser)
   const inventory = useAppSelector(selectInventory)
   const inventoryError = useAppSelector(selectInventoryError)
   const canonicalRecordMap = useAppSelector(selectCanonicalRecordMap)
   const canonicalRecordsError = useAppSelector(selectCanonicalRecordsError)
+  const shouldRedirectHome = useRequireAuthenticatedRoute()
 
   const metrics = useMemo(() => {
     const inventoryCount = inventory.length
@@ -112,7 +112,7 @@ function DashboardRoute() {
     [inventory],
   )
 
-  if (authReady && !user) {
+  if (shouldRedirectHome) {
     return <Navigate to="/" replace />
   }
 

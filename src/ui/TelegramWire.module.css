@@ -45,6 +45,7 @@
   font-size: 0.98rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  font-weight: 600;
 }
 
 .line {
@@ -64,7 +65,6 @@
   font-family: 'Courier New', Courier, monospace;
   font-size: 0.72rem;
   letter-spacing: 0.14em;
-  opacity: 0.62;
   text-transform: uppercase;
 }
 

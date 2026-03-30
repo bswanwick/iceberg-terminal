@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import type { ChangeEvent, FormEvent } from 'react'
 import {
   Alert,
   Box,
@@ -17,35 +16,17 @@ import {
 } from '@mui/material'
 import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded'
 import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
-import { useAppDispatch, useAppSelector } from '../../app/hooks'
+import { useAppSelector } from '../../app/hooks'
 import {
-  selectNewsletterError,
-  selectNewsletterLastSubmission,
-  selectNewsletterStatus,
-} from '../../features/newsletter/selectors'
-import { newsletterSlice } from '../../features/newsletter/slice'
-import {
-  normalizeEmail,
-  normalizeFirstName,
-  normalizeInterests,
-  validateSubscriptionPayload,
-} from '../../features/newsletter/formUtils'
+  selectFeaturedInventory,
+  selectFeaturedInventoryError,
+  selectFeaturedInventoryStatus,
+} from '../../features/featuredInventory/selectors'
+import { useSignupForm } from '../../features/newsletter/useSIgnupForm'
 import { selectAppLocked } from '../../features/ui/selectors'
 import SignInAndAvatar from '../SignInAndAvatar'
 import TelegramWire from '../TelegramWire'
 import swimmingLogo from '../../assets/swimming-swan-logo.png'
-
-type EmailChangeEvent = ChangeEvent<HTMLInputElement>
-
-type NewsletterSubmitEvent = FormEvent<HTMLFormElement>
-
-type FeaturedItem = {
-  title: string
-  collection: string
-  summary: string
-  price: string
-  tags: string[]
-}
 
 type PrintItem = {
   title: string
@@ -53,55 +34,6 @@ type PrintItem = {
   detail: string
   price: string
 }
-
-type NewsletterFormState = {
-  firstName: string
-  email: string
-  interests: string[]
-}
-
-const FEATURED_ITEMS: FeaturedItem[] = [
-  {
-    title: 'Cunard Winter Crossing Menu, 1912',
-    collection: 'North Atlantic Dining Room Archives',
-    summary:
-      'Deck service menu from RMS Campania with gilt details, route marks, and period typography.',
-    price: '$285',
-    tags: ['Cunard', 'Ocean Liners', 'Liverpool to New York', 'Hospitality'],
-  },
-  {
-    title: 'White Star Luggage Label Set',
-    collection: 'Collector Release',
-    summary:
-      'Matched pair of adhesive labels tied to Southampton and Boston departures, lightly restored.',
-    price: '$160',
-    tags: ['White Star', 'Luggage Labels', 'Southampton', 'Boston'],
-  },
-  {
-    title: 'Orient Line Art Deco Ticket Wallet',
-    collection: 'Southern Passage Papers',
-    summary:
-      'Ticket wallet with embossed crest and preserved passage notes, ideal for framed display.',
-    price: '$340',
-    tags: ['Orient Line', 'Passenger Tickets', 'Art Deco', 'Sydney'],
-  },
-  {
-    title: 'Compagnie Generale Brochure, 1927',
-    collection: 'French Atlantic Publicity',
-    summary:
-      'Illustrated route brochure featuring itinerary tables and original promotion inserts.',
-    price: '$210',
-    tags: ['CGT', 'Brochure', 'Le Havre', 'Collector Grade'],
-  },
-  {
-    title: 'B&O Rail Connection Sleeper Card',
-    collection: 'Intermodal Journey Records',
-    summary:
-      'Sleeper reservation card linking ship arrivals to inland rail, stamped and cataloged.',
-    price: '$145',
-    tags: ['Baltimore & Ohio', 'Rail Link', 'New York', 'Transit History'],
-  },
-]
 
 const PRINT_ITEMS: PrintItem[] = [
   {
@@ -128,106 +60,101 @@ const PRINT_ITEMS: PrintItem[] = [
 ]
 
 const INTEREST_OPTIONS = [
-  'Ocean liners',
-  'Rail travel',
-  'Destination posters',
-  'Passenger records',
-  'Luxury hospitality',
+  'Travel brochures',
+  'Tourist guides and booklets',
+  'Trip reports, logs, and diaries',
+  'Hotels',
+  'Railroadiana',
+  'Maritime',
+  'Aviation',
+  'Menus',
+  'Postcards',
+  'Maps',
+  'Passenger Lists',
+  'Americana',
+  'European travel',
+  'Archiving & Preservation',
 ]
 
 const CAROUSEL_VIEWPORT = 3
+
+const currencyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 2,
+})
 
 const TELEGRAM_WIRE_MESSAGE = [
   '------------------------------',
   'TO: All Persons',
   'FROM: SWANWICK AND COMPANY',
   '------------------------------',
-  "Welcome to the Tourist's Antiquarium STOP",
-  'We sell both historical artifacts',
-  'and modern reproduction prints STOP',
-  'Both are clearly labeled STOP',
-  'Please enjoy your stay STOP',
+  "Welcome to the Tourist's Antiquarium [STOP]",
+  'We sell both historical artifacts ',
+  'and modern reproduction prints [STOP]',
+  'Both are clearly labeled [STOP]',
+  'Please enjoy your stay [STOP]',
   '',
-  'END OF TRANSMISSION',
+  '<< END OF TRANSMISSION >>',
 ]
 
 // This route is used as the main marketing page for the business. It includes a newsletter sign-up form and previews of featured items. If the user is already authenticated, they are redirected to the dashboard.
 
 function LandingRoute() {
-  const dispatch = useAppDispatch()
-  const newsletterStatus = useAppSelector(selectNewsletterStatus)
-  const newsletterError = useAppSelector(selectNewsletterError)
-  const lastSubmission = useAppSelector(selectNewsletterLastSubmission)
   const appLocked = useAppSelector(selectAppLocked)
+  const featuredInventory = useAppSelector(selectFeaturedInventory)
+  const featuredInventoryStatus = useAppSelector(selectFeaturedInventoryStatus)
+  const featuredInventoryError = useAppSelector(selectFeaturedInventoryError)
+  const {
+    form,
+    handleFieldChange,
+    handleInterestToggle,
+    handleSubmit,
+    newsletterStatus,
+    newsletterError,
+    lastSubmission,
+  } = useSignupForm({ kind: 'newsletter' })
 
   const [carouselStart, setCarouselStart] = useState(0)
-  const [form, setForm] = useState<NewsletterFormState>({ firstName: '', email: '', interests: [] })
-  const carouselLength = FEATURED_ITEMS.length
+  const carouselLength = featuredInventory.length
   const canSlide = carouselLength > CAROUSEL_VIEWPORT
 
   const visibleFeatured = useMemo(() => {
-    if (!canSlide) {
-      return FEATURED_ITEMS
+    if (carouselLength === 0) {
+      return []
     }
 
-    const items: FeaturedItem[] = []
+    if (!canSlide) {
+      return featuredInventory
+    }
+
+    const items = []
     let index = carouselStart
     for (let count = 0; count < CAROUSEL_VIEWPORT; count += 1) {
-      items.push(FEATURED_ITEMS[index])
+      items.push(featuredInventory[index])
       index = (index + 1) % carouselLength
     }
     return items
-  }, [canSlide, carouselLength, carouselStart])
-
-  const updateFormStatus = () => {
-    if (newsletterStatus !== 'idle') {
-      dispatch(newsletterSlice.actions.newsletterClearStatus())
-    }
-  }
-
-  const handleFieldChange = (event: EmailChangeEvent) => {
-    const { name, value } = event.target
-    setForm((previous) => ({ ...previous, [name]: value }))
-    updateFormStatus()
-  }
-
-  const handleInterestToggle = (option: string) => {
-    setForm((previous) => {
-      const interests = previous.interests.includes(option)
-        ? previous.interests.filter((item) => item !== option)
-        : [...previous.interests, option]
-
-      return { ...previous, interests }
-    })
-
-    updateFormStatus()
-  }
+  }, [canSlide, carouselLength, carouselStart, featuredInventory])
 
   const showPreviousItems = () => {
+    if (carouselLength === 0) {
+      return
+    }
+
     setCarouselStart((previous) => (previous - 1 + carouselLength) % carouselLength)
   }
 
   const showNextItems = () => {
-    setCarouselStart((previous) => (previous + 1) % carouselLength)
-  }
-
-  const handleNewsletterSubmit = (event: NewsletterSubmitEvent) => {
-    event.preventDefault()
-    const payload = {
-      email: normalizeEmail(form.email),
-      firstName: normalizeFirstName(form.firstName),
-      interests: normalizeInterests(form.interests),
-    }
-
-    const validationError = validateSubscriptionPayload(payload)
-    if (validationError) {
-      dispatch(newsletterSlice.actions.newsletterSubscribeFailed(validationError))
+    if (carouselLength === 0) {
       return
     }
 
-    dispatch(newsletterSlice.actions.newsletterSubscribeRequested(payload))
-    setForm({ firstName: '', email: '', interests: [] })
+    setCarouselStart((previous) => (previous + 1) % carouselLength)
   }
+
+  const formatRetailPrice = (value: number | null) =>
+    value === null ? 'Price on request' : currencyFormatter.format(value)
 
   return (
     <Stack spacing={4}>
@@ -332,11 +259,15 @@ function LandingRoute() {
               fontSize: { xs: '16px', md: '1rem' },
             }}
           >
-            Welcome to our new online gallery! Our focus is the history of travel, transportation,
-            and tourism. We carefully catalog and care for every piece that comes through our doors
-            and we hope to provide you with a window into a world that continues to inspire us. Pack
-            your bags, because our Grand Tour starts now.
+            Hello and welcome to our online gallery. We curate vintage travel memorabilia,
+            historical paper, faithful reproductions, and other distinctive collectibles. We care
+            deeply about art, design, typography, printing, and paper, and we handle each piece with
+            respect. That's why we're trying to save and preserve this heritage. Find out more about
+            our preservation efforts here.
           </Typography>
+
+          {/* TODO - INSERT LINK ABOVE */}
+
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
             <Button href="#featured" variant="contained" color="secondary" size="large">
               The Main Gallery
@@ -374,13 +305,23 @@ function LandingRoute() {
           p: { xs: 3, md: 6 },
           borderRadius: 3,
           background:
-            'linear-gradient(140deg, rgba(10, 24, 38, 0.98) 0%, rgba(19, 40, 60, 0.98) 52%, rgba(49, 35, 20, 0.95) 100%)',
+            'linear-gradient(140deg, rgba(19, 40, 60, 0.98) 0%, rgba(10, 24, 38, 0.98) 100%)',
           border: '1px solid rgba(201, 169, 113, 0.35)',
           position: 'relative',
           overflow: 'hidden',
         }}
       >
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} alignItems="center">
+          <Box sx={{ width: '100%', maxWidth: 640 }}>
+            <TelegramWire
+              message={TELEGRAM_WIRE_MESSAGE}
+              fixedLineCount={4}
+              deferredLineCount={2}
+              charIntervalMs={38}
+              headerLabel="INCOMING Wire Transmission"
+              headerColor="#b53a2d"
+            />
+          </Box>
           <Box
             component="img"
             src={swimmingLogo}
@@ -398,16 +339,6 @@ function LandingRoute() {
               flexShrink: 1,
             }}
           />
-          <Box sx={{ width: '100%', maxWidth: 640 }}>
-            <TelegramWire
-              message={TELEGRAM_WIRE_MESSAGE}
-              fixedLineCount={4}
-              deferredLineCount={2}
-              charIntervalMs={38}
-              headerLabel="Wire Service"
-              headerColor="#b53a2d"
-            />
-          </Box>
         </Stack>
       </Paper>
 
@@ -431,13 +362,16 @@ function LandingRoute() {
           >
             <Stack spacing={1}>
               <Typography variant="overline" sx={{ letterSpacing: '0.18em' }}>
-                Do you romanticize travel as much as we do?
+                Need of a vacation?
               </Typography>
-              <Typography variant="h3">The Adored Collection</Typography>
+              <Typography variant="h3">
+                The Adored<sup style={{ fontSize: '0.5em' }}>♥</sup> Collection
+              </Typography>
               <Typography variant="body1" sx={{ maxWidth: 720 }}>
-                Of all the items that pass through our hands, these are the ones that have stolen
-                our hearts. Subscribe to our newsletter to receive sneak peeks at items before they
-                are listed here.
+                A rotating selection from the Main Gallery. These items have taken our hearts. Maybe
+                it's the history behind a piece, or the artwork on the cover, or maybe it's rare and
+                remarkable in some unique way. Whatever it may be, these are the ones that speak to
+                our hearts. We adore them and we hope you do too.
               </Typography>
             </Stack>
             <Stack direction="row" spacing={1}>
@@ -462,32 +396,77 @@ function LandingRoute() {
             </Stack>
           </Stack>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-            {visibleFeatured.map((item) => (
-              <Card key={item.title} variant="outlined" sx={{ flex: 1, borderRadius: 2 }}>
-                <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Stack spacing={0.75}>
-                    <Typography variant="h5">{item.title}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {item.collection}
-                    </Typography>
-                  </Stack>
-                  <Typography variant="body2" sx={{ minHeight: 84 }}>
-                    {item.summary}
-                  </Typography>
-                  <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
-                    {item.tags.map((tag) => (
-                      <Chip key={tag} label={tag} size="small" />
-                    ))}
-                  </Stack>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="h6">{item.price}</Typography>
-                    <Button variant="text" color="primary">
-                      View Listing
-                    </Button>
-                  </Stack>
+            {featuredInventoryError ? (
+              <Card variant="outlined" sx={{ flex: 1, borderRadius: 2 }}>
+                <CardContent>
+                  <Typography color="error">{featuredInventoryError}</Typography>
                 </CardContent>
               </Card>
-            ))}
+            ) : featuredInventoryStatus === 'loading' && featuredInventory.length === 0 ? (
+              <Card variant="outlined" sx={{ flex: 1, borderRadius: 2 }}>
+                <CardContent>
+                  <Typography variant="body1">Loading featured inventory.</Typography>
+                </CardContent>
+              </Card>
+            ) : visibleFeatured.length === 0 ? (
+              <Card variant="outlined" sx={{ flex: 1, borderRadius: 2 }}>
+                <CardContent>
+                  <Typography variant="body1">No featured items are listed right now.</Typography>
+                </CardContent>
+              </Card>
+            ) : (
+              visibleFeatured.map((item) => (
+                <Card key={item.id} variant="outlined" sx={{ flex: 1, borderRadius: 2 }}>
+                  {item.imageUrl ? (
+                    <Box
+                      component="img"
+                      src={item.imageUrl}
+                      alt={item.title}
+                      sx={{
+                        display: 'block',
+                        width: '100%',
+                        height: 220,
+                        objectFit: 'cover',
+                        borderTopLeftRadius: 8,
+                        borderTopRightRadius: 8,
+                      }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        height: 220,
+                        background:
+                          'linear-gradient(135deg, rgba(19, 40, 60, 0.18) 0%, rgba(201, 169, 113, 0.28) 100%)',
+                        borderTopLeftRadius: 8,
+                        borderTopRightRadius: 8,
+                      }}
+                    />
+                  )}
+                  <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Stack spacing={0.75}>
+                      <Typography variant="h5">{item.title}</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {item.collection}
+                      </Typography>
+                    </Stack>
+                    <Typography variant="body2" sx={{ minHeight: 84 }}>
+                      {item.summary}
+                    </Typography>
+                    <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
+                      {item.tags.map((tag) => (
+                        <Chip key={tag} label={tag} size="small" />
+                      ))}
+                    </Stack>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Typography variant="h6">{formatRetailPrice(item.retailPrice)}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {item.updatedAt}
+                      </Typography>
+                    </Stack>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </Stack>
         </Stack>
       </Paper>
@@ -505,13 +484,15 @@ function LandingRoute() {
       >
         <Stack spacing={3}>
           <Typography variant="overline" sx={{ letterSpacing: '0.18em' }}>
-            Print-on-Demand Reprints
+            Looking for something new?
           </Typography>
-          <Typography variant="h3">Personally sourced scans, faithfully reproduced</Typography>
+          <Typography variant="h3">Faithfully reproduced prints</Typography>
           <Typography variant="body1" sx={{ maxWidth: 780 }}>
-            Our reprint line is built from pieces scanned in-house from original travel ephemera.
-            Each release includes capture notes, restoration limits, and paper profile details so
-            collectors know exactly what they are acquiring.
+            Some of our prints are produced in-house by hand-pressing cotton rag paper onto antique
+            letterpress printing blocks. We also offer digital reproductions made from
+            high-resolution scans of original pieces that we personally sourced, scanned, cropped,
+            digitized, and uploaded ourselves. These prints are ideal for framing and display, and
+            they make great gifts for any travel lover.
           </Typography>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
             {PRINT_ITEMS.map((item) => (
@@ -548,21 +529,20 @@ function LandingRoute() {
             'linear-gradient(120deg, rgba(244, 235, 218, 0.98) 0%, rgba(232, 220, 194, 0.98) 100%)',
         }}
       >
-        <Stack spacing={2} component="form" onSubmit={handleNewsletterSubmit}>
+        <Stack spacing={2} component="form" onSubmit={handleSubmit}>
           <Typography variant="overline" sx={{ letterSpacing: '0.18em' }}>
             We invite you to join
           </Typography>
           <Typography variant="h3">The Tourist's Dispatch</Typography>
           <Typography variant="body1" sx={{ maxWidth: 720 }}>
-            Each month, we focus on a new theme related to the history of tourism and travel. Our
-            content is free to subscribers. We will never share your information and you can
-            unsubscribe at any time. Oh, and we promise that all text with our name on it was
-            written by a human. Fancy that!
+            A free monthly e-newsletter with great stories, archival tips, collector insights, and
+            early access to new drops before they are listed on the site. Oh, one final thing; we
+            promise that everything is written by a human. Fancy that!
           </Typography>
           {newsletterStatus === 'success' && lastSubmission && (
             <Alert severity="success">
               <b>
-                Welcome aboard, {lastSubmission.firstName}. We will write to {lastSubmission.email}.
+                Welcome aboard, {lastSubmission.name}. We will write to {lastSubmission.email}.
               </b>
             </Alert>
           )}
@@ -573,9 +553,9 @@ function LandingRoute() {
           )}
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
             <TextField
-              name="firstName"
+              name="name"
               label="First name"
-              value={form.firstName}
+              value={form.name}
               onChange={handleFieldChange}
               size="small"
               required
@@ -595,11 +575,32 @@ function LandingRoute() {
             />
           </Stack>
           <Stack spacing={1}>
-            <Typography variant="subtitle2">Collector interests</Typography>
-            <FormGroup row>
+            <Typography variant="subtitle2">Share your interests (Optional)</Typography>
+            <FormGroup
+              sx={{
+                display: 'grid',
+                gridTemplateColumns: {
+                  xs: '1fr',
+                  sm: 'repeat(2, minmax(0, 1fr))',
+                  lg: 'repeat(3, minmax(0, 1fr))',
+                },
+                columnGap: { xs: 1, md: 3 },
+                rowGap: 0.75,
+              }}
+            >
               {INTEREST_OPTIONS.map((option) => (
                 <FormControlLabel
                   key={option}
+                  sx={{
+                    m: 0,
+                    alignItems: 'flex-start',
+                    '& .MuiCheckbox-root': {
+                      pt: 0.5,
+                    },
+                    '& .MuiFormControlLabel-label': {
+                      lineHeight: 1.35,
+                    },
+                  }}
                   control={
                     <Checkbox
                       checked={form.interests.includes(option)}

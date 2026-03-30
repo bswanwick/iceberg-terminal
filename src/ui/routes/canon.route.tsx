@@ -1,17 +1,17 @@
 import { Alert } from '@mui/material'
 import { Navigate } from 'react-router-dom'
 import { useAppSelector } from '../../app/hooks'
-import { selectAuthError, selectAuthReady, selectAuthUser } from '../../features/auth/selectors'
+import { selectAuthError } from '../../features/auth/selectors'
 import { selectCanonicalRecordsError } from '../../features/canonicalRecords/selectors'
 import CanonicalRecordsSection from '../../features/canonicalRecords/components/CanonicalRecordsSection'
+import { useRequireAuthenticatedRoute } from './useRequireAuthenticatedRoute'
 
 function CanonRoute() {
   const authError = useAppSelector(selectAuthError)
-  const authReady = useAppSelector(selectAuthReady)
-  const user = useAppSelector(selectAuthUser)
   const canonicalRecordsError = useAppSelector(selectCanonicalRecordsError)
+  const shouldRedirectHome = useRequireAuthenticatedRoute()
 
-  if (authReady && !user) {
+  if (shouldRedirectHome) {
     return <Navigate to="/" replace />
   }
 

@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import type { MouseEvent } from 'react'
+import type { DragEvent, MouseEvent } from 'react'
 import {
   Box,
   Button,
+  Chip,
   Dialog,
   DialogContent,
   DialogTitle,
   Grid,
   IconButton,
+  Paper,
   Slide,
   Stack,
   ToggleButton,
@@ -17,51 +19,34 @@ import {
 } from '@mui/material'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
 import DownloadIcon from '@mui/icons-material/Download'
+import DeleteIcon from '@mui/icons-material/DeleteOutline'
 import OpenInNewIcon from '@mui/icons-material/OpenInNew'
 import GridViewIcon from '@mui/icons-material/GridView'
 import ViewListIcon from '@mui/icons-material/ViewList'
+import DragIndicatorIcon from '@mui/icons-material/DragIndicator'
+import StarIcon from '@mui/icons-material/Star'
+import StarBorderIcon from '@mui/icons-material/StarBorder'
 import ImageIcon from '@mui/icons-material/Image'
 import DescriptionIcon from '@mui/icons-material/Description'
 import CloseIcon from '@mui/icons-material/Close'
+import { useAppDispatch, useAppSelector } from '../../../app/hooks'
+import { selectAppLocked } from '../../ui/selectors'
+import { getInventoryFileLabel, isInventoryImageFile, sortInventoryFiles } from '../fileUtils'
+import {
+  selectInventory,
+  selectInventoryAddForm,
+  selectInventoryEditForm,
+  selectInventoryEditingId,
+  selectInventoryFileManagerForm,
+  selectInventoryFileManagerOpen,
+  selectInventoryStatus,
+} from '../selectors'
+import { inventorySlice } from '../slice'
 import type { InventoryFile } from '../slice'
 
 type ExplorerViewMode = 'list' | 'grid'
 
-type InventoryFilesDialogRow = {
-  id: string
-  title: string
-  files: InventoryFile[]
-}
-
-type InventoryFilesDialogProps = {
-  open: boolean
-  row: InventoryFilesDialogRow | null
-  onClose: () => void
-  getFileLabel: (storedFile: InventoryFile) => string
-}
-
-const imageFileExtensions = new Set([
-  'jpg',
-  'jpeg',
-  'png',
-  'gif',
-  'webp',
-  'bmp',
-  'svg',
-  'avif',
-  'tif',
-  'tiff',
-])
-
-const isImageFile = (storedFile: InventoryFile) => {
-  if (storedFile.contentType.toLowerCase().startsWith('image/')) {
-    return true
-  }
-
-  const name = storedFile.name || storedFile.path
-  const extension = name.split('.').at(-1)?.toLowerCase() ?? ''
-  return imageFileExtensions.has(extension)
-}
+type InventoryDragEvent = DragEvent<HTMLElement>
 
 const downloadStoredFile = (storedFile: InventoryFile) => {
   const downloadElement = document.createElement('a')
@@ -111,10 +96,31 @@ const copyImageToClipboard = async (storedFile: InventoryFile) => {
   }
 }
 
-const InventoryFilesDialog = ({ open, row, onClose, getFileLabel }: InventoryFilesDialogProps) => {
+const InventoryFilesDialog = () => {
+  const dispatch = useAppDispatch()
+  const inventory = useAppSelector(selectInventory)
+  const addForm = useAppSelector(selectInventoryAddForm)
+  const editForm = useAppSelector(selectInventoryEditForm)
+  const editingId = useAppSelector(selectInventoryEditingId)
+  const fileManagerOpen = useAppSelector(selectInventoryFileManagerOpen)
+  const fileManagerForm = useAppSelector(selectInventoryFileManagerForm)
+  const inventoryStatus = useAppSelector(selectInventoryStatus)
+  const appLocked = useAppSelector(selectAppLocked)
+
   const [explorerViewMode, setExplorerViewMode] = useState<ExplorerViewMode>('grid')
   const [previewFile, setPreviewFile] = useState<InventoryFile | null>(null)
   const [explorerFeedback, setExplorerFeedback] = useState<string | null>(null)
+  const [draggingPath, setDraggingPath] = useState<string | null>(null)
+  const [dropTargetPath, setDropTargetPath] = useState<string | null>(null)
+
+  const editingItem = editingId ? (inventory.find((entry) => entry.id === editingId) ?? null) : null
+  const activeForm = fileManagerForm === 'edit' ? editForm : addForm
+  const orderedFiles = sortInventoryFiles(activeForm.files)
+  const dialogTitle =
+    fileManagerForm === 'edit'
+      ? `Manage files: ${(editingItem?.title || editForm.title || 'Inventory item').trim() || 'Inventory item'}`
+      : `Manage files: ${(addForm.title || 'New inventory item').trim() || 'New inventory item'}`
+  const controlsDisabled = appLocked || inventoryStatus === 'saving' || !fileManagerForm
 
   const handleExplorerViewMode = (
     _event: MouseEvent<HTMLElement>,
@@ -127,14 +133,13 @@ const InventoryFilesDialog = ({ open, row, onClose, getFileLabel }: InventoryFil
     setExplorerViewMode(value)
   }
 
-  const handleExplorerFileClick = (storedFile: InventoryFile) => {
-    setExplorerFeedback(null)
-    if (isImageFile(storedFile)) {
-      setPreviewFile(storedFile)
+  const handlePreviewOpen = (storedFile: InventoryFile) => {
+    if (!isInventoryImageFile(storedFile)) {
       return
     }
 
-    downloadStoredFile(storedFile)
+    setExplorerFeedback(null)
+    setPreviewFile(storedFile)
   }
 
   const handlePreviewClose = () => {
@@ -153,15 +158,247 @@ const InventoryFilesDialog = ({ open, row, onClose, getFileLabel }: InventoryFil
 
   const handleDialogClose = () => {
     setPreviewFile(null)
-    setExplorerViewMode('list')
+    setExplorerViewMode('grid')
     setExplorerFeedback(null)
-    onClose()
+    setDraggingPath(null)
+    setDropTargetPath(null)
+    dispatch(inventorySlice.actions.inventoryFileManagerClosed())
+  }
+
+  const handleHeroSelect = (storedFile: InventoryFile) => {
+    if (!fileManagerForm || !isInventoryImageFile(storedFile)) {
+      return
+    }
+
+    dispatch(
+      inventorySlice.actions.inventoryFileHeroSelected({
+        form: fileManagerForm,
+        path: storedFile.path,
+      }),
+    )
+  }
+
+  const handleDeleteFile = (storedFile: InventoryFile) => {
+    if (!fileManagerForm) {
+      return
+    }
+
+    if (previewFile?.path === storedFile.path) {
+      setPreviewFile(null)
+    }
+
+    dispatch(
+      inventorySlice.actions.inventoryFileRemovalStaged({
+        form: fileManagerForm,
+        storedFile,
+      }),
+    )
+  }
+
+  const handleDragStart = (storedFile: InventoryFile) => () => {
+    setDraggingPath(storedFile.path)
+    setDropTargetPath(storedFile.path)
+  }
+
+  const handleDragEnd = () => {
+    setDraggingPath(null)
+    setDropTargetPath(null)
+  }
+
+  const handleDragOver = (storedFile: InventoryFile) => (event: InventoryDragEvent) => {
+    event.preventDefault()
+    if (draggingPath && draggingPath !== storedFile.path) {
+      setDropTargetPath(storedFile.path)
+    }
+  }
+
+  const handleDrop = (storedFile: InventoryFile) => (event: InventoryDragEvent) => {
+    event.preventDefault()
+
+    if (!fileManagerForm || !draggingPath || draggingPath === storedFile.path) {
+      handleDragEnd()
+      return
+    }
+
+    dispatch(
+      inventorySlice.actions.inventoryFilesReordered({
+        form: fileManagerForm,
+        sourcePath: draggingPath,
+        destinationPath: storedFile.path,
+      }),
+    )
+
+    handleDragEnd()
+  }
+
+  const renderFileCard = (storedFile: InventoryFile) => {
+    const image = isInventoryImageFile(storedFile)
+    const isDropTarget = dropTargetPath === storedFile.path && draggingPath !== storedFile.path
+
+    return (
+      <Paper
+        key={storedFile.path || storedFile.url}
+        variant="outlined"
+        draggable={!controlsDisabled}
+        onDragStart={handleDragStart(storedFile)}
+        onDragEnd={handleDragEnd}
+        onDragOver={handleDragOver(storedFile)}
+        onDrop={handleDrop(storedFile)}
+        sx={{
+          width: '100%',
+          overflow: 'hidden',
+          borderRadius: 2,
+          borderColor: isDropTarget ? 'warning.main' : 'rgba(17, 24, 39, 0.12)',
+          boxShadow: isDropTarget ? '0 0 0 2px rgba(245, 158, 11, 0.18)' : 'none',
+          backgroundColor:
+            draggingPath === storedFile.path
+              ? 'rgba(17, 24, 39, 0.03)'
+              : 'rgba(255, 255, 255, 0.96)',
+        }}
+      >
+        <Box sx={{ position: 'relative' }}>
+          {image ? (
+            <Box
+              component="button"
+              type="button"
+              onClick={() => handlePreviewOpen(storedFile)}
+              sx={{
+                width: '100%',
+                aspectRatio: '4 / 5',
+                overflow: 'hidden',
+                display: 'block',
+                p: 0,
+                border: 0,
+                cursor: 'zoom-in',
+                backgroundColor: 'rgba(17, 24, 39, 0.06)',
+              }}
+            >
+              <Box
+                component="img"
+                src={storedFile.url}
+                alt={storedFile.name || 'Inventory image file'}
+                sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+              />
+            </Box>
+          ) : (
+            <Box
+              sx={{
+                width: '100%',
+                aspectRatio: '4 / 5',
+                overflow: 'hidden',
+                display: 'grid',
+                placeItems: 'center',
+                backgroundColor: 'rgba(17, 24, 39, 0.06)',
+              }}
+            >
+              <DescriptionIcon sx={{ fontSize: 36, color: 'text.secondary' }} />
+            </Box>
+          )}
+          <Stack
+            direction="row"
+            spacing={0.5}
+            sx={{ position: 'absolute', top: 8, right: 8, alignItems: 'center' }}
+          >
+            <Tooltip title="Reorder file">
+              <Box
+                sx={{
+                  width: 32,
+                  height: 32,
+                  display: 'grid',
+                  placeItems: 'center',
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(255, 255, 255, 0.88)',
+                  color: 'text.secondary',
+                  cursor: controlsDisabled ? 'default' : 'grab',
+                }}
+              >
+                <DragIndicatorIcon fontSize="small" />
+              </Box>
+            </Tooltip>
+            <Tooltip
+              title={
+                image
+                  ? storedFile.isHero
+                    ? 'Hero image selected'
+                    : 'Set hero image'
+                  : 'Hero image requires an image file'
+              }
+            >
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={() => handleHeroSelect(storedFile)}
+                  disabled={controlsDisabled || !image}
+                  sx={{ backgroundColor: 'rgba(255, 255, 255, 0.88)' }}
+                >
+                  {storedFile.isHero ? (
+                    <StarIcon fontSize="small" color="warning" />
+                  ) : (
+                    <StarBorderIcon fontSize="small" />
+                  )}
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Delete file from this item">
+              <span>
+                <IconButton
+                  size="small"
+                  onClick={() => handleDeleteFile(storedFile)}
+                  disabled={controlsDisabled}
+                  sx={{ backgroundColor: 'rgba(255, 255, 255, 0.88)' }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Stack>
+        </Box>
+        <Stack spacing={1} sx={{ p: 1.25 }}>
+          <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+            <Typography
+              variant="caption"
+              sx={{
+                display: 'block',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                flex: 1,
+              }}
+            >
+              {storedFile.name || storedFile.path.split('/').at(-1) || 'File'}
+            </Typography>
+            <Chip size="small" label={`#${storedFile.displayOrder + 1}`} variant="outlined" />
+          </Stack>
+          <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+            <Stack direction="row" spacing={0.75} alignItems="center">
+              {image ? <ImageIcon fontSize="small" /> : <DescriptionIcon fontSize="small" />}
+              {storedFile.isHero && <Chip size="small" color="warning" label="Hero" />}
+            </Stack>
+            <Stack direction="row" spacing={0.5}>
+              <Tooltip title="Download file">
+                <IconButton size="small" onClick={() => downloadStoredFile(storedFile)}>
+                  <DownloadIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Open in new tab">
+                <IconButton size="small" onClick={() => openFileInNewTab(storedFile)}>
+                  <OpenInNewIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Stack>
+          </Stack>
+          <Typography variant="caption" color="text.secondary">
+            {getInventoryFileLabel(storedFile)}
+          </Typography>
+        </Stack>
+      </Paper>
+    )
   }
 
   return (
-    <Dialog open={open} onClose={handleDialogClose} fullScreen>
+    <Dialog open={fileManagerOpen} onClose={handleDialogClose} fullScreen>
       <DialogTitle sx={{ pr: 6 }}>
-        {row ? `Files: ${row.title}` : 'Files'}
+        {dialogTitle}
         <IconButton
           aria-label="Close file explorer"
           onClick={handleDialogClose}
@@ -179,7 +416,8 @@ const InventoryFilesDialog = ({ open, row, onClose, getFileLabel }: InventoryFil
             alignItems={{ xs: 'stretch', sm: 'center' }}
           >
             <Typography variant="body2" color="text.secondary">
-              Click a file to download. Click an image to preview with actions.
+              Click an image to preview. Drag cards to reorder, use the star to choose the Adored
+              Collection hero image, and use the trash icon to remove a file from this item.
             </Typography>
             <Stack direction="row" spacing={1} alignItems="center">
               <ToggleButtonGroup
@@ -226,108 +464,28 @@ const InventoryFilesDialog = ({ open, row, onClose, getFileLabel }: InventoryFil
                 minWidth: 0,
                 overflowY: 'auto',
                 maxWidth: { md: '50%' },
+                pr: { md: previewFile ? 1 : 0 },
               }}
             >
-              {!row || row.files.length === 0 ? (
+              {orderedFiles.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
-                  This inventory item has no files yet.
+                  Upload files first, then come back here to choose a hero image, delete files, and
+                  sort display order.
                 </Typography>
               ) : explorerViewMode === 'list' ? (
-                <Stack>
-                  {row.files.map((storedFile) => {
-                    const image = isImageFile(storedFile)
-
-                    return (
-                      <Button
-                        key={storedFile.path || storedFile.url}
-                        variant="outlined"
-                        onClick={() => handleExplorerFileClick(storedFile)}
-                        sx={{
-                          justifyContent: 'space-between',
-                          textTransform: 'none',
-                          py: 1,
-                          mb: 1,
-                        }}
-                      >
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          {image ? (
-                            <ImageIcon fontSize="small" />
-                          ) : (
-                            <DescriptionIcon fontSize="small" />
-                          )}
-                          <Typography variant="body2">{getFileLabel(storedFile)}</Typography>
-                        </Stack>
-                        <Typography variant="caption" color="text.secondary">
-                          {image ? 'Preview' : 'Download'}
-                        </Typography>
-                      </Button>
-                    )
-                  })}
+                <Stack spacing={1.25}>
+                  {orderedFiles.map((storedFile) => renderFileCard(storedFile))}
                 </Stack>
               ) : (
-                <Grid container spacing={1}>
-                  {row.files.map((storedFile) => {
-                    const image = isImageFile(storedFile)
-
-                    return (
-                      <Grid key={storedFile.path || storedFile.url} size={{ xs: 6, sm: 3, md: 2 }}>
-                        <Button
-                          variant="outlined"
-                          onClick={() => handleExplorerFileClick(storedFile)}
-                          sx={{
-                            width: '100%',
-                            maxWidth: 170,
-                            mx: 'auto',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            p: 0,
-                            borderRadius: 0,
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              width: '100%',
-                              aspectRatio: '1 / 1',
-                              display: 'grid',
-                              placeItems: 'center',
-                              backgroundColor: 'rgba(17, 24, 39, 0.06)',
-                            }}
-                          >
-                            {image ? (
-                              <Box
-                                component="img"
-                                src={storedFile.url}
-                                alt={storedFile.name || 'Inventory image file'}
-                                sx={{
-                                  width: '100%',
-                                  height: '100%',
-                                  objectFit: 'cover',
-                                }}
-                              />
-                            ) : (
-                              <DescriptionIcon sx={{ fontSize: 34, color: 'text.secondary' }} />
-                            )}
-                          </Box>
-                          <Box sx={{ p: 1, width: '100%' }}>
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                display: 'block',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                              }}
-                            >
-                              {storedFile.name || storedFile.path.split('/').at(-1) || 'File'}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              {image ? 'Preview' : 'Download'}
-                            </Typography>
-                          </Box>
-                        </Button>
-                      </Grid>
-                    )
-                  })}
+                <Grid container spacing={1.25}>
+                  {orderedFiles.map((storedFile) => (
+                    <Grid
+                      key={storedFile.path || storedFile.url}
+                      size={{ xs: 12, sm: 6, md: 4, lg: 3 }}
+                    >
+                      {renderFileCard(storedFile)}
+                    </Grid>
+                  ))}
                 </Grid>
               )}
             </Box>
