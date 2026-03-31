@@ -297,7 +297,7 @@ function LandingRoute() {
         id="featured"
         elevation={0}
         sx={{
-          scrollMarginTop: { xs: 224, sm: 204, md: 172 },
+          scrollMarginTop: { xs: 180, sm: 168, md: 136 },
           p: { xs: 3, md: 5 },
           borderRadius: 3,
           border: '1px solid rgba(19, 40, 60, 0.2)',
@@ -377,8 +377,8 @@ function LandingRoute() {
                       sx={{
                         display: 'block',
                         width: '100%',
-                        height: 420,
-                        objectFit: 'cover',
+                        height: 360,
+                        objectFit: 'contain',
                         borderTopLeftRadius: 8,
                         borderTopRightRadius: 8,
                       }}
@@ -386,7 +386,7 @@ function LandingRoute() {
                   ) : (
                     <Box
                       sx={{
-                        height: 420,
+                        height: 360,
                         background:
                           'linear-gradient(135deg, rgba(19, 40, 60, 0.18) 0%, rgba(201, 169, 113, 0.28) 100%)',
                         borderTopLeftRadius: 8,
@@ -427,7 +427,7 @@ function LandingRoute() {
         id="reprints"
         elevation={0}
         sx={{
-          scrollMarginTop: { xs: 224, sm: 204, md: 172 },
+          scrollMarginTop: { xs: 180, sm: 168, md: 136 },
           p: { xs: 3, md: 5 },
           borderRadius: 3,
           border: '1px solid rgba(17, 33, 48, 0.16)',
