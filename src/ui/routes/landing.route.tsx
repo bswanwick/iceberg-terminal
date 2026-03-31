@@ -22,9 +22,9 @@ import {
   selectFeaturedInventoryError,
   selectFeaturedInventoryStatus,
 } from '../../features/featuredInventory/selectors'
+import { MarketingHeaderOffset } from '../../features/landing/components/MarketingSiteHeader'
 import { useSignupForm } from '../../features/newsletter/useSIgnupForm'
 import { selectAppLocked } from '../../features/ui/selectors'
-import SignInAndAvatar from '../SignInAndAvatar'
 import TelegramWire from '../TelegramWire'
 import swimmingLogo from '../../assets/swimming-swan-logo.png'
 
@@ -158,56 +158,7 @@ function LandingRoute() {
 
   return (
     <Stack spacing={4}>
-      <Paper
-        elevation={0}
-        sx={{
-          p: { xs: 2.5, md: 3 },
-          borderRadius: 3,
-          border: '1px solid rgba(17, 33, 48, 0.14)',
-          position: 'relative',
-          background:
-            'linear-gradient(110deg, rgba(248, 245, 236, 0.98) 0%, rgba(236, 229, 210, 0.98) 100%)',
-        }}
-      >
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          justifyContent="space-between"
-          alignItems={{ xs: 'flex-start', md: 'center' }}
-          spacing={1}
-        >
-          <Stack spacing={0.5}>
-            <Typography variant="h6" sx={{ lineHeight: 1 }}>
-              Swanwick & Company presents:
-            </Typography>
-            <Typography variant="h4" sx={{ lineHeight: 1 }}>
-              <Box component="span" sx={{ display: { xs: 'block', md: 'inline' } }}>
-                The
-              </Box>{' '}
-              <Box component="span" sx={{ display: { xs: 'block', md: 'inline' } }}>
-                Tourist's
-              </Box>{' '}
-              <Box component="span" sx={{ display: { xs: 'block', md: 'inline' } }}>
-                Antiquarium
-              </Box>
-            </Typography>
-          </Stack>
-          <Stack
-            direction="row"
-            spacing={1.5}
-            useFlexGap
-            sx={{
-              flexWrap: 'wrap',
-              position: { xs: 'absolute', md: 'static' },
-              top: { xs: 16, md: 'auto' },
-              right: { xs: 16, md: 'auto' },
-            }}
-          >
-            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-              <SignInAndAvatar />
-            </Box>
-          </Stack>
-        </Stack>
-      </Paper>
+      <MarketingHeaderOffset />
 
       <Paper
         elevation={0}
@@ -346,6 +297,7 @@ function LandingRoute() {
         id="featured"
         elevation={0}
         sx={{
+          scrollMarginTop: { xs: 224, sm: 204, md: 172 },
           p: { xs: 3, md: 5 },
           borderRadius: 3,
           border: '1px solid rgba(19, 40, 60, 0.2)',
@@ -425,7 +377,7 @@ function LandingRoute() {
                       sx={{
                         display: 'block',
                         width: '100%',
-                        height: 220,
+                        height: 420,
                         objectFit: 'cover',
                         borderTopLeftRadius: 8,
                         borderTopRightRadius: 8,
@@ -434,7 +386,7 @@ function LandingRoute() {
                   ) : (
                     <Box
                       sx={{
-                        height: 220,
+                        height: 420,
                         background:
                           'linear-gradient(135deg, rgba(19, 40, 60, 0.18) 0%, rgba(201, 169, 113, 0.28) 100%)',
                         borderTopLeftRadius: 8,
@@ -475,6 +427,7 @@ function LandingRoute() {
         id="reprints"
         elevation={0}
         sx={{
+          scrollMarginTop: { xs: 224, sm: 204, md: 172 },
           p: { xs: 3, md: 5 },
           borderRadius: 3,
           border: '1px solid rgba(17, 33, 48, 0.16)',

@@ -9,6 +9,7 @@ import { AUTH_SIGN_OUT_REASON_NOT_YET_ALLOWED, authSlice } from './features/auth
 import { canonicalRecordsSlice } from './features/canonicalRecords/slice'
 import { featuredInventorySlice } from './features/featuredInventory/slice'
 import { inventorySlice } from './features/inventory/slice'
+import MarketingSiteHeader from './features/landing/components/MarketingSiteHeader'
 import IndexRoute from './ui/routes/index.route'
 import Header from './ui/Header'
 import ScreenLockOverlay from './ui/ScreenLockOverlay'
@@ -22,8 +23,10 @@ function App() {
   const signOutReason = useAppSelector(selectAuthSignOutReason)
   const location = useLocation()
 
-  const isMarketingLanding =
+  const isMarketingRoute =
     location.pathname === '/' ||
+    location.pathname === '/about' ||
+    location.pathname === '/blog' ||
     location.pathname === '/iceberg-welcome' ||
     location.pathname === '/register'
 
@@ -59,9 +62,10 @@ function App() {
 
   return (
     <Box>
-      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+      {isMarketingRoute && <MarketingSiteHeader />}
+      <Container maxWidth="lg" sx={{ py: isMarketingRoute ? 0 : { xs: 3, md: 5 } }}>
         <Stack spacing={3}>
-          {!isMarketingLanding && <Header />}
+          {!isMarketingRoute && <Header />}
           <IndexRoute />
         </Stack>
       </Container>

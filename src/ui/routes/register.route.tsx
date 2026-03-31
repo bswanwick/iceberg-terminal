@@ -18,6 +18,7 @@ import {
   SIGNUP_COMMUNICATION_PREFERENCE_TEXT,
   type SignupCommunicationPreference,
 } from '../../features/newsletter/formUtils'
+import { MarketingHeaderOffset } from '../../features/landing/components/MarketingSiteHeader'
 import { useSignupForm } from '../../features/newsletter/useSIgnupForm'
 
 const registerFieldSx = {
@@ -88,6 +89,8 @@ function RegisterRoute() {
 
   return (
     <Stack spacing={4}>
+      <MarketingHeaderOffset />
+
       <Paper
         elevation={0}
         sx={{

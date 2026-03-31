@@ -34,10 +34,6 @@ function AuthProviderSignIn({ disabled, onGoogleSignIn }: AuthProviderSignInProp
     onGoogleSignIn()
   }
 
-  const handleRegister = () => {
-    handleMenuClose()
-  }
-
   return (
     <>
       <Button
@@ -60,9 +56,6 @@ function AuthProviderSignIn({ disabled, onGoogleSignIn }: AuthProviderSignInProp
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <MenuItem onClick={handleGoogleSignIn}>Sign in with Google</MenuItem>
-        <MenuItem component={RouterLink} to="/register" onClick={handleRegister}>
-          Register
-        </MenuItem>
       </Menu>
     </>
   )
