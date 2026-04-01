@@ -122,7 +122,10 @@ function MarketingSiteHeader() {
               spacing={2}
             >
               <Stack spacing={0.35} sx={{ minWidth: 0, pr: 1.5 }}>
-                <Typography variant="h6" sx={{ lineHeight: 1 }}>
+                <Typography
+                  variant="h6"
+                  sx={{ lineHeight: 1, display: { xs: 'none', md: 'block' } }}
+                >
                   Swanwick & Company presents:
                 </Typography>
                 <Typography

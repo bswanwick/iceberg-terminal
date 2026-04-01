@@ -1,5 +1,21 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
+export type FeaturedInventoryFile = {
+  url: string
+  name: string
+  contentType: string
+  size: number
+  displayOrder: number
+  isHero: boolean
+}
+
+export type FeaturedInventoryConditionSummary = {
+  grade: string
+  category: string
+  summary: string
+  highlights: string[]
+}
+
 export type FeaturedInventoryItem = {
   id: string
   inventoryId: string
@@ -8,9 +24,16 @@ export type FeaturedInventoryItem = {
   title: string
   collection: string
   summary: string
+  description: string
+  publisher: string
+  format: string
+  publishYear: string
+  dimensions: string
   tags: string[]
   retailPrice: number | null
   imageUrl: string
+  files: FeaturedInventoryFile[]
+  condition: FeaturedInventoryConditionSummary | null
   updatedAt: string
 }
 

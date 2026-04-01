@@ -42,3 +42,4 @@ return { title, brandPublisher, year, format };
 # UI Conventions
 
 - Modals should have X icon in top-right corner to close, and clicking outside the modal should also close it.
+-

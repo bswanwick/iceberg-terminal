@@ -15,14 +15,18 @@ import {
 } from 'firebase/firestore'
 import type { AnyFeatureAction, RootState } from '../../app/store'
 import { db } from '../../firebase'
-import { featuredInventorySlice } from '../featuredInventory/slice'
+import {
+  featuredInventorySlice,
+  type FeaturedInventoryConditionSummary,
+  type FeaturedInventoryFile,
+} from '../featuredInventory/slice'
 import {
   buildUserStoragePath,
   deleteStorageFile,
   uploadStorageFile,
   type StoredFile,
 } from '../../firebase/storage'
-import { getFeaturedInventoryImage } from './fileUtils'
+import { getFeaturedInventoryImage, sortInventoryFiles } from './fileUtils'
 import {
   collectorConditionCategoryOptions,
   completenessStatusOptions,
@@ -458,21 +462,114 @@ const requireUid = (state: RootState) => state.auth.user?.uid
 
 const buildFeaturedInventoryDocId = (uid: string, inventoryId: string) => `${uid}__${inventoryId}`
 
+type FeaturedInventorySyncItem = Pick<
+  InventoryItem,
+  | 'id'
+  | 'title'
+  | 'publisher'
+  | 'canonicalRecordId'
+  | 'featured'
+  | 'publishYear'
+  | 'format'
+  | 'dimensions'
+  | 'conditionGrade'
+  | 'conditionReport'
+  | 'notes'
+  | 'tags'
+  | 'files'
+  | 'retailPrice'
+>
+
+const formatConditionLabel = (value: string) =>
+  value
+    .split('_')
+    .filter((segment) => segment)
+    .map((segment) => `${segment[0]?.toUpperCase() ?? ''}${segment.slice(1)}`)
+    .join(' ')
+
+const createSummaryExcerpt = (value: string) => {
+  const normalizedValue = value.trim().replace(/\s+/g, ' ')
+  if (normalizedValue.length <= 180) {
+    return normalizedValue
+  }
+
+  const excerpt = normalizedValue.slice(0, 177)
+  const boundaryIndex = excerpt.lastIndexOf(' ')
+  return `${(boundaryIndex > 120 ? excerpt.slice(0, boundaryIndex) : excerpt).trimEnd()}...`
+}
+
+const pushConditionHighlight = (highlights: string[], label: string, value: string | undefined) => {
+  if (!value) {
+    return
+  }
+
+  highlights.push(`${label}: ${formatConditionLabel(value)}`)
+}
+
+const buildFeaturedInventoryCondition = (
+  conditionGrade: string,
+  report: VintagePaperConditionReport | null,
+): FeaturedInventoryConditionSummary | null => {
+  const highlights: string[] = []
+
+  pushConditionHighlight(highlights, 'Surface', report?.surface?.quality)
+  if (report?.surface?.issues && report.surface.issues.length > 0) {
+    const issues = report.surface.issues
+      .filter((issue) => issue !== 'none')
+      .slice(0, 3)
+      .map(formatConditionLabel)
+      .join(', ')
+    if (issues) {
+      highlights.push(`Surface issues: ${issues}`)
+    }
+  }
+
+  pushConditionHighlight(highlights, 'Completeness', report?.structure?.completeness)
+
+  const edgeCondition = report?.edgesAndCorners?.edgeCondition
+  const cornerCondition = report?.edgesAndCorners?.cornerCondition
+  const edgeDetails = [
+    edgeCondition ? formatConditionLabel(edgeCondition) : '',
+    cornerCondition ? formatConditionLabel(cornerCondition) : '',
+  ]
+    .filter(Boolean)
+    .join(', ')
+  if (edgeDetails) {
+    highlights.push(`Edges and corners: ${edgeDetails}`)
+  }
+
+  pushConditionHighlight(highlights, 'Binding', report?.binding?.type)
+  pushConditionHighlight(highlights, 'Spine', report?.binding?.spineCondition)
+
+  const summary = report?.overallSummary?.trim() ?? ''
+  const category = report?.overallConditionCategory
+    ? formatConditionLabel(report.overallConditionCategory)
+    : ''
+  const grade = conditionGrade.trim()
+
+  return grade || category || summary || highlights.length > 0
+    ? {
+        grade,
+        category,
+        summary,
+        highlights,
+      }
+    : null
+}
+
+const toFeaturedInventoryFiles = (files: InventoryFile[]): FeaturedInventoryFile[] =>
+  sortInventoryFiles(files).map(({ url, name, contentType, size, displayOrder, isHero }) => ({
+    url,
+    name,
+    contentType,
+    size,
+    displayOrder,
+    isHero,
+  }))
+
 const syncFeaturedInventoryDocument = (
   uid: string,
-  item: Pick<
-    InventoryItem,
-    | 'id'
-    | 'title'
-    | 'publisher'
-    | 'canonicalRecordId'
-    | 'featured'
-    | 'format'
-    | 'notes'
-    | 'tags'
-    | 'files'
-    | 'retailPrice'
-  >,
+  item: FeaturedInventorySyncItem,
   state: RootState,
 ) => {
   const featuredDocRef = doc(featuredInventoryCollection, buildFeaturedInventoryDocId(uid, item.id))
@@ -486,9 +583,13 @@ const syncFeaturedInventoryDocument = (
   )
   const title = canonicalRecord?.title.trim() || item.title.trim() || 'Untitled item'
   const collection = item.publisher.trim() || item.format.trim() || 'Featured listing'
-  const summary = canonicalRecord?.description.trim() || item.notes.trim() || 'Curated inventory.'
+  const description =
+    canonicalRecord?.description.trim() || item.notes.trim() || 'Curated inventory.'
+  const summary = createSummaryExcerpt(description)
   const tags = item.tags.length > 0 ? item.tags : (canonicalRecord?.tags ?? [])
   const imageUrl = getFeaturedInventoryImage(item.files)
+  const condition = buildFeaturedInventoryCondition(item.conditionGrade, item.conditionReport)
+  const files = toFeaturedInventoryFiles(item.files)
 
   return setDoc(featuredDocRef, {
     inventoryId: item.id,
@@ -497,9 +598,16 @@ const syncFeaturedInventoryDocument = (
     title,
     collection,
     summary,
+    description,
+    publisher: item.publisher,
+    format: item.format,
+    publishYear: item.publishYear,
+    dimensions: item.dimensions,
     tags,
     retailPrice: item.retailPrice,
     imageUrl,
+    files,
+    condition,
     updatedAt: serverTimestamp(),
   })
 }
@@ -609,7 +717,11 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
                 publisher,
                 canonicalRecordId,
                 featured,
+                publishYear,
                 format,
+                dimensions,
+                conditionGrade,
+                conditionReport: sanitizedConditionReport,
                 notes,
                 tags,
                 files,
@@ -706,7 +818,11 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
                 publisher,
                 canonicalRecordId,
                 featured,
+                publishYear,
                 format,
+                dimensions,
+                conditionGrade,
+                conditionReport: sanitizedConditionReport,
                 notes,
                 tags,
                 files,
