@@ -56,11 +56,16 @@ function LandingHero() {
             fontSize: { xs: '16px', md: '1rem' },
           }}
         >
-          Hello and welcome to our online gallery. We curate vintage travel memorabilia, historical
-          paper, faithful reproductions, and other distinctive collectibles. We care deeply about
-          art, design, typography, printing, and paper, and we handle each piece with respect.
-          That's why we're trying to save and preserve this heritage. Find out more about our
-          preservation efforts here.
+          Welcome to our new online gallery! Our collection is focused on the printed historical
+          record of travel and tourism from the late 19th to mid-20th century. We hope you find
+          inspiration in our carefully curated selection of{' '}
+          <b style={{ textDecoration: 'underline' }}>vintage travel brochures</b>,{' '}
+          <b style={{ textDecoration: 'underline' }}>tour guidebooks</b>,{' '}
+          <b style={{ textDecoration: 'underline' }}>timetables</b>,{' '}
+          <b style={{ textDecoration: 'underline' }}>maps</b> and other{' '}
+          <b style={{ textDecoration: 'underline' }}>collectibles</b>. We are beyond excited that
+          you are here, and we hope you enjoy exploring our collection as much as we enjoyed putting
+          it together.
         </Typography>
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>

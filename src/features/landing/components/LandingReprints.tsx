@@ -51,11 +51,12 @@ function LandingReprints() {
         </Typography>
         <Typography variant="h3">Faithfully reproduced prints</Typography>
         <Typography variant="body1" sx={{ maxWidth: 780 }}>
-          Some of our prints are produced in-house by hand-pressing cotton rag paper onto antique
-          letterpress printing blocks. We also offer digital reproductions made from high-resolution
-          scans of original pieces that we personally sourced, scanned, cropped, digitized, and
-          uploaded ourselves. These prints are ideal for framing and display, and they make great
-          gifts for any travel lover.
+          We sell new paper too! Our in-house line uses antique letterpress printing blocks and
+          traditional printing methods to create high-quality, display ready, prints. We use only
+          high-quality cotton rag paper. We hand-roll the ink and hand-press the paper ourselves. We
+          also offer print-on-demand home decor and other items made from high-DPI scans that we
+          personally sourced, captured, cropped, corrected, and digitized ourselves. All of our
+          reprint items are <b>made in the USA</b>.
         </Typography>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
           {PRINT_ITEMS.map((item) => (

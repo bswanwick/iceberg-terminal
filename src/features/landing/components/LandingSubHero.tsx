@@ -2,19 +2,8 @@ import { Box, Paper, Stack } from '@mui/material'
 import TelegramWire from '../../../ui/TelegramWire'
 import swimmingLogo from '../../../assets/swimming-swan-logo.png'
 
-const TELEGRAM_WIRE_MESSAGE = [
-  '------------------------------',
-  'TO: All Persons',
-  'FROM: SWANWICK AND COMPANY',
-  '------------------------------',
-  "Welcome to the Tourist's Antiquarium [STOP]",
-  'We sell both historical artifacts ',
-  'and modern reproduction prints [STOP]',
-  'Both are clearly labeled [STOP]',
-  'Please enjoy your stay [STOP]',
-  '',
-  '<< END OF TRANSMISSION >>',
-]
+const TELEGRAM_WIRE_MESSAGE =
+  'Welcome to The Tourists Antiquarium [STOP] We offer both historical artifacts and modern reproductions [STOP] Learn more about what we do at our blog - in the menu [STOP] Please enjoy your stay and thank you for supporting our small business [STOP]'
 
 function LandingSubHero() {
   return (
@@ -34,12 +23,10 @@ function LandingSubHero() {
         <Box sx={{ width: '100%', maxWidth: 640 }}>
           <TelegramWire
             message={TELEGRAM_WIRE_MESSAGE}
-            fixedLineCount={4}
-            deferredLineCount={2}
-            charIntervalMs={38}
+            to="All Persons"
+            from="SWANWICK AND COMPANY"
             headerLabel="INCOMING Wire Transmission"
             headerColor="#b53a2d"
-            requireAcceptance
           />
         </Box>
         <Box

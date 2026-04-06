@@ -60,19 +60,44 @@ function BlogRoute() {
             <Typography variant="overline" sx={{ letterSpacing: '0.18em' }}>
               First dispatch
             </Typography>
-            <Typography variant="h3">
-              How a travel brochure earns its place in the archive
+            <Typography variant="h3">Why Tourism?</Typography>
+            <Typography variant="body1">
+              Dear Traveler, Have you ever seen the movie Titanic? There&apos;s a scene early on
+              where the main character, Rose, first arrives at the Southampton quayside. The ship
+              looms in the background, and she is surrounded by a sea of activity: cars, horses,
+              families unloading their buggies (some with help from dockhands, most without) and
+              long wooden gangways watched over by stern men in uniform.
             </Typography>
             <Typography variant="body1">
-              A good brochure is more than tourism advertising. It can tell you which hotels a city
-              valued, which rail lines mattered, what kind of language persuaded travelers, and how
-              designers imagined movement, leisure, and modernity. Our first set of posts will trace
-              those signals through paper stock, typography, print finishes, and distribution marks.
+              It&apos;s hard not to be captivated by the scene, as it captures something much larger
+              than one ship or one disaster. It conveys the experience of travel; what it would have
+              actually felt like to be there. If you look at the faces in the crowd, you&apos;ll see
+              even more: the anticipation of departure, the promise of arrival, and the uncertainty
+              of return.
             </Typography>
             <Typography variant="body1">
-              As the blog grows, this page will become the public reading room for essays tied
-              directly to objects in the gallery and prints program.
+              For all the steel and steam that enabled travel, what people carried with them was
+              something far more personal. To this day, what we carry when we travel is unique to
+              each of us. Broadly speaking, however, tourism reveals how places are imagined, how
+              cities or countries introduce themselves, and how ordinary folks look at a wider
+              world.
             </Typography>
+            <Typography variant="body1">
+              Our tourism history carries with it the hopes and dreams of previous generations. Yet,
+              the evidence of this heritage is being lost every day. Early guidebooks, travel
+              brochures, and other &ldquo;ephemera&rdquo; were designed to be read and thrown away.
+              Only a small portion has survived. By digitizing these pieces of history, we are
+              ensuring that this unique part of our story is not lost.
+            </Typography>
+            <Typography variant="body1">
+              When we travel as passengers, guests, or as tourists, we share a common experience. We
+              are setting out toward something foreign and unknown. We test our mettle, our
+              patience, and our ability to have a good time along the way. To look closely at
+              tourism is to look closely at the way people experience themselves, one another, and
+              the world. If that&apos;s a little too flowery for you, I&apos;m sorry, but it&apos;s
+              true.
+            </Typography>
+            <Typography variant="body1">Until next time, Swanwick &amp; Co.</Typography>
           </Stack>
         </Paper>
 

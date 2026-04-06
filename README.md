@@ -174,7 +174,7 @@ System shall store high-resolution images suitable for research and inspection
 5. Daily feed of new listings to review\
 6. Use local AI model to parse tags out of scanned images (ship names, people, places, etc) as part of intake process, use those tags to automate Etsy listings.
 7. Stub the canonical database from other known sites' lists
-8. `magick mogrify -path jpg -format jpg -quality 75 *.tif` to process tifs for web
+8. `magick mogrify -path jpg -format jpg -quality 75 *.tif` to process tifs for web. Web friendly version, higher-res preview jpg/png version, full-res TIFF version (paid subscribers)
 9. screen lock should only appear on dashboard or iceberg terminal pages, not the marketing site.
 10. hasElevatedAccess isn't mine, replace with better.
 11. Test Auth and Roles
@@ -183,3 +183,4 @@ System shall store high-resolution images suitable for research and inspection
 14. If Admin or Staff, then Files get uploaded to /assets not /user. Assets are protected company images and high-res scans.
 15. Remove the superflous Upload Photo button on the inventory form, we have upload file now.
 16. Do you know more about this? (A CTA inviting users to contribute to the canonical database.)
+17. The listing preview modal takes too long to appear from first click.

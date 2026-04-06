@@ -13,8 +13,8 @@ function LandingRoute() {
     <Stack spacing={4}>
       <MarketingHeaderOffset />
       <LandingHero />
-      <LandingSubHero />
       <LandingFeaturedListings />
+      <LandingSubHero />
       <LandingReprints />
       <LandingDispatch />
       <Typography
