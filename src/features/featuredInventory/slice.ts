@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
+import type { InventoryProductLine } from '../inventory/formUtils'
 
 export type FeaturedInventoryFile = {
   url: string
@@ -21,6 +22,7 @@ export type FeaturedInventoryItem = {
   inventoryId: string
   ownerId: string
   canonicalRecordId: string
+  productLine: InventoryProductLine
   title: string
   collection: string
   summary: string

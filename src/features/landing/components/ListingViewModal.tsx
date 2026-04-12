@@ -28,6 +28,7 @@ type ListingViewModalProps = {
   item: FeaturedInventoryItem | null
   open: boolean
   onClose: () => void
+  previewTitle: string
 }
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
@@ -69,7 +70,7 @@ const formatFileSize = (size: number) => {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function ListingViewModal({ item, open, onClose }: ListingViewModalProps) {
+function ListingViewModal({ item, open, onClose, previewTitle }: ListingViewModalProps) {
   const theme = useTheme()
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'))
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
@@ -148,7 +149,7 @@ function ListingViewModal({ item, open, onClose }: ListingViewModalProps) {
           >
             <Stack direction="row" justifyContent="space-between" alignItems="center">
               <Typography variant="overline" sx={{ letterSpacing: '0.18em', color: '#d8c7a1' }}>
-                The Adored Collection Preview
+                {previewTitle}
               </Typography>
               {canCycleImages ? (
                 <Stack direction="row" spacing={1}>

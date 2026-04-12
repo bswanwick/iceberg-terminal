@@ -4,6 +4,7 @@ import { catchError, filter, map, mergeMap } from 'rxjs/operators'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
 import type { AnyFeatureAction, RootState } from '../../app/store'
 import { db } from '../../firebase'
+import { normalizeInventoryProductLine } from '../inventory/formUtils'
 import slice, {
   type FeaturedInventoryConditionSummary,
   type FeaturedInventoryFile,
@@ -131,6 +132,7 @@ const toFeaturedInventoryItem = (docSnap: {
     inventoryId: typeof data.inventoryId === 'string' ? data.inventoryId : '',
     ownerId: typeof data.ownerId === 'string' ? data.ownerId : '',
     canonicalRecordId: typeof data.canonicalRecordId === 'string' ? data.canonicalRecordId : '',
+    productLine: normalizeInventoryProductLine(data.productLine),
     title,
     collection: typeof data.collection === 'string' ? data.collection : '',
     summary: typeof data.summary === 'string' ? data.summary : '',

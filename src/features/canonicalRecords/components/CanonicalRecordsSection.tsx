@@ -3,28 +3,32 @@ import {
   Button,
   Chip,
   Divider,
-  IconButton,
   LinearProgress,
   Paper,
   Stack,
   TextField,
   Typography,
 } from '@mui/material'
-import DeleteIcon from '@mui/icons-material/DeleteOutline'
-import EditIcon from '@mui/icons-material/Edit'
 import SaveIcon from '@mui/icons-material/Save'
 import CloseIcon from '@mui/icons-material/Close'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
+import { getStoredFileLabel, isUploadImageFile, sortStoredFiles } from '../../files'
 import {
   selectCanonicalRecordEditForm,
   selectCanonicalRecordEditingId,
+  selectCanonicalRecordImageUploadBatchCompleted,
+  selectCanonicalRecordImageUploadBatchTotal,
+  selectCanonicalRecordImageUploadError,
+  selectCanonicalRecordImageUploadInFlightCount,
+  selectCanonicalRecordImageUploadStatus,
   selectCanonicalRecords,
   selectCanonicalRecordsStatus,
 } from '../selectors'
 import { selectAuthUser } from '../../auth/selectors'
 import { selectAppLocked } from '../../ui/selectors'
-import { canonicalRecordsSlice } from '../slice'
+import { canonicalRecordsSlice, type CanonicalRecord } from '../slice'
 import CanonicalRecordAddForm from './CanonicalRecordAddForm.tsx'
+import CanonExplorer from './CanonExplorer.tsx'
 import { splitComma } from '../../../app/formUtils.ts'
 
 const CanonicalRecordsSection = () => {
@@ -35,6 +39,28 @@ const CanonicalRecordsSection = () => {
   const editForm = useAppSelector(selectCanonicalRecordEditForm)
   const editingId = useAppSelector(selectCanonicalRecordEditingId)
   const appLocked = useAppSelector(selectAppLocked)
+  const imageUploadStatus = useAppSelector(selectCanonicalRecordImageUploadStatus)
+  const imageUploadError = useAppSelector(selectCanonicalRecordImageUploadError)
+  const imageUploadInFlightCount = useAppSelector(selectCanonicalRecordImageUploadInFlightCount)
+  const imageUploadBatchTotal = useAppSelector(selectCanonicalRecordImageUploadBatchTotal)
+  const imageUploadBatchCompleted = useAppSelector(selectCanonicalRecordImageUploadBatchCompleted)
+
+  const uploadProgress =
+    imageUploadBatchTotal > 0 ? (imageUploadBatchCompleted / imageUploadBatchTotal) * 100 : 0
+
+  const handleEditImageUpload = (files: FileList | null) => {
+    if (!files) {
+      return
+    }
+
+    Array.from(files)
+      .filter((file) => isUploadImageFile(file))
+      .forEach((file) => {
+        dispatch(
+          canonicalRecordsSlice.actions.canonicalRecordImageUploadRequested({ form: 'edit', file }),
+        )
+      })
+  }
 
   const handleEditSave = () => {
     if (!editingId) {
@@ -48,9 +74,18 @@ const CanonicalRecordsSection = () => {
         description: editForm.description.trim(),
         tags: splitComma(editForm.tags),
         references: splitComma(editForm.references),
+        images: editForm.images,
       }),
     )
     dispatch(canonicalRecordsSlice.actions.canonicalRecordEditCanceled())
+  }
+
+  const handleEditStart = (record: CanonicalRecord) => {
+    dispatch(canonicalRecordsSlice.actions.canonicalRecordEditStarted({ id: record.id }))
+  }
+
+  const handleDelete = (record: CanonicalRecord) => {
+    dispatch(canonicalRecordsSlice.actions.canonicalRecordDeleteRequested({ id: record.id }))
   }
 
   return (
@@ -87,166 +122,192 @@ const CanonicalRecordsSection = () => {
           />
         </Stack>
 
-        {canonicalRecordsStatus !== 'idle' && <LinearProgress />}
-
         <CanonicalRecordAddForm />
 
         <Divider />
 
-        <Stack id="canon-record-list" spacing={2}>
-          {canonicalRecords.map((record) => (
-            <Paper
-              key={record.id}
-              elevation={0}
-              sx={{
-                p: 2,
-                borderRadius: 2,
-                border: '1px solid rgba(17, 24, 39, 0.08)',
-              }}
-            >
-              <Stack spacing={1.5}>
-                {editingId === record.id ? (
-                  <>
-                    <TextField
-                      label="Title"
-                      value={editForm.title}
-                      onChange={(event) =>
-                        dispatch(
-                          canonicalRecordsSlice.actions.canonicalRecordEditFormUpdated({
-                            field: 'title',
-                            value: event.target.value,
-                          }),
-                        )
-                      }
-                      fullWidth
-                      disabled={appLocked}
+        {editingId && (
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              borderRadius: 2,
+              border: '1px solid rgba(17, 24, 39, 0.08)',
+            }}
+          >
+            <Stack spacing={1.5}>
+              <Typography fontWeight={600}>Edit canonical record</Typography>
+              <TextField
+                label="Title"
+                value={editForm.title}
+                onChange={(event) =>
+                  dispatch(
+                    canonicalRecordsSlice.actions.canonicalRecordEditFormUpdated({
+                      field: 'title',
+                      value: event.target.value,
+                    }),
+                  )
+                }
+                fullWidth
+                disabled={appLocked}
+              />
+              <TextField
+                label="Description"
+                value={editForm.description}
+                onChange={(event) =>
+                  dispatch(
+                    canonicalRecordsSlice.actions.canonicalRecordEditFormUpdated({
+                      field: 'description',
+                      value: event.target.value,
+                    }),
+                  )
+                }
+                fullWidth
+                disabled={appLocked}
+                multiline
+                minRows={2}
+              />
+              <TextField
+                label="Tags"
+                value={editForm.tags}
+                onChange={(event) =>
+                  dispatch(
+                    canonicalRecordsSlice.actions.canonicalRecordEditFormUpdated({
+                      field: 'tags',
+                      value: event.target.value,
+                    }),
+                  )
+                }
+                fullWidth
+                disabled={appLocked}
+              />
+              <TextField
+                label="References"
+                value={editForm.references}
+                onChange={(event) =>
+                  dispatch(
+                    canonicalRecordsSlice.actions.canonicalRecordEditFormUpdated({
+                      field: 'references',
+                      value: event.target.value,
+                    }),
+                  )
+                }
+                fullWidth
+                disabled={appLocked}
+              />
+              <Stack spacing={1.25}>
+                <Stack
+                  direction={{ xs: 'column', md: 'row' }}
+                  spacing={1.5}
+                  alignItems="flex-start"
+                >
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    disabled={appLocked || imageUploadStatus === 'uploading'}
+                  >
+                    Upload images
+                    <input
+                      hidden
+                      multiple
+                      type="file"
+                      accept="image/*"
+                      onChange={(event) => handleEditImageUpload(event.target.files)}
                     />
-                    <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-                      <TextField
-                        label="Description"
-                        value={editForm.description}
-                        onChange={(event) =>
-                          dispatch(
-                            canonicalRecordsSlice.actions.canonicalRecordEditFormUpdated({
-                              field: 'description',
-                              value: event.target.value,
-                            }),
-                          )
-                        }
-                        fullWidth
-                        disabled={appLocked}
-                        multiline
-                        minRows={2}
-                      />
-                    </Stack>
-                    <TextField
-                      label="Tags"
-                      value={editForm.tags}
-                      onChange={(event) =>
-                        dispatch(
-                          canonicalRecordsSlice.actions.canonicalRecordEditFormUpdated({
-                            field: 'tags',
-                            value: event.target.value,
-                          }),
-                        )
-                      }
-                      fullWidth
-                      disabled={appLocked}
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() =>
+                      dispatch(
+                        canonicalRecordsSlice.actions.canonicalRecordImageManagerOpened({
+                          form: 'edit',
+                        }),
+                      )
+                    }
+                    disabled={appLocked || editForm.images.length === 0}
+                  >
+                    Manage images
+                  </Button>
+                  <Typography variant="body2" color="text.secondary">
+                    Upload record imagery and pick one featured image for display.
+                  </Typography>
+                </Stack>
+                {imageUploadStatus === 'uploading' && (
+                  <Box sx={{ width: '100%', maxWidth: 360 }}>
+                    <LinearProgress
+                      variant={imageUploadBatchTotal > 0 ? 'determinate' : 'indeterminate'}
+                      value={uploadProgress}
+                      sx={{ height: 8, borderRadius: 999 }}
                     />
-                    <TextField
-                      label="References"
-                      value={editForm.references}
-                      onChange={(event) =>
-                        dispatch(
-                          canonicalRecordsSlice.actions.canonicalRecordEditFormUpdated({
-                            field: 'references',
-                            value: event.target.value,
-                          }),
-                        )
-                      }
-                      fullWidth
-                      disabled={appLocked}
-                    />
-                    <Stack direction="row" spacing={1} justifyContent="flex-end">
-                      <Button
-                        variant="contained"
-                        size="small"
-                        startIcon={<SaveIcon />}
-                        onClick={handleEditSave}
-                        disabled={appLocked}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        variant="text"
-                        size="small"
-                        startIcon={<CloseIcon />}
-                        onClick={() =>
-                          dispatch(canonicalRecordsSlice.actions.canonicalRecordEditCanceled())
-                        }
-                        disabled={appLocked}
-                      >
-                        Cancel
-                      </Button>
-                    </Stack>
-                  </>
-                ) : (
-                  <>
-                    <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Box>
-                        <Typography fontWeight={600}>{record.title}</Typography>
-                      </Box>
-                      <Stack direction="row" spacing={1}>
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            dispatch(
-                              canonicalRecordsSlice.actions.canonicalRecordEditStarted({
-                                id: record.id,
-                              }),
-                            )
-                          }
-                          disabled={appLocked}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            dispatch(
-                              canonicalRecordsSlice.actions.canonicalRecordDeleteRequested({
-                                id: record.id,
-                              }),
-                            )
-                          }
-                          disabled={appLocked}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Stack>
-                    </Stack>
-                    <Typography variant="body2" color="text.secondary">
-                      {record.createdAt}
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ display: 'block', mt: 0.75 }}
+                    >
+                      Uploading {imageUploadBatchCompleted}/{imageUploadBatchTotal} image
+                      {imageUploadBatchTotal === 1 ? '' : 's'}
+                      {imageUploadInFlightCount > 0
+                        ? ` (${imageUploadInFlightCount} in flight)`
+                        : ''}
                     </Typography>
-                    {record.description && <Typography>{record.description}</Typography>}
-                    {record.tags.length > 0 && (
-                      <Stack direction="row" spacing={1} flexWrap="wrap">
-                        {record.tags.map((tag) => (
-                          <Chip key={tag} size="small" label={tag} />
-                        ))}
-                      </Stack>
-                    )}
-                  </>
+                  </Box>
+                )}
+                {imageUploadError && (
+                  <Typography color="error" variant="body2">
+                    {imageUploadError}
+                  </Typography>
+                )}
+                {editForm.images.length > 0 && (
+                  <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    {sortStoredFiles(editForm.images).map((storedFile) => (
+                      <Chip
+                        key={storedFile.path}
+                        size="small"
+                        label={
+                          storedFile.isHero
+                            ? `Featured • ${getStoredFileLabel(storedFile)}`
+                            : getStoredFileLabel(storedFile)
+                        }
+                        color={storedFile.isHero ? 'warning' : 'default'}
+                        variant="outlined"
+                      />
+                    ))}
+                  </Stack>
                 )}
               </Stack>
-            </Paper>
-          ))}
-          {canonicalRecords.length === 0 && (
-            <Typography color="text.secondary">
-              No canonical records yet. Add one above to get started.
-            </Typography>
-          )}
-        </Stack>
+              <Stack direction="row" spacing={1} justifyContent="flex-end">
+                <Button
+                  variant="contained"
+                  size="small"
+                  startIcon={<SaveIcon />}
+                  onClick={handleEditSave}
+                  disabled={appLocked}
+                >
+                  Save
+                </Button>
+                <Button
+                  variant="text"
+                  size="small"
+                  startIcon={<CloseIcon />}
+                  onClick={() =>
+                    dispatch(canonicalRecordsSlice.actions.canonicalRecordEditCanceled())
+                  }
+                  disabled={appLocked}
+                >
+                  Cancel
+                </Button>
+              </Stack>
+            </Stack>
+          </Paper>
+        )}
+
+        <CanonExplorer
+          records={canonicalRecords}
+          busy={canonicalRecordsStatus !== 'idle'}
+          showAdminActions
+          onEdit={handleEditStart}
+          onDelete={handleDelete}
+        />
       </Stack>
     </Paper>
   )

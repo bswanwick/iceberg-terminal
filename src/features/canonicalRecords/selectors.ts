@@ -10,6 +10,20 @@ export const selectCanonicalRecordEditForm = (state: RootState) =>
   state.canonicalRecords.ui.editForm
 export const selectCanonicalRecordEditingId = (state: RootState) =>
   state.canonicalRecords.ui.editingId
+export const selectCanonicalRecordImageManagerOpen = (state: RootState) =>
+  state.canonicalRecords.ui.imageManagerOpen
+export const selectCanonicalRecordImageManagerForm = (state: RootState) =>
+  state.canonicalRecords.ui.imageManagerForm
+export const selectCanonicalRecordImageUploadStatus = (state: RootState) =>
+  state.canonicalRecords.ui.imageUploadStatus
+export const selectCanonicalRecordImageUploadError = (state: RootState) =>
+  state.canonicalRecords.ui.imageUploadError
+export const selectCanonicalRecordImageUploadInFlightCount = (state: RootState) =>
+  state.canonicalRecords.ui.imageUploadInFlightCount
+export const selectCanonicalRecordImageUploadBatchTotal = (state: RootState) =>
+  state.canonicalRecords.ui.imageUploadBatchTotal
+export const selectCanonicalRecordImageUploadBatchCompleted = (state: RootState) =>
+  state.canonicalRecords.ui.imageUploadBatchCompleted
 
 type CanonicalRecordMap = Map<string, CanonicalRecord>
 

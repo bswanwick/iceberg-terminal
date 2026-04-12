@@ -177,10 +177,9 @@ System shall store high-resolution images suitable for research and inspection
 8. `magick mogrify -path jpg -format jpg -quality 75 *.tif` to process tifs for web. Web friendly version, higher-res preview jpg/png version, full-res TIFF version (paid subscribers)
 9. screen lock should only appear on dashboard or iceberg terminal pages, not the marketing site.
 10. hasElevatedAccess isn't mine, replace with better.
-11. Test Auth and Roles
-12. Fix the file upload bug, it uploads but doesn't attach to the inventory item.
-13. Autocomplete for the "Format" so I don't have to retype Brochure a million times.
-14. If Admin or Staff, then Files get uploaded to /assets not /user. Assets are protected company images and high-res scans.
-15. Remove the superflous Upload Photo button on the inventory form, we have upload file now.
-16. Do you know more about this? (A CTA inviting users to contribute to the canonical database.)
-17. The listing preview modal takes too long to appear from first click.
+11. Autocomplete for the "Format" so I don't have to retype Brochure a million times.
+12. If Admin or Staff, then Files get uploaded to /assets not /user. Assets are protected company images and high-res scans.
+13. Remove the superflous Upload Photo button on the inventory form, we have upload file now.
+14. Do you know more about this? (A CTA inviting users to contribute to the canonical database.)
+15. The listing preview modal takes too long to appear from first click - images are too big.
+16. Don't use canon descriptions for the reprints line.

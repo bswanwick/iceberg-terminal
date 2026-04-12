@@ -30,8 +30,15 @@ import ImageIcon from '@mui/icons-material/Image'
 import DescriptionIcon from '@mui/icons-material/Description'
 import CloseIcon from '@mui/icons-material/Close'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
+import {
+  copyStoredImageToClipboard,
+  downloadStoredFile,
+  getStoredFileLabel,
+  isStoredImageFile,
+  openStoredFileInNewTab,
+  sortStoredFiles,
+} from '../../files'
 import { selectAppLocked } from '../../ui/selectors'
-import { getInventoryFileLabel, isInventoryImageFile, sortInventoryFiles } from '../fileUtils'
 import {
   selectInventory,
   selectInventoryAddForm,
@@ -47,54 +54,6 @@ import type { InventoryFile } from '../slice'
 type ExplorerViewMode = 'list' | 'grid'
 
 type InventoryDragEvent = DragEvent<HTMLElement>
-
-const downloadStoredFile = (storedFile: InventoryFile) => {
-  const downloadElement = document.createElement('a')
-  downloadElement.href = storedFile.url
-  downloadElement.download = storedFile.name || storedFile.path.split('/').at(-1) || 'file'
-  downloadElement.rel = 'noreferrer'
-  document.body.appendChild(downloadElement)
-  downloadElement.click()
-  document.body.removeChild(downloadElement)
-}
-
-const openFileInNewTab = (storedFile: InventoryFile) => {
-  window.open(storedFile.url, '_blank', 'noopener,noreferrer')
-}
-
-const copyImageToClipboard = async (storedFile: InventoryFile) => {
-  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
-    return 'Clipboard is unavailable in this environment.'
-  }
-
-  if (!navigator.clipboard) {
-    return 'Clipboard is unavailable in this browser.'
-  }
-
-  try {
-    if (typeof ClipboardItem !== 'undefined' && navigator.clipboard.write) {
-      const response = await fetch(storedFile.url)
-      const blob = await response.blob()
-      const mimeType = blob.type || storedFile.contentType || 'image/png'
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          [mimeType]: blob,
-        }),
-      ])
-      return 'Image copied to clipboard.'
-    }
-
-    await navigator.clipboard.writeText(storedFile.url)
-    return 'Clipboard image copy is unsupported. Image URL copied instead.'
-  } catch {
-    try {
-      await navigator.clipboard.writeText(storedFile.url)
-      return 'Image copy failed. Image URL copied instead.'
-    } catch {
-      return 'Unable to copy image or URL.'
-    }
-  }
-}
 
 const InventoryFilesDialog = () => {
   const dispatch = useAppDispatch()
@@ -115,7 +74,7 @@ const InventoryFilesDialog = () => {
 
   const editingItem = editingId ? (inventory.find((entry) => entry.id === editingId) ?? null) : null
   const activeForm = fileManagerForm === 'edit' ? editForm : addForm
-  const orderedFiles = sortInventoryFiles(activeForm.files)
+  const orderedFiles = sortStoredFiles(activeForm.files)
   const dialogTitle =
     fileManagerForm === 'edit'
       ? `Manage files: ${(editingItem?.title || editForm.title || 'Inventory item').trim() || 'Inventory item'}`
@@ -134,7 +93,7 @@ const InventoryFilesDialog = () => {
   }
 
   const handlePreviewOpen = (storedFile: InventoryFile) => {
-    if (!isInventoryImageFile(storedFile)) {
+    if (!isStoredImageFile(storedFile)) {
       return
     }
 
@@ -152,7 +111,7 @@ const InventoryFilesDialog = () => {
       return
     }
 
-    const message = await copyImageToClipboard(previewFile)
+    const message = await copyStoredImageToClipboard(previewFile)
     setExplorerFeedback(message)
   }
 
@@ -166,7 +125,7 @@ const InventoryFilesDialog = () => {
   }
 
   const handleHeroSelect = (storedFile: InventoryFile) => {
-    if (!fileManagerForm || !isInventoryImageFile(storedFile)) {
+    if (!fileManagerForm || !isStoredImageFile(storedFile)) {
       return
     }
 
@@ -232,7 +191,7 @@ const InventoryFilesDialog = () => {
   }
 
   const renderFileCard = (storedFile: InventoryFile) => {
-    const image = isInventoryImageFile(storedFile)
+    const image = isStoredImageFile(storedFile)
     const isDropTarget = dropTargetPath === storedFile.path && draggingPath !== storedFile.path
 
     return (
@@ -381,14 +340,14 @@ const InventoryFilesDialog = () => {
                 </IconButton>
               </Tooltip>
               <Tooltip title="Open in new tab">
-                <IconButton size="small" onClick={() => openFileInNewTab(storedFile)}>
+                <IconButton size="small" onClick={() => openStoredFileInNewTab(storedFile)}>
                   <OpenInNewIcon fontSize="small" />
                 </IconButton>
               </Tooltip>
             </Stack>
           </Stack>
           <Typography variant="caption" color="text.secondary">
-            {getInventoryFileLabel(storedFile)}
+            {getStoredFileLabel(storedFile)}
           </Typography>
         </Stack>
       </Paper>
@@ -550,7 +509,7 @@ const InventoryFilesDialog = () => {
                         <Tooltip title="Open in new tab">
                           <IconButton
                             size="small"
-                            onClick={() => openFileInNewTab(previewFile)}
+                            onClick={() => openStoredFileInNewTab(previewFile)}
                             sx={{ color: '#fff' }}
                           >
                             <OpenInNewIcon fontSize="small" />

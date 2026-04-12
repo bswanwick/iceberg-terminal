@@ -23,10 +23,11 @@ import {
 import {
   buildUserStoragePath,
   deleteStorageFile,
+  sortStoredFiles,
   uploadStorageFile,
   type StoredFile,
-} from '../../firebase/storage'
-import { getFeaturedInventoryImage, sortInventoryFiles } from './fileUtils'
+} from '../files'
+import { getFeaturedInventoryImage } from './fileUtils'
 import {
   collectorConditionCategoryOptions,
   completenessStatusOptions,
@@ -60,7 +61,13 @@ import {
   type SurfaceAssessment,
   type VintagePaperConditionReport,
 } from './condition-report'
-import { coercePublishYear, normalizePublishYear, validatePublishYear } from './formUtils'
+import {
+  coercePublishYear,
+  normalizeInventoryProductLine,
+  normalizePublishYear,
+  validateInventoryProductLine,
+  validatePublishYear,
+} from './formUtils'
 import slice, { type InventoryFile, type InventoryItem } from './slice'
 
 const inventoryCollection = (uid: string) => collection(db, 'users', uid, 'inventory')
@@ -440,6 +447,7 @@ const toInventoryItem = (docSnap: {
     title: typeof data.title === 'string' ? data.title : '',
     publisher: typeof data.publisher === 'string' ? data.publisher : '',
     canonicalRecordId: typeof data.canonicalRecordId === 'string' ? data.canonicalRecordId : '',
+    productLine: normalizeInventoryProductLine(data.productLine),
     featured: toOptionalBoolean(data.featured) ?? false,
     publishYear: coercePublishYear(data.publishYear ?? data.publishDate),
     format: typeof data.format === 'string' ? data.format : '',
@@ -468,6 +476,7 @@ type FeaturedInventorySyncItem = Pick<
   | 'title'
   | 'publisher'
   | 'canonicalRecordId'
+  | 'productLine'
   | 'featured'
   | 'publishYear'
   | 'format'
@@ -558,7 +567,7 @@ const buildFeaturedInventoryCondition = (
 }
 
 const toFeaturedInventoryFiles = (files: InventoryFile[]): FeaturedInventoryFile[] =>
-  sortInventoryFiles(files).map(({ url, name, contentType, size, displayOrder, isHero }) => ({
+  sortStoredFiles(files).map(({ url, name, contentType, size, displayOrder, isHero }) => ({
     url,
     name,
     contentType,
@@ -595,6 +604,7 @@ const syncFeaturedInventoryDocument = (
     inventoryId: item.id,
     ownerId: uid,
     canonicalRecordId: item.canonicalRecordId,
+    productLine: item.productLine,
     title,
     collection,
     summary,
@@ -658,6 +668,7 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
         title,
         publisher,
         canonicalRecordId,
+        productLine,
         featured,
         publishYear,
         format,
@@ -683,6 +694,11 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
         return of(slice.actions.inventoryFetchFailed(publishYearError))
       }
 
+      const productLineError = validateInventoryProductLine(productLine)
+      if (productLineError) {
+        return of(slice.actions.inventoryFetchFailed(productLineError))
+      }
+
       const sanitizedConditionReport = sanitizeConditionReport(conditionReport)
 
       return from(
@@ -690,6 +706,7 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
           title,
           publisher,
           canonicalRecordId,
+          productLine,
           featured,
           publishYear: normalizePublishYear(publishYear),
           format,
@@ -716,6 +733,7 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
                 title,
                 publisher,
                 canonicalRecordId,
+                productLine,
                 featured,
                 publishYear,
                 format,
@@ -760,6 +778,7 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
         title,
         publisher,
         canonicalRecordId,
+        productLine,
         featured,
         publishYear,
         format,
@@ -785,6 +804,11 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
         return of(slice.actions.inventoryFetchFailed(publishYearError))
       }
 
+      const productLineError = validateInventoryProductLine(productLine)
+      if (productLineError) {
+        return of(slice.actions.inventoryFetchFailed(productLineError))
+      }
+
       const sanitizedConditionReport = sanitizeConditionReport(conditionReport)
       const itemRef = doc(db, 'users', uid, 'inventory', id)
       return from(
@@ -792,6 +816,7 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
           title,
           publisher,
           canonicalRecordId,
+          productLine,
           featured,
           publishYear: normalizePublishYear(publishYear),
           format,
@@ -817,6 +842,7 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
                 title,
                 publisher,
                 canonicalRecordId,
+                productLine,
                 featured,
                 publishYear,
                 format,

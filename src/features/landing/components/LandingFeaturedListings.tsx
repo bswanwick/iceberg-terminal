@@ -5,13 +5,13 @@ import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
 import { Box, Button, Card, CardContent, Chip, Paper, Stack, Typography } from '@mui/material'
 import { useAppSelector } from '../../../app/hooks'
 import {
-  selectFeaturedInventory,
   selectFeaturedInventoryError,
+  selectFeaturedOriginals,
   selectFeaturedInventoryStatus,
 } from '../../featuredInventory/selectors'
 import ListingViewModal from './ListingViewModal'
 
-type FeaturedInventoryItem = ReturnType<typeof selectFeaturedInventory>[number]
+type FeaturedInventoryItem = ReturnType<typeof selectFeaturedOriginals>[number]
 
 const CAROUSEL_VIEWPORT = 3
 
@@ -22,7 +22,7 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 })
 
 function LandingFeaturedListings() {
-  const featuredInventory = useAppSelector(selectFeaturedInventory)
+  const featuredInventory = useAppSelector(selectFeaturedOriginals)
   const featuredInventoryStatus = useAppSelector(selectFeaturedInventoryStatus)
   const featuredInventoryError = useAppSelector(selectFeaturedInventoryError)
 
@@ -318,6 +318,7 @@ function LandingFeaturedListings() {
         item={selectedFeaturedItem}
         open={Boolean(selectedFeaturedItem)}
         onClose={closeFeaturedPreview}
+        previewTitle="The Adored Collection Preview"
       />
     </Paper>
   )

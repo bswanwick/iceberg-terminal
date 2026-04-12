@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { DragEvent, ReactNode } from 'react'
 import {
   Box,
   Button,
-  Chip,
+  Divider,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -27,13 +27,20 @@ import StarIcon from '@mui/icons-material/Star'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
 import { splitComma } from '../../../app/formUtils'
 import { selectAuthUser } from '../../auth/selectors'
-import { selectCanonicalRecords } from '../../canonicalRecords/selectors'
-import CanonicalRecordAddForm from '../../canonicalRecords/components/CanonicalRecordAddForm.tsx'
-import { selectAppLocked } from '../../ui/selectors'
-import { getInventoryFileLabel, sortInventoryFiles } from '../fileUtils'
 import {
+  selectCanonicalRecords,
+  selectCanonicalRecordsStatus,
+} from '../../canonicalRecords/selectors'
+import CanonicalRecordAddForm from '../../canonicalRecords/components/CanonicalRecordAddForm.tsx'
+import CanonExplorer from '../../canonicalRecords/components/CanonExplorer.tsx'
+import type { CanonicalRecord } from '../../canonicalRecords/slice'
+import { selectAppLocked } from '../../ui/selectors'
+import {
+  inventoryProductLineOptions,
+  isInventoryProductLine,
   normalizePublishYear,
   parseMoneyInput,
+  validateInventoryProductLine,
   validateMoneyInput,
   validatePublishYear,
 } from '../formUtils'
@@ -63,6 +70,7 @@ type InventoryTextField = Exclude<
 >
 
 type InventoryFormValidationState = {
+  productLine: string | null
   publishYear: string | null
   acquisitionCost: string | null
   retailPrice: string | null
@@ -81,22 +89,20 @@ type InventoryFormRenderOptions = {
 
 dayjs.extend(customParseFormat)
 
-const uploadedFileChipSx = {
-  width: '100%',
-  minWidth: 0,
-  justifyContent: 'space-between',
-  '& .MuiChip-label': {
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-    whiteSpace: 'nowrap',
-    display: 'block',
-  },
+const inventoryFormPaperSx = {
+  p: 2,
+  borderRadius: 2,
+  border: '1px solid rgba(17, 24, 39, 0.08)',
+  background:
+    'linear-gradient(180deg, rgba(236, 229, 210, 0.96) 0%, rgba(232, 222, 200, 0.96) 100%)',
+  position: 'relative',
 }
 
 const InventoryFormsSection = () => {
   const dispatch = useAppDispatch()
   const user = useAppSelector(selectAuthUser)
   const canonicalRecords = useAppSelector(selectCanonicalRecords)
+  const canonicalRecordsStatus = useAppSelector(selectCanonicalRecordsStatus)
   const inventory = useAppSelector(selectInventory)
   const inventoryStatus = useAppSelector(selectInventoryStatus)
   const addForm = useAppSelector(selectInventoryAddForm)
@@ -111,16 +117,20 @@ const InventoryFormsSection = () => {
 
   const [dragOverForm, setDragOverForm] = useState<InventoryFormTarget | null>(null)
   const [activeDropForm, setActiveDropForm] = useState<InventoryFormTarget | null>(null)
-  const [canonicalDialogOpen, setCanonicalDialogOpen] = useState(false)
+  const [canonicalChooserOpen, setCanonicalChooserOpen] = useState(false)
+  const [canonicalChooserForm, setCanonicalChooserForm] = useState<InventoryFormTarget>('add')
+  const [canonicalAddDialogOpen, setCanonicalAddDialogOpen] = useState(false)
 
   const canAddInventory = addForm.canonicalRecordId.trim().length > 0
   const monthYearFormat = 'MM/YYYY'
   const addValidation: InventoryFormValidationState = {
+    productLine: validateInventoryProductLine(addForm.productLine),
     publishYear: validatePublishYear(addForm.publishYear),
     acquisitionCost: validateMoneyInput(addForm.acquisitionCost, 'Acquisition cost'),
     retailPrice: validateMoneyInput(addForm.retailPrice, 'Retail price'),
   }
   const editValidation: InventoryFormValidationState = {
+    productLine: validateInventoryProductLine(editForm.productLine),
     publishYear: validatePublishYear(editForm.publishYear),
     acquisitionCost: validateMoneyInput(editForm.acquisitionCost, 'Acquisition cost'),
     retailPrice: validateMoneyInput(editForm.retailPrice, 'Retail price'),
@@ -128,14 +138,22 @@ const InventoryFormsSection = () => {
   const editingItem = editingId ? inventory.find((entry) => entry.id === editingId) : null
   const canSubmitAddInventory =
     canAddInventory &&
+    !addValidation.productLine &&
     !addValidation.publishYear &&
     !addValidation.acquisitionCost &&
     !addValidation.retailPrice
   const canSubmitEditInventory =
-    !editValidation.publishYear && !editValidation.acquisitionCost && !editValidation.retailPrice
+    !editValidation.productLine &&
+    !editValidation.publishYear &&
+    !editValidation.acquisitionCost &&
+    !editValidation.retailPrice
   const uploadProgress =
     fileUploadBatchTotal > 0 ? (fileUploadBatchCompleted / fileUploadBatchTotal) * 100 : 0
   const isEditingInventory = Boolean(editingId && editingItem)
+  const canonicalRecordMap = useMemo(
+    () => new Map(canonicalRecords.map((record) => [record.id, record] as const)),
+    [canonicalRecords],
+  )
 
   const toMonthYearValue = (value: string) => {
     const parsed = dayjs(value, monthYearFormat, true)
@@ -223,13 +241,30 @@ const InventoryFormsSection = () => {
     dragOverForm === form ||
     (activeDropForm === form && fileUploadStatus === 'uploading' && fileUploadBatchTotal > 0)
 
-  const handleCanonicalDialogOpen = () => {
-    setCanonicalDialogOpen(true)
+  const handleCanonicalChooserOpen = (form: InventoryFormTarget) => {
+    setCanonicalChooserForm(form)
+    setCanonicalChooserOpen(true)
   }
 
-  const handleCanonicalDialogClose = () => {
-    setCanonicalDialogOpen(false)
+  const handleCanonicalChooserClose = () => {
+    setCanonicalChooserOpen(false)
   }
+
+  const handleCanonicalAddDialogOpen = () => {
+    setCanonicalAddDialogOpen(true)
+  }
+
+  const handleCanonicalAddDialogClose = () => {
+    setCanonicalAddDialogOpen(false)
+  }
+
+  const handleCanonicalSelect = (record: CanonicalRecord) => {
+    updateTextField(canonicalChooserForm, 'canonicalRecordId', record.id)
+    setCanonicalChooserOpen(false)
+  }
+
+  const getRequiredProductLine = (productLine: InventoryFormState['productLine']) =>
+    isInventoryProductLine(productLine) ? productLine : null
 
   const renderDropOverlay = (formTarget: InventoryFormTarget) => {
     if (!isDropOverlayVisible(formTarget)) {
@@ -296,39 +331,6 @@ const InventoryFormsSection = () => {
     )
   }
 
-  const renderStoredFiles = (formTarget: InventoryFormTarget) => {
-    const form = getForm(formTarget)
-    if (form.files.length === 0) {
-      return null
-    }
-
-    return (
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' },
-          columnGap: 1,
-          rowGap: 1.25,
-          mt: 0.5,
-        }}
-      >
-        {sortInventoryFiles(form.files).map((storedFile) => (
-          <Chip
-            key={storedFile.path}
-            label={
-              storedFile.isHero
-                ? `Hero • ${getInventoryFileLabel(storedFile)}`
-                : getInventoryFileLabel(storedFile)
-            }
-            variant="outlined"
-            color={storedFile.isHero ? 'warning' : 'default'}
-            sx={uploadedFileChipSx}
-          />
-        ))}
-      </Box>
-    )
-  }
-
   const handleOpenFileManager = (formTarget: InventoryFormTarget) => {
     dispatch(inventorySlice.actions.inventoryFileManagerOpened({ form: formTarget }))
   }
@@ -340,6 +342,9 @@ const InventoryFormsSection = () => {
     const form = getForm(formTarget)
     const validation = getValidation(formTarget)
     const submitDisabled = options.disabled || !options.canSubmit || inventoryStatus === 'saving'
+    const selectedCanonicalRecord = form.canonicalRecordId
+      ? (canonicalRecordMap.get(form.canonicalRecordId) ?? null)
+      : null
 
     return (
       <Stack spacing={formTarget === 'edit' ? 1.5 : 2}>
@@ -375,37 +380,72 @@ const InventoryFormsSection = () => {
             {fileUploadError}
           </Typography>
         )}
-        {renderStoredFiles(formTarget)}
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          <TextField
-            label="Inventory title"
-            value={form.title}
-            onChange={(event) => updateTextField(formTarget, 'title', event.target.value)}
-            fullWidth
-            disabled={options.disabled}
-            sx={formTarget === 'add' ? { width: '49%' } : undefined}
-          />
-          <Stack direction="row" spacing={1} sx={{ flex: 1, alignItems: 'stretch' }}>
+        <Stack spacing={2}>
+          <Typography variant="overline" sx={{ letterSpacing: '0.14em', color: 'text.secondary' }}>
+            Listing information
+          </Typography>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}
+            alignItems={{ xs: 'stretch', md: 'center' }}
+          >
             <TextField
-              select
-              label="Canonical record"
-              value={form.canonicalRecordId}
-              onChange={(event) =>
-                updateTextField(formTarget, 'canonicalRecordId', event.target.value)
-              }
+              label="Inventory title"
+              value={form.title}
+              onChange={(event) => updateTextField(formTarget, 'title', event.target.value)}
               fullWidth
               disabled={options.disabled}
-              sx={{ flex: 1 }}
+            />
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flexShrink: 0 }}>
+              <IconButton
+                aria-label="Feature this inventory listing"
+                onClick={() => updateFeatured(formTarget, !form.featured)}
+                disabled={options.disabled}
+                color={form.featured ? 'warning' : 'default'}
+                sx={{
+                  border: '1px solid rgba(17, 24, 39, 0.16)',
+                  backgroundColor: form.featured ? 'rgba(245, 158, 11, 0.12)' : 'transparent',
+                }}
+              >
+                {form.featured ? <StarIcon /> : <StarBorderIcon />}
+              </IconButton>
+              <Typography fontWeight={600}>Featured Listing</Typography>
+            </Stack>
+          </Stack>
+
+          <Stack direction="row" spacing={1} sx={{ alignItems: 'stretch' }}>
+            <Button
+              variant="outlined"
+              onClick={() => handleCanonicalChooserOpen(formTarget)}
+              disabled={options.disabled}
+              sx={{
+                flex: 1,
+                justifyContent: 'flex-start',
+                px: 1.5,
+                py: 1.25,
+                textAlign: 'left',
+                textTransform: 'none',
+              }}
             >
-              {canonicalRecords.map((record) => (
-                <MenuItem key={record.id} value={record.id}>
-                  {record.title}
-                </MenuItem>
-              ))}
-            </TextField>
+              <Stack spacing={0.5} alignItems="flex-start" sx={{ minWidth: 0 }}>
+                <Typography fontWeight={600} sx={{ maxWidth: '100%' }} noWrap>
+                  {selectedCanonicalRecord?.title || 'Select record'}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ maxWidth: '100%' }}
+                  noWrap
+                >
+                  {selectedCanonicalRecord
+                    ? 'Canonical record selected.'
+                    : 'Select a canonical record to continue.'}
+                </Typography>
+              </Stack>
+            </Button>
             <IconButton
               aria-label="Add canonical record"
-              onClick={handleCanonicalDialogOpen}
+              onClick={handleCanonicalAddDialogOpen}
               disabled={options.disabled}
               sx={{
                 flex: '0 0 auto',
@@ -417,143 +457,162 @@ const InventoryFormsSection = () => {
               <AddIcon />
             </IconButton>
           </Stack>
+          <Divider />
         </Stack>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          <TextField
-            label="Publish year"
-            fullWidth
-            value={form.publishYear}
-            onChange={(event) => updateTextField(formTarget, 'publishYear', event.target.value)}
-            disabled={options.disabled}
-            inputProps={{
-              inputMode: 'numeric',
-              maxLength: 4,
-              pattern: '\\d{4}',
-            }}
-            error={Boolean(validation.publishYear)}
-            helperText={validation.publishYear}
-          />
-          <DatePicker
-            label="Acquisition date"
-            views={['year', 'month']}
-            format={monthYearFormat}
-            value={toMonthYearValue(form.acquisitionDate)}
-            onChange={(value, context) => {
-              if (context.validationError) {
-                return
-              }
 
-              updateAcquisitionDate(formTarget, value)
-            }}
-            slotProps={{
-              textField: {
-                fullWidth: true,
-                disabled: options.disabled,
-                placeholder: monthYearFormat,
-              },
-            }}
-          />
-        </Stack>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
-          <TextField
-            label="Acquisition cost"
-            fullWidth
-            value={form.acquisitionCost}
-            onChange={(event) => updateTextField(formTarget, 'acquisitionCost', event.target.value)}
-            disabled={options.disabled}
-            error={Boolean(validation.acquisitionCost)}
-            helperText={validation.acquisitionCost}
-            inputProps={{ inputMode: 'decimal' }}
-          />
-          <TextField
-            label="Retail price"
-            fullWidth
-            value={form.retailPrice}
-            onChange={(event) => updateTextField(formTarget, 'retailPrice', event.target.value)}
-            disabled={options.disabled}
-            error={Boolean(validation.retailPrice)}
-            helperText={validation.retailPrice}
-            inputProps={{ inputMode: 'decimal' }}
-          />
-        </Stack>
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <IconButton
-            aria-label="Feature on The Adored Collection"
-            onClick={() => updateFeatured(formTarget, !form.featured)}
-            disabled={options.disabled}
-            color={form.featured ? 'warning' : 'default'}
-            sx={{
-              border: '1px solid rgba(17, 24, 39, 0.16)',
-              backgroundColor: form.featured ? 'rgba(245, 158, 11, 0.12)' : 'transparent',
-            }}
-          >
-            {form.featured ? <StarIcon /> : <StarBorderIcon />}
-          </IconButton>
-          <Stack spacing={0.25}>
-            <Typography fontWeight={600}>The Adored Collection</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Star this item to list it on the public landing page.
-            </Typography>
+        <Stack spacing={2}>
+          <Typography variant="overline" sx={{ letterSpacing: '0.14em', color: 'text.secondary' }}>
+            Sourcing and pricing
+          </Typography>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+            <TextField
+              select
+              label="Product line"
+              fullWidth
+              value={form.productLine}
+              onChange={(event) => updateTextField(formTarget, 'productLine', event.target.value)}
+              disabled={options.disabled}
+              error={Boolean(validation.productLine)}
+              helperText={validation.productLine}
+            >
+              <MenuItem value="">Choose a product line</MenuItem>
+              {inventoryProductLineOptions.map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </TextField>
+            <TextField
+              label="Publish year"
+              fullWidth
+              value={form.publishYear}
+              onChange={(event) => updateTextField(formTarget, 'publishYear', event.target.value)}
+              disabled={options.disabled}
+              inputProps={{
+                inputMode: 'numeric',
+                maxLength: 4,
+                pattern: '\\d{4}',
+              }}
+              error={Boolean(validation.publishYear)}
+              helperText={validation.publishYear}
+            />
           </Stack>
-        </Stack>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          <TextField
-            label="Format"
-            fullWidth
-            value={form.format}
-            onChange={(event) => updateTextField(formTarget, 'format', event.target.value)}
-            disabled={options.disabled}
-            sx={{ flex: 1 }}
-          />
-          <TextField
-            label="Dimensions"
-            fullWidth
-            value={form.dimensions}
-            onChange={(event) => updateTextField(formTarget, 'dimensions', event.target.value)}
-            disabled={options.disabled}
-            sx={{ flex: 1 }}
-          />
-        </Stack>
-        <Stack id="inventory-condition-report" direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          <TextField
-            label="Condition grade"
-            fullWidth
-            value={form.conditionGrade}
-            onChange={(event) => updateTextField(formTarget, 'conditionGrade', event.target.value)}
-            disabled={options.disabled}
-            sx={{ flex: 1 }}
-          />
-          <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
-            <Button
-              variant="outlined"
-              onClick={() =>
-                dispatch(inventorySlice.actions.conditionReportDialogOpened({ form: formTarget }))
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+            <TextField
+              label="Acquisition source"
+              fullWidth
+              value={form.acquisitionSource}
+              onChange={(event) =>
+                updateTextField(formTarget, 'acquisitionSource', event.target.value)
               }
               disabled={options.disabled}
-            >
-              Edit report
-            </Button>
-          </Box>
+            />
+            <DatePicker
+              label="Acquisition date"
+              views={['year', 'month']}
+              format={monthYearFormat}
+              value={toMonthYearValue(form.acquisitionDate)}
+              onChange={(value, context) => {
+                if (context.validationError) {
+                  return
+                }
+
+                updateAcquisitionDate(formTarget, value)
+              }}
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  disabled: options.disabled,
+                  placeholder: monthYearFormat,
+                },
+              }}
+            />
+          </Stack>
+          <Divider />
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+            <TextField
+              label="Acquisition cost"
+              fullWidth
+              value={form.acquisitionCost}
+              onChange={(event) =>
+                updateTextField(formTarget, 'acquisitionCost', event.target.value)
+              }
+              disabled={options.disabled}
+              error={Boolean(validation.acquisitionCost)}
+              helperText={validation.acquisitionCost}
+              inputProps={{ inputMode: 'decimal' }}
+            />
+            <TextField
+              label="Retail price"
+              fullWidth
+              value={form.retailPrice}
+              onChange={(event) => updateTextField(formTarget, 'retailPrice', event.target.value)}
+              disabled={options.disabled}
+              error={Boolean(validation.retailPrice)}
+              helperText={validation.retailPrice}
+              inputProps={{ inputMode: 'decimal' }}
+            />
+          </Stack>
         </Stack>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          <TextField
-            label="Acquisition source"
-            fullWidth
-            value={form.acquisitionSource}
-            onChange={(event) =>
-              updateTextField(formTarget, 'acquisitionSource', event.target.value)
-            }
-            disabled={options.disabled}
-            sx={formTarget === 'edit' ? { width: '50%' } : undefined}
-          />
-          <TextField
-            label="Notes"
-            fullWidth
-            value={form.notes}
-            onChange={(event) => updateTextField(formTarget, 'notes', event.target.value)}
-            disabled={options.disabled}
-            sx={formTarget === 'edit' ? { width: '50%' } : undefined}
-          />
+
+        <Stack spacing={2}>
+          <Typography variant="overline" sx={{ letterSpacing: '0.14em', color: 'text.secondary' }}>
+            Condition and listing details
+          </Typography>
+          <Stack
+            id="inventory-condition-report"
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={2}
+          >
+            <TextField
+              label="Condition grade"
+              fullWidth
+              value={form.conditionGrade}
+              onChange={(event) =>
+                updateTextField(formTarget, 'conditionGrade', event.target.value)
+              }
+              disabled={options.disabled}
+              sx={{ flex: 1 }}
+            />
+            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center' }}>
+              <Button
+                variant="outlined"
+                onClick={() =>
+                  dispatch(inventorySlice.actions.conditionReportDialogOpened({ form: formTarget }))
+                }
+                disabled={options.disabled}
+              >
+                Edit report
+              </Button>
+            </Box>
+          </Stack>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+            <TextField
+              label="Format"
+              fullWidth
+              value={form.format}
+              onChange={(event) => updateTextField(formTarget, 'format', event.target.value)}
+              disabled={options.disabled}
+              sx={{ flex: 1 }}
+            />
+            <TextField
+              label="Dimensions"
+              fullWidth
+              value={form.dimensions}
+              onChange={(event) => updateTextField(formTarget, 'dimensions', event.target.value)}
+              disabled={options.disabled}
+              sx={{ flex: 1 }}
+            />
+          </Stack>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+            <TextField
+              label="Notes"
+              fullWidth
+              value={form.notes}
+              onChange={(event) => updateTextField(formTarget, 'notes', event.target.value)}
+              disabled={options.disabled}
+            />
+          </Stack>
         </Stack>
         <TextField
           label="Tags (comma-separated)"
@@ -593,7 +652,8 @@ const InventoryFormsSection = () => {
   }
 
   const handleAdd = () => {
-    if (!canSubmitAddInventory) {
+    const productLine = getRequiredProductLine(addForm.productLine)
+    if (!canSubmitAddInventory || !productLine) {
       return
     }
 
@@ -602,6 +662,7 @@ const InventoryFormsSection = () => {
         title: addForm.title.trim(),
         publisher: addForm.publisher.trim(),
         canonicalRecordId: addForm.canonicalRecordId,
+        productLine,
         featured: addForm.featured,
         publishYear: normalizePublishYear(addForm.publishYear),
         format: addForm.format.trim(),
@@ -621,7 +682,8 @@ const InventoryFormsSection = () => {
   }
 
   const handleEditSave = () => {
-    if (!editingId || !canSubmitEditInventory) {
+    const productLine = getRequiredProductLine(editForm.productLine)
+    if (!editingId || !canSubmitEditInventory || !productLine) {
       return
     }
 
@@ -631,6 +693,7 @@ const InventoryFormsSection = () => {
         title: editForm.title.trim(),
         publisher: editForm.publisher.trim(),
         canonicalRecordId: editForm.canonicalRecordId,
+        productLine,
         featured: editForm.featured,
         publishYear: normalizePublishYear(editForm.publishYear),
         format: editForm.format.trim(),
@@ -653,27 +716,29 @@ const InventoryFormsSection = () => {
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <>
         {!isEditingInventory && (
-          <Stack
+          <Paper
             id="inventory-add-item"
-            spacing={2}
-            sx={{ position: 'relative' }}
+            elevation={0}
+            sx={inventoryFormPaperSx}
             onDragOver={handleFormDragOver('add')}
             onDragLeave={handleFormDragLeave('add')}
             onDrop={handleFormDrop('add')}
           >
             {renderDropOverlay('add')}
 
-            <Typography fontWeight={600}>Fill this out to add a new inventory item.</Typography>
-            {renderInventoryForm('add', {
-              disabled: appLocked || !user,
-              uploadButtonLabel: 'Attach Files',
-              submitLabel: 'Add item',
-              submitIcon: <AddIcon />,
-              submitSize: 'medium',
-              canSubmit: canSubmitAddInventory,
-              onSubmit: handleAdd,
-            })}
-          </Stack>
+            <Stack spacing={1.5}>
+              <Typography fontWeight={600}>Fill this out to add a new inventory item.</Typography>
+              {renderInventoryForm('add', {
+                disabled: appLocked || !user,
+                uploadButtonLabel: 'Attach Files',
+                submitLabel: 'Add item',
+                submitIcon: <AddIcon />,
+                submitSize: 'medium',
+                canSubmit: canSubmitAddInventory,
+                onSubmit: handleAdd,
+              })}
+            </Stack>
+          </Paper>
         )}
 
         <Stack spacing={2}>
@@ -681,12 +746,7 @@ const InventoryFormsSection = () => {
             <Paper
               id="inventory-edit-item"
               elevation={0}
-              sx={{
-                p: 2,
-                borderRadius: 2,
-                border: '1px solid rgba(17, 24, 39, 0.08)',
-                position: 'relative',
-              }}
+              sx={inventoryFormPaperSx}
               onDragOver={handleFormDragOver('edit')}
               onDragLeave={handleFormDragLeave('edit')}
               onDrop={handleFormDrop('edit')}
@@ -712,15 +772,46 @@ const InventoryFormsSection = () => {
           )}
         </Stack>
         <Dialog
-          open={canonicalDialogOpen}
-          onClose={handleCanonicalDialogClose}
+          open={canonicalChooserOpen}
+          onClose={handleCanonicalChooserClose}
+          fullWidth
+          maxWidth="lg"
+        >
+          <DialogTitle sx={{ pr: 7 }}>Link canonical record</DialogTitle>
+          <IconButton
+            aria-label="Close canonical selector dialog"
+            onClick={handleCanonicalChooserClose}
+            sx={{ position: 'absolute', top: 10, right: 10 }}
+          >
+            <CloseIcon />
+          </IconButton>
+          <DialogContent dividers>
+            <Stack spacing={2}>
+              <Typography variant="body2" color="text.secondary">
+                Choose a canonical record to attach to this inventory item.
+              </Typography>
+              {canonicalChooserOpen && (
+                <CanonExplorer
+                  records={canonicalRecords}
+                  busy={canonicalRecordsStatus !== 'idle'}
+                  selectable
+                  selectedId={getForm(canonicalChooserForm).canonicalRecordId || null}
+                  onSelect={handleCanonicalSelect}
+                />
+              )}
+            </Stack>
+          </DialogContent>
+        </Dialog>
+        <Dialog
+          open={canonicalAddDialogOpen}
+          onClose={handleCanonicalAddDialogClose}
           fullWidth
           maxWidth="sm"
         >
           <DialogTitle sx={{ pr: 7 }}>Add canonical record</DialogTitle>
           <IconButton
             aria-label="Close canonical record dialog"
-            onClick={handleCanonicalDialogClose}
+            onClick={handleCanonicalAddDialogClose}
             sx={{ position: 'absolute', top: 10, right: 10 }}
           >
             <CloseIcon />

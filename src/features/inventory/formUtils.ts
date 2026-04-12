@@ -4,6 +4,23 @@ const LEGACY_MONTH_YEAR_PATTERN = /^(?:0[1-9]|1[0-2])\/(\d{4})$/
 
 const MONEY_PATTERN = /^(?:\d+|\d+\.\d{1,2}|\.\d{1,2})$/
 
+export const inventoryProductLineOptions = ['Originals', 'Prints'] as const
+
+export type InventoryProductLine = (typeof inventoryProductLineOptions)[number]
+
+export type InventoryProductLineField = InventoryProductLine | ''
+
+export const defaultInventoryProductLine: InventoryProductLine = 'Originals'
+
+export const isInventoryProductLine = (value: string): value is InventoryProductLine =>
+  inventoryProductLineOptions.some((option) => option === value)
+
+export const normalizeInventoryProductLine = (value: unknown): InventoryProductLine =>
+  typeof value === 'string' && isInventoryProductLine(value) ? value : defaultInventoryProductLine
+
+export const validateInventoryProductLine = (value: string) =>
+  isInventoryProductLine(value) ? null : 'Choose Originals or Prints.'
+
 export const normalizePublishYear = (value: string) => value.trim()
 
 export const coercePublishYear = (value: unknown) => {

@@ -3,6 +3,7 @@ import { authListenerEpic, authSignInEpic, authSignOutEpic } from '../features/a
 import {
   canonicalRecordAddEpic,
   canonicalRecordDeleteEpic,
+  canonicalRecordImageUploadEpic,
   canonicalRecordUpdateEpic,
   canonicalRecordsFetchEpic,
 } from '../features/canonicalRecords/epics'
@@ -27,6 +28,7 @@ export const rootEpic = combineEpics(
   canonicalRecordAddEpic,
   canonicalRecordUpdateEpic,
   canonicalRecordDeleteEpic,
+  canonicalRecordImageUploadEpic,
   featuredInventoryFetchEpic,
   inventoryFetchEpic,
   inventoryAddEpic,

@@ -1,14 +1,20 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { StoredFile } from '../../firebase/storage'
+import { moveStoredFile, normalizeStoredFiles, type StoredFile } from '../files'
 import type { VintagePaperConditionReport } from './condition-report'
 import authSlice from '../auth/slice'
-import { formatMoneyInput } from './formUtils'
+import {
+  formatMoneyInput,
+  type InventoryProductLine,
+  type InventoryProductLineField,
+  isInventoryProductLine,
+} from './formUtils'
 
 export type InventoryItem = {
   id: string
   title: string
   publisher: string
   canonicalRecordId: string
+  productLine: InventoryProductLine
   featured: boolean
   publishYear: string
   format: string
@@ -32,6 +38,7 @@ export type InventoryFormState = {
   title: string
   publisher: string
   canonicalRecordId: string
+  productLine: InventoryProductLineField
   featured: boolean
   publishYear: string
   format: string
@@ -148,6 +155,7 @@ const createEmptyInventoryForm = (): InventoryFormState => ({
   title: '',
   publisher: '',
   canonicalRecordId: '',
+  productLine: '',
   featured: false,
   publishYear: '',
   format: '',
@@ -162,81 +170,6 @@ const createEmptyInventoryForm = (): InventoryFormState => ({
   tags: '',
   files: [],
 })
-
-const imageFileExtensions = new Set([
-  'jpg',
-  'jpeg',
-  'png',
-  'gif',
-  'webp',
-  'bmp',
-  'svg',
-  'avif',
-  'tif',
-  'tiff',
-])
-
-const isImageFile = (storedFile: InventoryFile) => {
-  if (storedFile.contentType.toLowerCase().startsWith('image/')) {
-    return true
-  }
-
-  const name = storedFile.name || storedFile.path
-  const extension = name.split('.').at(-1)?.toLowerCase() ?? ''
-  return imageFileExtensions.has(extension)
-}
-
-const normalizeInventoryFiles = (files: InventoryFile[]) => {
-  const sortedFiles = [...files].sort((left, right) => {
-    const leftOrder = Number.isFinite(left.displayOrder)
-      ? left.displayOrder
-      : Number.MAX_SAFE_INTEGER
-    const rightOrder = Number.isFinite(right.displayOrder)
-      ? right.displayOrder
-      : Number.MAX_SAFE_INTEGER
-
-    if (leftOrder !== rightOrder) {
-      return leftOrder - rightOrder
-    }
-
-    return left.path.localeCompare(right.path)
-  })
-
-  let heroAssigned = false
-
-  return sortedFiles.map((storedFile, index) => {
-    const image = isImageFile(storedFile)
-    const isHero = image && storedFile.isHero && !heroAssigned
-
-    if (isHero) {
-      heroAssigned = true
-    }
-
-    return {
-      ...storedFile,
-      displayOrder: index,
-      isHero,
-    }
-  })
-}
-
-const moveInventoryFile = (files: InventoryFile[], sourcePath: string, destinationPath: string) => {
-  const orderedFiles = normalizeInventoryFiles(files)
-  const sourceIndex = orderedFiles.findIndex((storedFile) => storedFile.path === sourcePath)
-  const destinationIndex = orderedFiles.findIndex(
-    (storedFile) => storedFile.path === destinationPath,
-  )
-
-  if (sourceIndex < 0 || destinationIndex < 0 || sourceIndex === destinationIndex) {
-    return orderedFiles
-  }
-
-  const reorderedFiles = [...orderedFiles]
-  const [movedFile] = reorderedFiles.splice(sourceIndex, 1)
-  reorderedFiles.splice(destinationIndex, 0, movedFile)
-
-  return normalizeInventoryFiles(reorderedFiles)
-}
 
 const initialState: InventoryState = {
   items: [],
@@ -303,7 +236,7 @@ export const inventorySlice = createSlice({
       action: PayloadAction<InventoryFileUploadSucceededPayload>,
     ) => {
       const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
-      targetForm.files = normalizeInventoryFiles([
+      targetForm.files = normalizeStoredFiles([
         ...targetForm.files,
         {
           ...action.payload.storedFile,
@@ -337,7 +270,7 @@ export const inventorySlice = createSlice({
           ? state.ui.addFilesPendingRemoval
           : state.ui.editFilesPendingRemoval
 
-      targetForm.files = normalizeInventoryFiles(
+      targetForm.files = normalizeStoredFiles(
         targetForm.files.filter((storedFile) => storedFile.path !== action.payload.storedFile.path),
       )
       if (
@@ -369,16 +302,16 @@ export const inventorySlice = createSlice({
     },
     inventoryFileHeroSelected: (state, action: PayloadAction<InventoryFileHeroSelectedPayload>) => {
       const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
-      targetForm.files = normalizeInventoryFiles(
+      targetForm.files = normalizeStoredFiles(
         targetForm.files.map((storedFile) => ({
           ...storedFile,
-          isHero: storedFile.path === action.payload.path && isImageFile(storedFile),
+          isHero: storedFile.path === action.payload.path,
         })),
       )
     },
     inventoryFilesReordered: (state, action: PayloadAction<InventoryFilesReorderedPayload>) => {
       const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
-      targetForm.files = moveInventoryFile(
+      targetForm.files = moveStoredFile(
         targetForm.files,
         action.payload.sourcePath,
         action.payload.destinationPath,
@@ -386,6 +319,14 @@ export const inventorySlice = createSlice({
     },
     inventoryFormUpdated: (state, action: PayloadAction<InventoryFormUpdatePayload>) => {
       const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
+
+      if (action.payload.field === 'productLine') {
+        if (action.payload.value === '' || isInventoryProductLine(action.payload.value)) {
+          targetForm.productLine = action.payload.value
+        }
+        return
+      }
+
       targetForm[action.payload.field] = action.payload.value
     },
     inventoryFormFeaturedUpdated: (
@@ -432,6 +373,7 @@ export const inventorySlice = createSlice({
         title: item.title,
         publisher: item.publisher,
         canonicalRecordId: item.canonicalRecordId,
+        productLine: item.productLine,
         featured: item.featured,
         publishYear: item.publishYear,
         format: item.format,
@@ -444,7 +386,7 @@ export const inventorySlice = createSlice({
         retailPrice: formatMoneyInput(item.retailPrice),
         notes: item.notes,
         tags: item.tags.join(', '),
-        files: normalizeInventoryFiles(item.files),
+        files: normalizeStoredFiles(item.files),
       }
       state.ui.editFilesPendingRemoval = []
       state.ui.fileManagerOpen = false
