@@ -109,7 +109,7 @@ function RegisterRoute() {
         >
           <Stack spacing={0.5} sx={{ flex: 1, maxWidth: 680 }}>
             <Typography variant="h3">Project Iceberg</Typography>
-            <Typography variant="body1" sx={{ maxWidth: 640 }}>
+            {/* <Typography variant="body1" sx={{ maxWidth: 640 }}>
               We are building an online archive of vintage tourism ephemera. Many organizations have
               already done amazing work building enormous databases full of railway, oceanliner,
               airline, and advertising materials, but rarely is tourism ephemera the primary focus.
@@ -117,13 +117,19 @@ function RegisterRoute() {
               scattered, uncataloged, and often overlooked. We want to change that. Thomas Cook is
               just the tip of the iceberg. We'd like to study the rest, share it, and make it
               accessible to everyone.
+            </Typography> */}
+            <Typography variant="body1" sx={{ maxWidth: 640 }}>
+              Project Iceberg is an operations hub for dealers and collectors. We are building a
+              better experience to help you buy, sell, research, and share your collections. If
+              you'd like to partner with us as we build, or if you would like to be considered for
+              early access to the beta, please join our waiting list below.
             </Typography>
           </Stack>
 
           <Box
             component="img"
             src={logoImage}
-            alt="Swanwick & Co. logo"
+            alt="Project Iceberg logo"
             sx={{
               width: { xs: '100%', md: 280 },
               maxWidth: 320,
@@ -157,8 +163,7 @@ function RegisterRoute() {
           {/* Just show the info alert if there isn't already an error */}
           {!newsletterError && (
             <Alert severity="info">
-              We are looking for help testing the beta. If you would like to be considered for early
-              access, please fill out the form below.
+              We are in private beta. Registrations will be available soon.
             </Alert>
           )}
           {newsletterStatus === 'success' && lastSubmission && (
@@ -170,10 +175,10 @@ function RegisterRoute() {
           )}
           <Stack spacing={1}>
             <Typography variant="h4" sx={{ color: '#f8efe0' }}>
-              Your Particulars Please
+              Your Particulars
             </Typography>
             <Typography variant="body1" sx={{ color: 'rgba(238, 228, 211, 0.92)', maxWidth: 720 }}>
-              Tell us how best to reach you, and a little about yourself...
+              Tell us a little about yourself...
             </Typography>
           </Stack>
           <Stack spacing={2}>

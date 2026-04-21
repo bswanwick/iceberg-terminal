@@ -74,6 +74,14 @@ function ListingViewModal({ item, open, onClose, previewTitle }: ListingViewModa
   const theme = useTheme()
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'))
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const hasCustomDescription = Boolean(item?.customDescription.trim())
+  const hasCanonicalDescription = Boolean(item?.canonicalDescription.trim())
+  const primaryDescription = hasCustomDescription
+    ? (item?.customDescription.trim() ?? '')
+    : item?.canonicalDescription.trim() ||
+      item?.description ||
+      item?.summary ||
+      'A detailed listing description will appear here soon.'
 
   const imageFiles = useMemo(
     () => (item ? item.files.filter((storedFile) => isImageFile(storedFile)) : []),
@@ -366,11 +374,18 @@ function ListingViewModal({ item, open, onClose, previewTitle }: ListingViewModa
               </AccordionSummary>
               <AccordionDetails>
                 <Stack spacing={1.25}>
-                  <Typography variant="body2">
-                    {item.description ||
-                      item.summary ||
-                      'A detailed listing description will appear here soon.'}
-                  </Typography>
+                  {hasCustomDescription ? (
+                    <Typography variant="subtitle2">Custom Description</Typography>
+                  ) : null}
+                  <Typography variant="body2">{primaryDescription}</Typography>
+                  {hasCustomDescription && hasCanonicalDescription ? (
+                    <Stack spacing={0.5}>
+                      <Typography variant="subtitle2">Canonical Description</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {item.canonicalDescription}
+                      </Typography>
+                    </Stack>
+                  ) : null}
                   {item.tags.length > 0 ? (
                     <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
                       {item.tags.map((tag) => (

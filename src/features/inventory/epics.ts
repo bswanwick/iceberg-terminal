@@ -447,6 +447,7 @@ const toInventoryItem = (docSnap: {
     title: typeof data.title === 'string' ? data.title : '',
     publisher: typeof data.publisher === 'string' ? data.publisher : '',
     canonicalRecordId: typeof data.canonicalRecordId === 'string' ? data.canonicalRecordId : '',
+    customDescription: typeof data.customDescription === 'string' ? data.customDescription : '',
     productLine: normalizeInventoryProductLine(data.productLine),
     featured: toOptionalBoolean(data.featured) ?? false,
     publishYear: coercePublishYear(data.publishYear ?? data.publishDate),
@@ -476,6 +477,7 @@ type FeaturedInventorySyncItem = Pick<
   | 'title'
   | 'publisher'
   | 'canonicalRecordId'
+  | 'customDescription'
   | 'productLine'
   | 'featured'
   | 'publishYear'
@@ -592,8 +594,10 @@ const syncFeaturedInventoryDocument = (
   )
   const title = canonicalRecord?.title.trim() || item.title.trim() || 'Untitled item'
   const collection = item.publisher.trim() || item.format.trim() || 'Featured listing'
+  const canonicalDescription = canonicalRecord?.description.trim() || ''
+  const customDescription = item.customDescription.trim()
   const description =
-    canonicalRecord?.description.trim() || item.notes.trim() || 'Curated inventory.'
+    customDescription || canonicalDescription || item.notes.trim() || 'Curated inventory.'
   const summary = createSummaryExcerpt(description)
   const tags = item.tags.length > 0 ? item.tags : (canonicalRecord?.tags ?? [])
   const imageUrl = getFeaturedInventoryImage(item.files)
@@ -609,6 +613,8 @@ const syncFeaturedInventoryDocument = (
     collection,
     summary,
     description,
+    canonicalDescription,
+    customDescription,
     publisher: item.publisher,
     format: item.format,
     publishYear: item.publishYear,
@@ -668,6 +674,7 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
         title,
         publisher,
         canonicalRecordId,
+        customDescription,
         productLine,
         featured,
         publishYear,
@@ -706,6 +713,7 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
           title,
           publisher,
           canonicalRecordId,
+          customDescription,
           productLine,
           featured,
           publishYear: normalizePublishYear(publishYear),
@@ -733,6 +741,7 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
                 title,
                 publisher,
                 canonicalRecordId,
+                customDescription,
                 productLine,
                 featured,
                 publishYear,
@@ -778,6 +787,7 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
         title,
         publisher,
         canonicalRecordId,
+        customDescription,
         productLine,
         featured,
         publishYear,
@@ -816,6 +826,7 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
           title,
           publisher,
           canonicalRecordId,
+          customDescription,
           productLine,
           featured,
           publishYear: normalizePublishYear(publishYear),
@@ -842,6 +853,7 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
                 title,
                 publisher,
                 canonicalRecordId,
+                customDescription,
                 productLine,
                 featured,
                 publishYear,

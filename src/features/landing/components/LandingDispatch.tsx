@@ -17,6 +17,7 @@ const INTEREST_OPTIONS = [
   'Travel brochures',
   'Tourist guides and booklets',
   'Trip reports, logs, and diaries',
+  'Round the world',
   'Hotels',
   'Railroadiana',
   'Maritime',
@@ -60,15 +61,13 @@ function LandingDispatch() {
         </Typography>
         <Typography variant="h3">The Tourist's Dispatch</Typography>
         <Typography variant="body1" sx={{ maxWidth: 720 }}>
-          A free monthly e-newsletter with great stories, archival tips, collector insights, and
-          early access to new drops before they are listed on the site. Oh, one final thing; we
-          promise that everything is written by a human. Fancy that!
+          A free monthly e-newsletter with great stories, tips, collector insights, and sneak
+          previews of upcoming inventory. One more thing... we promise that everything you read is
+          written by a human. Now fancy that!
         </Typography>
         {newsletterStatus === 'success' && lastSubmission && (
           <Alert severity="success">
-            <b>
-              Welcome aboard, {lastSubmission.name}. We will write to {lastSubmission.email}.
-            </b>
+            <b>Welcome aboard. We will write to {lastSubmission.email}.</b>
           </Alert>
         )}
         {newsletterStatus === 'error' && newsletterError && (
@@ -77,16 +76,6 @@ function LandingDispatch() {
           </Alert>
         )}
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          <TextField
-            name="name"
-            label="First name"
-            value={form.name}
-            onChange={handleFieldChange}
-            size="small"
-            required
-            fullWidth
-            disabled={appLocked}
-          />
           <TextField
             name="email"
             label="Email address"

@@ -6,6 +6,7 @@ import featuredInventory, {
   type FeaturedInventoryAction,
 } from '../features/featuredInventory/slice'
 import inventory, { type InventoryAction } from '../features/inventory/slice'
+import landingContent, { type LandingContentAction } from '../features/landingContent/slice'
 import newsletter, { type NewsletterAction } from '../features/newsletter/slice'
 import ui, { type UiAction } from '../features/ui/slice'
 import { rootEpic } from './rootEpic'
@@ -15,6 +16,7 @@ const rootReducer = combineReducers({
   canonicalRecords: canonicalRecords.reducer,
   featuredInventory: featuredInventory.reducer,
   inventory: inventory.reducer,
+  landingContent: landingContent.reducer,
   newsletter: newsletter.reducer,
   ui: ui.reducer,
 })
@@ -26,6 +28,7 @@ export type AnyFeatureAction =
   | CanonicalRecordsAction
   | FeaturedInventoryAction
   | InventoryAction
+  | LandingContentAction
   | NewsletterAction
   | UiAction
 

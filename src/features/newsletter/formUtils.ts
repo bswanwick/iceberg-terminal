@@ -38,10 +38,8 @@ export const normalizeInterests = (values: string[]) =>
 export const isValidEmail = (value: string) => EMAIL_PATTERN.test(value)
 
 export const validateSignupPayload = (payload: SignupSubmissionPayload) => {
-  if (payload.name.length < 2) {
-    return payload.kind === SIGNUP_FORM_KIND_NEWSLETTER
-      ? 'Enter your first name.'
-      : 'Enter your name.'
+  if (payload.kind === SIGNUP_FORM_KIND_ACCESS && payload.name.length < 2) {
+    return 'Enter your name.'
   }
 
   if (payload.email.length === 0 && payload.cell.length === 0) {

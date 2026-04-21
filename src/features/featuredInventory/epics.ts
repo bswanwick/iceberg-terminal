@@ -137,11 +137,22 @@ const toFeaturedInventoryItem = (docSnap: {
     collection: typeof data.collection === 'string' ? data.collection : '',
     summary: typeof data.summary === 'string' ? data.summary : '',
     description:
-      typeof data.description === 'string'
-        ? data.description
-        : typeof data.summary === 'string'
-          ? data.summary
-          : '',
+      typeof data.customDescription === 'string' && data.customDescription.trim()
+        ? data.customDescription
+        : typeof data.description === 'string'
+          ? data.description
+          : typeof data.summary === 'string'
+            ? data.summary
+            : '',
+    canonicalDescription:
+      typeof data.canonicalDescription === 'string'
+        ? data.canonicalDescription
+        : typeof data.description === 'string'
+          ? data.description
+          : typeof data.summary === 'string'
+            ? data.summary
+            : '',
+    customDescription: typeof data.customDescription === 'string' ? data.customDescription : '',
     publisher: typeof data.publisher === 'string' ? data.publisher : '',
     format: typeof data.format === 'string' ? data.format : '',
     publishYear: typeof data.publishYear === 'string' ? data.publishYear : '',

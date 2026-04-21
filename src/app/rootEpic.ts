@@ -15,6 +15,7 @@ import {
   inventoryFetchEpic,
   inventoryUpdateEpic,
 } from '../features/inventory/epics'
+import { landingContentFetchEpic, landingContentSaveEpic } from '../features/landingContent/epics'
 import { newsletterSubscribeEpic } from '../features/newsletter/epics'
 import { uiScreenLockEpic, uiToastAutoDismissEpic } from '../features/ui/epics.ts'
 
@@ -35,5 +36,7 @@ export const rootEpic = combineEpics(
   inventoryUpdateEpic,
   inventoryDeleteEpic,
   inventoryFileUploadEpic,
+  landingContentFetchEpic,
+  landingContentSaveEpic,
   newsletterSubscribeEpic,
 )

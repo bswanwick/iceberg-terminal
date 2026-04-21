@@ -1,9 +1,12 @@
 import { Box, Button, Paper, Stack, Typography } from '@mui/material'
 import { useAppSelector } from '../../../app/hooks'
+import { sanitizeLandingHeroHtml } from '../../landingContent/content'
+import { selectLandingHeroBodyHtml } from '../../landingContent/selectors'
 import { selectAppLocked } from '../../ui/selectors'
 
 function LandingHero() {
   const appLocked = useAppSelector(selectAppLocked)
+  const heroBodyHtml = useAppSelector(selectLandingHeroBodyHtml)
 
   return (
     <Paper
@@ -47,26 +50,25 @@ function LandingHero() {
         >
           Excursions into the Golden Age of Travel
         </Typography>
-        <Typography
-          variant="h6"
+        <Box
           sx={{
             maxWidth: 680,
             color: 'rgba(238, 228, 211, 0.92)',
             fontWeight: 400,
             fontSize: { xs: '16px', md: '1rem' },
+            '& p': {
+              m: 0,
+            },
+            '& ul, & ol': {
+              my: 0,
+              pl: 3,
+            },
+            '& li + li': {
+              mt: 0.75,
+            },
           }}
-        >
-          Welcome to our new online gallery! Our collection is focused on the printed historical
-          record of travel and tourism from the late 19th to mid-20th century. We hope you find
-          inspiration in our carefully curated selection of{' '}
-          <b style={{ textDecoration: 'underline' }}>vintage travel brochures</b>,{' '}
-          <b style={{ textDecoration: 'underline' }}>tour guidebooks</b>,{' '}
-          <b style={{ textDecoration: 'underline' }}>timetables</b>,{' '}
-          <b style={{ textDecoration: 'underline' }}>maps</b> and other{' '}
-          <b style={{ textDecoration: 'underline' }}>collectibles</b>. We are beyond excited that
-          you are here, and we hope you enjoy exploring our collection as much as we enjoyed putting
-          it together.
-        </Typography>
+          dangerouslySetInnerHTML={{ __html: sanitizeLandingHeroHtml(heroBodyHtml) }}
+        />
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
           <Button href="#featured" variant="contained" color="secondary" size="large">

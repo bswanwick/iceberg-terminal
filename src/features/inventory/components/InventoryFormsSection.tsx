@@ -3,10 +3,12 @@ import type { DragEvent, ReactNode } from 'react'
 import {
   Box,
   Button,
+  Checkbox,
   Divider,
   Dialog,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   IconButton,
   LinearProgress,
   MenuItem,
@@ -66,7 +68,7 @@ type InventoryFormTarget = 'add' | 'edit'
 
 type InventoryTextField = Exclude<
   keyof InventoryFormState,
-  'conditionReport' | 'files' | 'featured'
+  'conditionReport' | 'files' | 'featured' | 'customDescriptionEnabled'
 >
 
 type InventoryFormValidationState = {
@@ -184,6 +186,15 @@ const InventoryFormsSection = () => {
   const updateFeatured = (formTarget: InventoryFormTarget, value: boolean) => {
     dispatch(
       inventorySlice.actions.inventoryFormFeaturedUpdated({
+        form: formTarget,
+        value,
+      }),
+    )
+  }
+
+  const updateCustomDescriptionEnabled = (formTarget: InventoryFormTarget, value: boolean) => {
+    dispatch(
+      inventorySlice.actions.inventoryFormCustomDescriptionEnabledUpdated({
         form: formTarget,
         value,
       }),
@@ -413,7 +424,11 @@ const InventoryFormsSection = () => {
             </Stack>
           </Stack>
 
-          <Stack direction="row" spacing={1} sx={{ alignItems: 'stretch' }}>
+          <Stack
+            direction={{ xs: 'column', md: 'row' }}
+            spacing={1}
+            sx={{ alignItems: { xs: 'stretch', md: 'center' } }}
+          >
             <Button
               variant="outlined"
               onClick={() => handleCanonicalChooserOpen(formTarget)}
@@ -443,6 +458,23 @@ const InventoryFormsSection = () => {
                 </Typography>
               </Stack>
             </Button>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={form.customDescriptionEnabled}
+                  onChange={(event) => {
+                    const checked = event.target.checked
+                    updateCustomDescriptionEnabled(formTarget, checked)
+                    if (!checked) {
+                      updateTextField(formTarget, 'customDescription', '')
+                    }
+                  }}
+                />
+              }
+              disabled={options.disabled}
+              label="Custom description"
+              sx={{ mx: 0, flexShrink: 0 }}
+            />
             <IconButton
               aria-label="Add canonical record"
               onClick={handleCanonicalAddDialogOpen}
@@ -457,6 +489,20 @@ const InventoryFormsSection = () => {
               <AddIcon />
             </IconButton>
           </Stack>
+          {form.customDescriptionEnabled ? (
+            <TextField
+              label="Custom listing description"
+              value={form.customDescription}
+              onChange={(event) =>
+                updateTextField(formTarget, 'customDescription', event.target.value)
+              }
+              disabled={options.disabled}
+              fullWidth
+              multiline
+              minRows={5}
+              helperText="Shown on featured landing cards and in the listing preview before the canonical description."
+            />
+          ) : null}
           <Divider />
         </Stack>
 
@@ -662,6 +708,7 @@ const InventoryFormsSection = () => {
         title: addForm.title.trim(),
         publisher: addForm.publisher.trim(),
         canonicalRecordId: addForm.canonicalRecordId,
+        customDescription: addForm.customDescription.trim(),
         productLine,
         featured: addForm.featured,
         publishYear: normalizePublishYear(addForm.publishYear),
@@ -693,6 +740,7 @@ const InventoryFormsSection = () => {
         title: editForm.title.trim(),
         publisher: editForm.publisher.trim(),
         canonicalRecordId: editForm.canonicalRecordId,
+        customDescription: editForm.customDescription.trim(),
         productLine,
         featured: editForm.featured,
         publishYear: normalizePublishYear(editForm.publishYear),

@@ -14,6 +14,7 @@ export type InventoryItem = {
   title: string
   publisher: string
   canonicalRecordId: string
+  customDescription: string
   productLine: InventoryProductLine
   featured: boolean
   publishYear: string
@@ -38,6 +39,8 @@ export type InventoryFormState = {
   title: string
   publisher: string
   canonicalRecordId: string
+  customDescription: string
+  customDescriptionEnabled: boolean
   productLine: InventoryProductLineField
   featured: boolean
   publishYear: string
@@ -56,7 +59,7 @@ export type InventoryFormState = {
 
 type InventoryFormField = Exclude<
   keyof InventoryFormState,
-  'conditionReport' | 'files' | 'featured'
+  'conditionReport' | 'files' | 'featured' | 'customDescriptionEnabled'
 >
 
 type InventoryFormUpdatePayload = {
@@ -66,6 +69,11 @@ type InventoryFormUpdatePayload = {
 }
 
 type InventoryFeaturedUpdatePayload = {
+  form: 'add' | 'edit'
+  value: boolean
+}
+
+type InventoryCustomDescriptionEnabledUpdatePayload = {
   form: 'add' | 'edit'
   value: boolean
 }
@@ -155,6 +163,8 @@ const createEmptyInventoryForm = (): InventoryFormState => ({
   title: '',
   publisher: '',
   canonicalRecordId: '',
+  customDescription: '',
+  customDescriptionEnabled: false,
   productLine: '',
   featured: false,
   publishYear: '',
@@ -336,6 +346,13 @@ export const inventorySlice = createSlice({
       const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
       targetForm.featured = action.payload.value
     },
+    inventoryFormCustomDescriptionEnabledUpdated: (
+      state,
+      action: PayloadAction<InventoryCustomDescriptionEnabledUpdatePayload>,
+    ) => {
+      const targetForm = action.payload.form === 'add' ? state.ui.addForm : state.ui.editForm
+      targetForm.customDescriptionEnabled = action.payload.value
+    },
     inventoryConditionReportSaved: (
       state,
       action: PayloadAction<InventoryConditionReportUpdatePayload>,
@@ -373,6 +390,8 @@ export const inventorySlice = createSlice({
         title: item.title,
         publisher: item.publisher,
         canonicalRecordId: item.canonicalRecordId,
+        customDescription: item.customDescription,
+        customDescriptionEnabled: Boolean(item.customDescription.trim()),
         productLine: item.productLine,
         featured: item.featured,
         publishYear: item.publishYear,

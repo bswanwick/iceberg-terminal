@@ -47,5 +47,10 @@ service cloud.firestore {
       allow read: if hasElevatedAccess();
       allow update, delete: if false;
     }
+
+    match /siteContent/{documentId} {
+      allow read: if true;
+      allow write: if hasElevatedAccess();
+    }
   }
 }

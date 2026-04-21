@@ -183,3 +183,4 @@ System shall store high-resolution images suitable for research and inspection
 14. Do you know more about this? (A CTA inviting users to contribute to the canonical database.)
 15. The listing preview modal takes too long to appear from first click - images are too big.
 16. Don't use canon descriptions for the reprints line.
+17. Don't user scope inventory additions by admins. items added by admins are available to all auth'd users.

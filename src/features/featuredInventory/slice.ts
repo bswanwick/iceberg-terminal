@@ -27,6 +27,8 @@ export type FeaturedInventoryItem = {
   collection: string
   summary: string
   description: string
+  canonicalDescription: string
+  customDescription: string
   publisher: string
   format: string
   publishYear: string

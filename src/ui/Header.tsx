@@ -21,7 +21,7 @@ const headerNavGroups: HeaderNavGroup[] = [
     to: '/dashboard',
     quickLinks: [
       { label: 'Overview', to: '/dashboard#dashboard-overview' },
-      { label: 'Inventory count', to: '/dashboard#dashboard-inventory-metrics' },
+      { label: 'Landing Page', to: '/dashboard#dashboard-landing-page-controls' },
       { label: 'Listing readiness', to: '/dashboard#dashboard-listing-readiness' },
       { label: 'Recent activity', to: '/dashboard#dashboard-recent-activity' },
     ],

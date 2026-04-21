@@ -1,11 +1,12 @@
 import { Box, Paper, Stack } from '@mui/material'
+import { useAppSelector } from '../../../app/hooks'
+import { selectLandingTelegramWireMessage } from '../../landingContent/selectors'
 import TelegramWire from '../../../ui/TelegramWire'
 import swimmingLogo from '../../../assets/swimming-swan-logo.png'
 
-const TELEGRAM_WIRE_MESSAGE =
-  'Welcome to The Tourists Antiquarium [STOP] We offer both historical artifacts and modern reproductions [STOP] Learn more about what we do at our blog - in the menu [STOP] Please enjoy your stay and thank you for supporting our small business [STOP]'
-
 function LandingSubHero() {
+  const telegramWireMessage = useAppSelector(selectLandingTelegramWireMessage)
+
   return (
     <Paper
       elevation={0}
@@ -22,7 +23,7 @@ function LandingSubHero() {
       <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} alignItems="center">
         <Box sx={{ width: '100%', maxWidth: 640 }}>
           <TelegramWire
-            message={TELEGRAM_WIRE_MESSAGE}
+            message={telegramWireMessage}
             to="All Persons"
             from="SWANWICK AND COMPANY"
             headerLabel="INCOMING Wire Transmission"

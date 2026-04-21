@@ -20,6 +20,7 @@ import {
   selectCanonicalRecordsError,
 } from '../../features/canonicalRecords/selectors'
 import { selectInventory, selectInventoryError } from '../../features/inventory/selectors'
+import LandingPageControlsCard from '../../features/landingContent/components/LandingPageControlsCard'
 import type { InventoryItem } from '../../features/inventory/slice'
 import { useRequireAuthenticatedRoute } from './useRequireAuthenticatedRoute'
 
@@ -260,6 +261,8 @@ function DashboardRoute() {
           </Table>
         </TableContainer>
       </Paper>
+
+      <LandingPageControlsCard />
     </Stack>
   )
 }
