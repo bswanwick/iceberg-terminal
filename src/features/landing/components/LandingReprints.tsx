@@ -183,12 +183,13 @@ function LandingReprints() {
         </Typography>
         <Typography variant="h3">Faithfully reproduced prints</Typography>
         <Typography variant="body1" sx={{ maxWidth: 780 }}>
-          We sell new paper too! Our in-house line uses antique letterpress printing blocks and
-          traditional printing methods to create high-quality, display ready, prints. We use only
-          high-quality cotton rag paper. We hand-roll the ink and hand-press the paper ourselves. We
-          also offer print-on-demand home decor and other items made from high-DPI scans that we
-          personally sourced, captured, cropped, corrected, and digitized ourselves. All of our
-          reprint items are <b>made in the USA</b>.
+          We sell new paper too. Our in-house line uses traditional printing methods and authentic
+          antique printing press blocks to create high-quality, display ready, prints. Our handmade
+          line uses a high quality, acid-free, cotton rag paper. We then hand-roll the ink and
+          hand-press the paper ourselves, for that authentic period feel. We also offer
+          print-on-demand home decor items. These items are made from high-DPI scans that we
+          personally sourced, and in some cases captured, cropped, corrected, and digitized
+          ourselves! All of our reprint items are <b>made in the USA</b>.
         </Typography>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} useFlexGap flexWrap="wrap">
           {featuredInventoryError ? (
