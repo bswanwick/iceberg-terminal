@@ -5,6 +5,7 @@ import LandingHero from '../../features/landing/components/LandingHero'
 import { MarketingHeaderOffset } from '../../features/landing/components/MarketingSiteHeader'
 import LandingReprints from '../../features/landing/components/LandingReprints'
 import LandingSubHero from '../../features/landing/components/LandingSubHero'
+import { Link } from 'react-router-dom'
 
 // This route is used as the main marketing page for the business. It includes a newsletter sign-up form and previews of featured items. If the user is already authenticated, they are redirected to the dashboard.
 
@@ -23,10 +24,7 @@ function LandingRoute() {
         sx={{ textAlign: 'center', pb: 1, color: 'rgba(235, 225, 209, 0.92)' }}
       >
         <br /> © {new Date().getFullYear()} Swanwick &amp; Company. All rights reserved.
-        {/* <Link href="/platform" underline="hover" color="inherit">
-          View project status
-        </Link>
-        . */}
+        <hr />
       </Typography>
     </Stack>
   )

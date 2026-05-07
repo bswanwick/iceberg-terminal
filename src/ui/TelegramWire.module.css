@@ -5,26 +5,8 @@
   background: linear-gradient(180deg, #f5edd9 0%, #ede2c7 100%);
   box-shadow: 0 4px 12px rgba(22, 18, 12, 0.2);
   color: #2d2315;
-  padding: 1rem 3.8rem 1rem 1.25rem;
+  padding: 1rem 1.25rem;
   overflow-wrap: anywhere;
-}
-
-.helpAction {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.85rem;
-  z-index: 1;
-}
-
-.helpButton {
-  color: #7c5c2e;
-  border: 1px solid rgba(124, 92, 46, 0.25);
-  background: rgba(255, 250, 238, 0.92);
-  font-size: 1rem;
-}
-
-.helpButton:hover {
-  background: rgba(255, 247, 226, 1);
 }
 
 .header {
@@ -60,6 +42,8 @@
 
 .tickerViewport {
   position: relative;
+  width: 100%;
+  box-sizing: border-box;
   overflow: hidden;
   white-space: nowrap;
   min-height: 2.45rem;
@@ -115,6 +99,19 @@
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .container {
+    padding: 0.9rem 0.85rem;
+  }
+
+  .tickerViewport {
+    margin-left: -0.1rem;
+    margin-right: -0.1rem;
+    padding-left: 0.45rem;
+    padding-right: 0.45rem;
+  }
 }
 
 @keyframes tickerScroll {

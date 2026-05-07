@@ -109,21 +109,23 @@ function RegisterRoute() {
         >
           <Stack spacing={0.5} sx={{ flex: 1, maxWidth: 680 }}>
             <Typography variant="h3">Project Iceberg</Typography>
-            {/* <Typography variant="body1" sx={{ maxWidth: 640 }}>
+            <Typography variant="body1" sx={{ maxWidth: 640 }}>
               We are building an online archive of vintage tourism ephemera. Many organizations have
               already done amazing work building enormous databases full of railway, oceanliner,
               airline, and advertising materials, but rarely is tourism ephemera the primary focus.
+            </Typography>
+            <Typography variant="body1" sx={{ maxWidth: 640 }}>
               Travel brochures, guidebooks, promotional booklets, and destination literature remain
               scattered, uncataloged, and often overlooked. We want to change that. Thomas Cook is
               just the tip of the iceberg. We'd like to study the rest, share it, and make it
               accessible to everyone.
-            </Typography> */}
-            <Typography variant="body1" sx={{ maxWidth: 640 }}>
-              Project Iceberg is an operations hub for dealers and collectors. We are building a
-              better experience to help you buy, sell, research, and share your collections. If
+            </Typography>
+            {/* <Typography variant="body1" sx={{ maxWidth: 640 }}>
+              Project Iceberg is also an operations hub for dealers and collectors. We are building
+              a better experience to help you buy, sell, research, and share your collections. If
               you'd like to partner with us as we build, or if you would like to be considered for
               early access to the beta, please join our waiting list below.
-            </Typography>
+            </Typography> */}
           </Stack>
 
           <Box
@@ -290,8 +292,7 @@ function RegisterRoute() {
             sx={registerFieldSx}
           />
           <Typography variant="body2" sx={{ color: 'rgba(238, 228, 211, 0.8)' }}>
-            Share what you collect, what you are researching, or how you would like to use the
-            members area.
+            Are you interested in archiving vintage travel and tourism materials? Tell us more!
           </Typography>
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} justifyContent="space-between">
             <Button

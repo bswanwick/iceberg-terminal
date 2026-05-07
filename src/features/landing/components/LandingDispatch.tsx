@@ -61,9 +61,11 @@ function LandingDispatch() {
         </Typography>
         <Typography variant="h3">The Tourist's Dispatch</Typography>
         <Typography variant="body1" sx={{ maxWidth: 720 }}>
-          A free monthly e-newsletter with great stories, tips, collector insights, and sneak
-          previews of upcoming inventory. One more thing... we promise that everything you read is
-          written by a human. Now fancy that!
+          Once in a while, we send out a free monthly e-newsletter with great stories, free content,
+          collector insights, and sneak previews. We call it <b>The Tourist's Dispatch</b> and it's
+          the best way to stay in the know. Everything you see on our site was hand-typed by a
+          human; no copy/paste, no AI. Just good old-fashioned travel writing written by a real
+          person. Fancy that!
         </Typography>
         {newsletterStatus === 'success' && lastSubmission && (
           <Alert severity="success">
@@ -89,7 +91,9 @@ function LandingDispatch() {
           />
         </Stack>
         <Stack spacing={1}>
-          <Typography variant="subtitle2">Share your interests (Optional)</Typography>
+          <Typography variant="subtitle2">
+            You may share your interests with us, should you so choose.
+          </Typography>
           <FormGroup
             sx={{
               display: 'grid',

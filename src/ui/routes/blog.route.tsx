@@ -58,46 +58,39 @@ function BlogRoute() {
         >
           <Stack spacing={2}>
             <Typography variant="overline" sx={{ letterSpacing: '0.18em' }}>
-              First dispatch
+              A note from the editor
             </Typography>
             <Typography variant="h3">Why Tourism?</Typography>
+            <Typography variant="body1">My fellow travelers,</Typography>
             <Typography variant="body1">
-              Dear Traveler, Have you ever seen the movie Titanic? There&apos;s a scene early on
-              where the main character, Rose, first arrives at the Southampton quayside. The ship
-              looms in the background, and she is surrounded by a sea of activity: cars, horses,
-              families unloading their buggies (some with help from dockhands, most without) and
-              long wooden gangways watched over by stern men in uniform.
+              Do you remember the movie <span style={{ fontStyle: 'italic' }}>Titanic</span>? Early
+              on there is a scene where we first get to see thFe marvelous ship docked at the
+              Southampton quayside. The main character, Rose, steps out of her car and she is
+              surrounded by a sea of activity: cars, horses, families unloading their buggies (some
+              with help from dockhands, most without) and long wooden gangways watched over by stern
+              men in uniform.
             </Typography>
             <Typography variant="body1">
-              It&apos;s hard not to be captivated by the scene, as it captures something much larger
-              than one ship or one disaster. It conveys the experience of travel; what it would have
-              actually felt like to be there. If you look at the faces in the crowd, you&apos;ll see
-              even more: the anticipation of departure, the promise of arrival, and the uncertainty
-              of return.
+              It&apos;s hard not to be captivated by it all, as it captures something much larger
+              than one ship or one disaster. It shows us the experience of travel at that time; what
+              it would have actually been like to be a tourist in the early 1900's. Can you imagine
+              it?
             </Typography>
             <Typography variant="body1">
-              For all the steel and steam that enabled travel, what people carried with them was
-              something far more personal. To this day, what we carry when we travel is unique to
-              each of us. Broadly speaking, however, tourism reveals how places are imagined, how
-              cities or countries introduce themselves, and how ordinary folks look at a wider
-              world.
+              For all the steel and steam that enabled us to travel, what people carried with them
+              was something far more personal. Our tourism history carries with it the hopes and
+              dreams of previous generations. Yet, the evidence of this is being lost every day.
+              Early guidebooks, travel brochures, and other &ldquo;ephemera&rdquo; were designed to
+              be read and thrown away. Only a small portion has survived.
             </Typography>
             <Typography variant="body1">
-              Our tourism history carries with it the hopes and dreams of previous generations. Yet,
-              the evidence of this heritage is being lost every day. Early guidebooks, travel
-              brochures, and other &ldquo;ephemera&rdquo; were designed to be read and thrown away.
-              Only a small portion has survived. By digitizing these pieces of history, we are
-              ensuring that this unique part of our story is not lost.
+              When we travel as passengers, guests, or as tourists, we all share in a common
+              experience. We are setting out toward something foreign and unknown. We test our
+              patience and our ability to have a good time in the face of adversity. To look closely
+              at tourism is to look closely at the way people experience the world an each other.
             </Typography>
-            <Typography variant="body1">
-              When we travel as passengers, guests, or as tourists, we share a common experience. We
-              are setting out toward something foreign and unknown. We test our mettle, our
-              patience, and our ability to have a good time along the way. To look closely at
-              tourism is to look closely at the way people experience themselves, one another, and
-              the world. If that&apos;s a little too flowery for you, I&apos;m sorry, but it&apos;s
-              true.
-            </Typography>
-            <Typography variant="body1">Until next time, Swanwick &amp; Co.</Typography>
+            <Typography variant="body1">All my best,</Typography>
+            <Typography variant="body1">Blaise Swanwick, Founder</Typography>
           </Stack>
         </Paper>
 
