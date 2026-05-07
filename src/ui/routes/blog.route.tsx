@@ -64,8 +64,8 @@ function BlogRoute() {
             <Typography variant="body1">My fellow travelers,</Typography>
             <Typography variant="body1">
               Do you remember the movie <span style={{ fontStyle: 'italic' }}>Titanic</span>? Early
-              on there is a scene where we first get to see thFe marvelous ship docked at the
-              Southampton quayside. The main character, Rose, steps out of her car and she is
+              on there is a scene where we first get to see the magnificent ship docked at the
+              Southampton quayside. The main character, Rose, steps out of the car and she is
               surrounded by a sea of activity: cars, horses, families unloading their buggies (some
               with help from dockhands, most without) and long wooden gangways watched over by stern
               men in uniform.
@@ -78,16 +78,16 @@ function BlogRoute() {
             </Typography>
             <Typography variant="body1">
               For all the steel and steam that enabled us to travel, what people carried with them
-              was something far more personal. Our tourism history carries with it the hopes and
-              dreams of previous generations. Yet, the evidence of this is being lost every day.
-              Early guidebooks, travel brochures, and other &ldquo;ephemera&rdquo; were designed to
-              be read and thrown away. Only a small portion has survived.
+              was something far more personal. The hopes and dreams of previous generations are
+              wrapped up in these artifacts. Yet, they are being lost every day. Early guidebooks,
+              travel brochures, and other &ldquo;ephemera&rdquo; were never meant to be kept.
             </Typography>
             <Typography variant="body1">
               When we travel as passengers, guests, or as tourists, we all share in a common
               experience. We are setting out toward something foreign and unknown. We test our
-              patience and our ability to have a good time in the face of adversity. To look closely
-              at tourism is to look closely at the way people experience the world an each other.
+              patience, resilience, and our ability to have a good time along the way. To look
+              closely at tourism is to look closely at the way people experience the world and each
+              other.
             </Typography>
             <Typography variant="body1">All my best,</Typography>
             <Typography variant="body1">Blaise Swanwick, Founder</Typography>
