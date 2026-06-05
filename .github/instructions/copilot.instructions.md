@@ -42,7 +42,7 @@ return { title, brandPublisher, year, format };
 # UI Conventions
 
 - Modals should have X icon in top-right corner to close, and clicking outside the modal should also close it.
--
+- The general theme and mood of the consumer UI is restrained, institutional, and accessible to the everyday user.
 
 # Application Architecture
 

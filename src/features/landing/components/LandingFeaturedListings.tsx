@@ -318,7 +318,6 @@ function LandingFeaturedListings() {
         item={selectedFeaturedItem}
         open={Boolean(selectedFeaturedItem)}
         onClose={closeFeaturedPreview}
-        previewTitle="The Adored Collection Preview"
       />
     </Paper>
   )

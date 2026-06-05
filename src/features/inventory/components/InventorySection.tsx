@@ -1,11 +1,17 @@
 import { useMemo, useState } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
 import {
+  Button,
   Box,
   Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   IconButton,
   LinearProgress,
+  MenuItem,
   Paper,
   Stack,
   Table,
@@ -17,26 +23,27 @@ import {
   TableRow,
   TableSortLabel,
   TextField,
-  Tooltip,
   Typography,
 } from '@mui/material'
 import DeleteIcon from '@mui/icons-material/DeleteOutline'
 import EditIcon from '@mui/icons-material/Edit'
+import TuneIcon from '@mui/icons-material/Tune'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
 import { selectAppLocked } from '../../ui/selectors'
 import { selectInventory, selectInventoryStatus } from '../selectors'
+import { inventoryProductLineOptions } from '../formUtils'
 import InventoryFormsSection from './InventoryFormsSection.tsx'
-import { inventorySlice, type InventoryFile } from '../slice'
+import { inventorySlice } from '../slice'
 
 type InventorySortOrder = 'asc' | 'desc'
 
 type InventoryColumnKey =
   | 'title'
+  | 'productLine'
   | 'featured'
   | 'publishYear'
   | 'acquisitionCost'
   | 'retailPrice'
-  | 'filesCount'
   | 'daysInInventory'
 
 type InventoryColumnAlign = 'left' | 'center' | 'right'
@@ -52,12 +59,12 @@ type InventoryColumn = {
 type InventoryRow = {
   id: string
   title: string
+  productLine: string
   featured: boolean
   publishYear: string
   acquisitionCost: number | null
   retailPrice: number | null
-  filesCount: number
-  files: InventoryFile[]
+  hasFiles: boolean
   daysInInventory: number | null
 }
 
@@ -67,13 +74,30 @@ type InventoryRowsPerPageEvent = ChangeEvent<HTMLInputElement | HTMLTextAreaElem
 
 type InventorySortClickEvent = MouseEvent<HTMLElement>
 
+type InventoryStatusFilter = 'all' | 'featured' | 'not-featured'
+
+type InventoryFileStatusFilter = 'all' | 'has-files' | 'no-files'
+
+type InventoryFilters = {
+  searchText: string
+  productLine: string
+  featured: InventoryStatusFilter
+  publishYear: string
+  fileStatus: InventoryFileStatusFilter
+  acquisitionCostMin: string
+  acquisitionCostMax: string
+  retailPriceMin: string
+  retailPriceMax: string
+  daysInInventoryMin: string
+  daysInInventoryMax: string
+}
+
 const inventoryColumns: InventoryColumn[] = [
   { id: 'title', label: 'Title', sortable: true, align: 'left', minWidth: 180 },
-  { id: 'publishYear', label: 'Year', sortable: true, align: 'left', minWidth: 96 },
+  { id: 'productLine', label: 'Product Line', sortable: true, align: 'left', minWidth: 120 },
   { id: 'featured', label: 'Featured', sortable: true, align: 'center', minWidth: 110 },
   { id: 'acquisitionCost', label: 'Acq. Cost', sortable: true, align: 'right', minWidth: 120 },
   { id: 'retailPrice', label: 'Retail', sortable: true, align: 'right', minWidth: 120 },
-  { id: 'filesCount', label: 'Files', sortable: true, align: 'center', minWidth: 80 },
   {
     id: 'daysInInventory',
     label: 'Days in Inventory',
@@ -84,6 +108,20 @@ const inventoryColumns: InventoryColumn[] = [
 ]
 
 const normalizeFilter = (value: string) => value.trim().toLowerCase()
+
+const createInitialFilters = (): InventoryFilters => ({
+  searchText: '',
+  productLine: 'all',
+  featured: 'all',
+  publishYear: '',
+  fileStatus: 'all',
+  acquisitionCostMin: '',
+  acquisitionCostMax: '',
+  retailPriceMin: '',
+  retailPriceMax: '',
+  daysInInventoryMin: '',
+  daysInInventoryMax: '',
+})
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -113,6 +151,34 @@ const compareStrings = (left: string, right: string) =>
   left.localeCompare(right, undefined, { sensitivity: 'base' })
 
 const compareNumbers = (left: number, right: number) => left - right
+
+const parseFilterNumber = (value: string) => {
+  const trimmedValue = value.trim()
+  if (!trimmedValue) {
+    return null
+  }
+
+  const parsedValue = Number(trimmedValue)
+  return Number.isFinite(parsedValue) ? parsedValue : null
+}
+
+const matchesMinimum = (value: number | null, minimum: string) => {
+  const parsedMinimum = parseFilterNumber(minimum)
+  if (parsedMinimum === null) {
+    return true
+  }
+
+  return value !== null && value >= parsedMinimum
+}
+
+const matchesMaximum = (value: number | null, maximum: string) => {
+  const parsedMaximum = parseFilterNumber(maximum)
+  if (parsedMaximum === null) {
+    return true
+  }
+
+  return value !== null && value <= parsedMaximum
+}
 
 const sortInventoryRows = (
   rows: InventoryRow[],
@@ -153,12 +219,12 @@ const buildInventoryRows = (records: ReturnType<typeof selectInventory>): Invent
   records.map((item) => ({
     id: item.id,
     title: item.title || 'Untitled item',
+    productLine: item.productLine,
     featured: item.featured,
     publishYear: item.publishYear || 'No publish year',
     acquisitionCost: item.acquisitionCost,
     retailPrice: item.retailPrice,
-    filesCount: item.files.length,
-    files: item.files,
+    hasFiles: item.files.length > 0,
     daysInInventory: toDaysInInventory(item.createdAt),
   }))
 
@@ -168,34 +234,89 @@ const InventorySection = () => {
   const inventoryStatus = useAppSelector(selectInventoryStatus)
   const appLocked = useAppSelector(selectAppLocked)
 
-  const [filterText, setFilterText] = useState('')
+  const [filters, setFilters] = useState<InventoryFilters>(createInitialFilters)
   const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(8)
   const [sortBy, setSortBy] = useState<InventoryColumnKey>('daysInInventory')
   const [sortOrder, setSortOrder] = useState<InventorySortOrder>('desc')
+  const [filtersDialogOpen, setFiltersDialogOpen] = useState(false)
 
   const inventoryRows = useMemo(() => buildInventoryRows(inventory), [inventory])
 
   const filteredRows = useMemo(() => {
-    const normalizedFilter = normalizeFilter(filterText)
-    if (!normalizedFilter) {
-      return inventoryRows
-    }
-
     return inventoryRows.filter((row) => {
+      const normalizedSearchText = normalizeFilter(filters.searchText)
+      const normalizedPublishYear = normalizeFilter(filters.publishYear)
       const haystack = [
         row.title,
+        row.productLine,
         row.publishYear,
         row.featured ? 'featured adored collection' : 'not featured',
+        row.hasFiles ? 'has files' : 'no files without files',
         formatCurrency(row.acquisitionCost),
         formatCurrency(row.retailPrice),
       ]
         .join(' ')
         .toLowerCase()
 
-      return haystack.includes(normalizedFilter)
+      if (normalizedSearchText && !haystack.includes(normalizedSearchText)) {
+        return false
+      }
+
+      if (filters.productLine !== 'all' && row.productLine !== filters.productLine) {
+        return false
+      }
+
+      if (filters.featured === 'featured' && !row.featured) {
+        return false
+      }
+
+      if (filters.featured === 'not-featured' && row.featured) {
+        return false
+      }
+
+      if (
+        normalizedPublishYear &&
+        !normalizeFilter(row.publishYear).includes(normalizedPublishYear)
+      ) {
+        return false
+      }
+
+      if (filters.fileStatus === 'has-files' && !row.hasFiles) {
+        return false
+      }
+
+      if (filters.fileStatus === 'no-files' && row.hasFiles) {
+        return false
+      }
+
+      if (!matchesMinimum(row.acquisitionCost, filters.acquisitionCostMin)) {
+        return false
+      }
+
+      if (!matchesMaximum(row.acquisitionCost, filters.acquisitionCostMax)) {
+        return false
+      }
+
+      if (!matchesMinimum(row.retailPrice, filters.retailPriceMin)) {
+        return false
+      }
+
+      if (!matchesMaximum(row.retailPrice, filters.retailPriceMax)) {
+        return false
+      }
+
+      if (!matchesMinimum(row.daysInInventory, filters.daysInInventoryMin)) {
+        return false
+      }
+
+      if (!matchesMaximum(row.daysInInventory, filters.daysInInventoryMax)) {
+        return false
+      }
+
+      return true
     })
-  }, [filterText, inventoryRows])
+  }, [filters, inventoryRows])
 
   const sortedRows = useMemo(
     () => sortInventoryRows(filteredRows, sortBy, sortOrder),
@@ -207,9 +328,16 @@ const InventorySection = () => {
     return sortedRows.slice(start, start + rowsPerPage)
   }, [page, rowsPerPage, sortedRows])
 
-  const handleFilterChange = (event: InventoryFilterEvent) => {
-    setFilterText(event.target.value)
+  const updateFilter = <K extends keyof InventoryFilters>(field: K, value: InventoryFilters[K]) => {
+    setFilters((currentFilters) => ({
+      ...currentFilters,
+      [field]: value,
+    }))
     setPage(0)
+  }
+
+  const handleFilterChange = (field: keyof InventoryFilters) => (event: InventoryFilterEvent) => {
+    updateFilter(field, event.target.value)
   }
 
   const handleRequestSort = (event: InventorySortClickEvent, property: InventoryColumnKey) => {
@@ -229,16 +357,31 @@ const InventorySection = () => {
     setPage(0)
   }
 
-  const handleFilesCellClick = (row: InventoryRow) => {
-    dispatch(inventorySlice.actions.inventoryEditStarted({ id: row.id }))
-    dispatch(inventorySlice.actions.inventoryFileManagerOpened({ form: 'edit' }))
+  const handleFiltersDialogOpen = () => {
+    setFiltersDialogOpen(true)
+  }
 
+  const handleFiltersDialogClose = () => {
+    setFiltersDialogOpen(false)
+  }
+
+  const handleResetFilters = () => {
+    setFilters(createInitialFilters())
+    setPage(0)
+  }
+
+  const scrollToEditForm = () => {
     requestAnimationFrame(() => {
       document.getElementById('inventory-edit-item')?.scrollIntoView({
         behavior: 'smooth',
         block: 'start',
       })
     })
+  }
+
+  const handleEditClick = (id: string) => {
+    dispatch(inventorySlice.actions.inventoryEditStarted({ id }))
+    scrollToEditForm()
   }
 
   return (
@@ -267,8 +410,8 @@ const InventorySection = () => {
           </Box>
           <TextField
             label="Search inventory 🔍"
-            value={filterText}
-            onChange={handleFilterChange}
+            value={filters.searchText}
+            onChange={handleFilterChange('searchText')}
             fullWidth
             disabled={inventory.length === 0}
             sx={{ maxWidth: { md: 420 } }}
@@ -314,7 +457,7 @@ const InventorySection = () => {
               {pagedRows.map((row) => (
                 <TableRow key={row.id} hover>
                   <TableCell>{row.title}</TableCell>
-                  <TableCell>{row.publishYear}</TableCell>
+                  <TableCell>{row.productLine}</TableCell>
                   <TableCell align="center">
                     <Chip
                       size="small"
@@ -325,15 +468,6 @@ const InventorySection = () => {
                   </TableCell>
                   <TableCell align="right">{formatCurrency(row.acquisitionCost)}</TableCell>
                   <TableCell align="right">{formatCurrency(row.retailPrice)}</TableCell>
-                  <TableCell
-                    align="center"
-                    onClick={() => handleFilesCellClick(row)}
-                    sx={{ cursor: 'pointer' }}
-                  >
-                    <Tooltip title="Edit files">
-                      <Chip size="small" label={row.filesCount} variant="outlined" />
-                    </Tooltip>
-                  </TableCell>
                   <TableCell align="right">
                     {row.daysInInventory === null ? '—' : row.daysInInventory}
                   </TableCell>
@@ -341,9 +475,7 @@ const InventorySection = () => {
                     <Stack direction="row" spacing={1} justifyContent="flex-end">
                       <IconButton
                         size="small"
-                        onClick={() =>
-                          dispatch(inventorySlice.actions.inventoryEditStarted({ id: row.id }))
-                        }
+                        onClick={() => handleEditClick(row.id)}
                         disabled={appLocked}
                       >
                         <EditIcon fontSize="small" />
@@ -376,16 +508,175 @@ const InventorySection = () => {
           </Table>
         </TableContainer>
 
-        <TablePagination
-          component="div"
-          count={filteredRows.length}
-          page={page}
-          onPageChange={handleChangePage}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          rowsPerPageOptions={[5, 8, 12, 20]}
-        />
+        <Stack
+          direction={{ xs: 'column', md: 'row' }}
+          spacing={1}
+          alignItems={{ xs: 'stretch', md: 'center' }}
+          justifyContent="space-between"
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <Button
+              startIcon={<TuneIcon fontSize="small" />}
+              onClick={handleFiltersDialogOpen}
+              disabled={inventory.length === 0}
+              size="small"
+              sx={{ alignSelf: 'flex-start', textTransform: 'none' }}
+            >
+              Filter
+            </Button>
+          </Box>
+          <TablePagination
+            component="div"
+            count={filteredRows.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 8, 12, 20]}
+            sx={{ flex: 1, '& .MuiTablePagination-toolbar': { px: 0 }, ml: { md: 'auto' } }}
+          />
+        </Stack>
         <Divider />
+
+        <Dialog open={filtersDialogOpen} onClose={handleFiltersDialogClose} fullWidth maxWidth="sm">
+          <DialogTitle>Filter inventory</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ pt: 1 }}>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <TextField
+                  select
+                  label="Product line"
+                  value={filters.productLine}
+                  onChange={handleFilterChange('productLine')}
+                  disabled={inventory.length === 0}
+                  fullWidth
+                >
+                  <MenuItem value="all">All product lines</MenuItem>
+                  {inventoryProductLineOptions.map((option) => (
+                    <MenuItem key={option} value={option}>
+                      {option}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  select
+                  label="Featured"
+                  value={filters.featured}
+                  onChange={handleFilterChange('featured')}
+                  disabled={inventory.length === 0}
+                  fullWidth
+                >
+                  <MenuItem value="all">All items</MenuItem>
+                  <MenuItem value="featured">Featured only</MenuItem>
+                  <MenuItem value="not-featured">Not featured</MenuItem>
+                </TextField>
+              </Stack>
+
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                <TextField
+                  label="Year"
+                  value={filters.publishYear}
+                  onChange={handleFilterChange('publishYear')}
+                  disabled={inventory.length === 0}
+                  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', maxLength: 4 }}
+                  fullWidth
+                />
+                <TextField
+                  select
+                  label="Files"
+                  value={filters.fileStatus}
+                  onChange={handleFilterChange('fileStatus')}
+                  disabled={inventory.length === 0}
+                  fullWidth
+                >
+                  <MenuItem value="all">Any file status</MenuItem>
+                  <MenuItem value="has-files">Has files</MenuItem>
+                  <MenuItem value="no-files">No files</MenuItem>
+                </TextField>
+              </Stack>
+
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Acquisition cost
+                </Typography>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <TextField
+                    label="Min"
+                    value={filters.acquisitionCostMin}
+                    onChange={handleFilterChange('acquisitionCostMin')}
+                    disabled={inventory.length === 0}
+                    inputProps={{ inputMode: 'decimal', min: 0, step: '0.01' }}
+                    fullWidth
+                  />
+                  <TextField
+                    label="Max"
+                    value={filters.acquisitionCostMax}
+                    onChange={handleFilterChange('acquisitionCostMax')}
+                    disabled={inventory.length === 0}
+                    inputProps={{ inputMode: 'decimal', min: 0, step: '0.01' }}
+                    fullWidth
+                  />
+                </Stack>
+              </Stack>
+
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Retail price
+                </Typography>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <TextField
+                    label="Min"
+                    value={filters.retailPriceMin}
+                    onChange={handleFilterChange('retailPriceMin')}
+                    disabled={inventory.length === 0}
+                    inputProps={{ inputMode: 'decimal', min: 0, step: '0.01' }}
+                    fullWidth
+                  />
+                  <TextField
+                    label="Max"
+                    value={filters.retailPriceMax}
+                    onChange={handleFilterChange('retailPriceMax')}
+                    disabled={inventory.length === 0}
+                    inputProps={{ inputMode: 'decimal', min: 0, step: '0.01' }}
+                    fullWidth
+                  />
+                </Stack>
+              </Stack>
+
+              <Stack spacing={1}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Days in inventory
+                </Typography>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  <TextField
+                    label="Min"
+                    value={filters.daysInInventoryMin}
+                    onChange={handleFilterChange('daysInInventoryMin')}
+                    disabled={inventory.length === 0}
+                    inputProps={{ inputMode: 'numeric', min: 0, step: 1 }}
+                    fullWidth
+                  />
+                  <TextField
+                    label="Max"
+                    value={filters.daysInInventoryMax}
+                    onChange={handleFilterChange('daysInInventoryMax')}
+                    disabled={inventory.length === 0}
+                    inputProps={{ inputMode: 'numeric', min: 0, step: 1 }}
+                    fullWidth
+                  />
+                </Stack>
+              </Stack>
+            </Stack>
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={handleResetFilters} disabled={inventory.length === 0}>
+              Reset
+            </Button>
+            <Button onClick={handleFiltersDialogClose} variant="contained">
+              Done
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         <InventoryFormsSection />
       </Stack>

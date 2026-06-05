@@ -25,8 +25,8 @@ function LandingSubHero() {
           <TelegramWire
             message={telegramWireMessage}
             to="All Persons"
-            from="SWANWICK AND COMPANY"
-            headerLabel="INCOMING Wire Transmission"
+            from="Swanwick & Company"
+            headerLabel="Urgent Telegram"
             headerColor="#b53a2d"
           />
         </Box>

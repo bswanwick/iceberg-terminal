@@ -243,7 +243,6 @@ function LandingReprints() {
         item={selectedPrintItem}
         open={Boolean(selectedPrintItem)}
         onClose={closePrintPreview}
-        previewTitle="Print Gallery Preview"
       />
     </Paper>
   )

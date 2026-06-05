@@ -126,7 +126,7 @@ function MarketingSiteHeader() {
                   variant="h6"
                   sx={{ lineHeight: 1, display: { xs: 'none', md: 'block' } }}
                 >
-                  Swanwick & Company presents:
+                  Welcome to:
                 </Typography>
                 <Typography
                   variant="h4"

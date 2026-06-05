@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Checkbox,
+  Chip,
   Divider,
   Dialog,
   DialogContent,
@@ -98,6 +99,82 @@ const inventoryFormPaperSx = {
   background:
     'linear-gradient(180deg, rgba(236, 229, 210, 0.96) 0%, rgba(232, 222, 200, 0.96) 100%)',
   position: 'relative',
+}
+
+const inventoryFormGroupSx = {
+  p: { xs: 1.5, md: 2 },
+  borderRadius: 2,
+  border: '1px solid rgba(17, 24, 39, 0.08)',
+  backgroundColor: 'rgba(255, 255, 255, 0.4)',
+}
+
+const inventoryFormFieldSx = {
+  '& .MuiInputLabel-root': {
+    fontWeight: 600,
+    letterSpacing: '0.01em',
+  },
+  '& .MuiInputBase-root, & .MuiPickersInputBase-root, & .MuiPickersOutlinedInput-root': {
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    transition: 'background-color 160ms ease, box-shadow 160ms ease, border-color 160ms ease',
+  },
+  '& .MuiOutlinedInput-root, & .MuiPickersOutlinedInput-root': {
+    '& fieldset': {
+      borderColor: 'rgba(71, 85, 105, 0.28)',
+    },
+    '&:hover fieldset': {
+      borderColor: 'rgba(71, 85, 105, 0.48)',
+    },
+    '&.Mui-focused': {
+      backgroundColor: 'rgba(255, 255, 255, 0.96)',
+      boxShadow: '0 0 0 4px rgba(191, 219, 254, 0.45)',
+    },
+    '&.Mui-focused fieldset': {
+      borderWidth: 2,
+      borderColor: 'rgba(37, 99, 235, 0.55)',
+    },
+  },
+  '& .MuiFormHelperText-root': {
+    fontWeight: 500,
+  },
+}
+
+const inventoryFormUtilityButtonSx = {
+  px: 2,
+  py: 1.1,
+  color: 'rgba(248, 250, 252, 0.98)',
+  borderColor: 'rgba(15, 23, 42, 0.42)',
+  background: 'linear-gradient(180deg, #2b4963 0%, #1f3448 100%)',
+  boxShadow: '0 6px 14px rgba(15, 23, 42, 0.14)',
+  '&:hover': {
+    borderColor: 'rgba(15, 23, 42, 0.5)',
+    background: 'linear-gradient(180deg, #32536f 0%, #22394f 100%)',
+    boxShadow: '0 8px 18px rgba(15, 23, 42, 0.18)',
+  },
+  '&.Mui-disabled': {
+    color: 'rgba(248, 250, 252, 0.7)',
+    borderColor: 'rgba(15, 23, 42, 0.18)',
+    background: 'linear-gradient(180deg, rgba(43, 73, 99, 0.6) 0%, rgba(31, 52, 72, 0.6) 100%)',
+  },
+}
+
+const inventoryCanonicalFieldButtonSx = {
+  flex: { xs: '1 1 auto', md: '0 1 58%' },
+  minWidth: 0,
+  maxWidth: { md: 640 },
+  justifyContent: 'flex-start',
+  px: 1.5,
+  py: 1.25,
+  textAlign: 'left',
+  textTransform: 'none',
+  color: 'text.primary',
+  borderRadius: 999,
+  borderColor: 'rgba(71, 85, 105, 0.28)',
+  backgroundColor: 'rgba(255, 255, 255, 0.82)',
+  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.6)',
+  '&:hover': {
+    borderColor: 'rgba(71, 85, 105, 0.48)',
+    backgroundColor: 'rgba(255, 255, 255, 0.96)',
+  },
 }
 
 const InventoryFormsSection = () => {
@@ -352,19 +429,22 @@ const InventoryFormsSection = () => {
   ) => {
     const form = getForm(formTarget)
     const validation = getValidation(formTarget)
+    const showProductLineError =
+      form.productLine.trim().length > 0 && Boolean(validation.productLine)
     const submitDisabled = options.disabled || !options.canSubmit || inventoryStatus === 'saving'
     const selectedCanonicalRecord = form.canonicalRecordId
       ? (canonicalRecordMap.get(form.canonicalRecordId) ?? null)
       : null
 
     return (
-      <Stack spacing={formTarget === 'edit' ? 1.5 : 2}>
+      <Stack spacing={formTarget === 'edit' ? 1.5 : 2} sx={inventoryFormFieldSx}>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             <Button
               variant="outlined"
               component="label"
               disabled={options.disabled || fileUploadStatus === 'uploading'}
+              sx={inventoryFormUtilityButtonSx}
             >
               {options.uploadButtonLabel}
               <input
@@ -378,6 +458,7 @@ const InventoryFormsSection = () => {
               variant="outlined"
               onClick={() => handleOpenFileManager(formTarget)}
               disabled={options.disabled || form.files.length === 0}
+              sx={inventoryFormUtilityButtonSx}
             >
               Manage files
             </Button>
@@ -391,7 +472,7 @@ const InventoryFormsSection = () => {
             {fileUploadError}
           </Typography>
         )}
-        <Stack spacing={2}>
+        <Stack spacing={2} sx={inventoryFormGroupSx}>
           <Typography variant="overline" sx={{ letterSpacing: '0.14em', color: 'text.secondary' }}>
             Listing information
           </Typography>
@@ -426,36 +507,32 @@ const InventoryFormsSection = () => {
 
           <Stack
             direction={{ xs: 'column', md: 'row' }}
-            spacing={1}
+            spacing={2}
             sx={{ alignItems: { xs: 'stretch', md: 'center' } }}
           >
             <Button
               variant="outlined"
               onClick={() => handleCanonicalChooserOpen(formTarget)}
               disabled={options.disabled}
-              sx={{
-                flex: 1,
-                justifyContent: 'flex-start',
-                px: 1.5,
-                py: 1.25,
-                textAlign: 'left',
-                textTransform: 'none',
-              }}
+              sx={inventoryCanonicalFieldButtonSx}
             >
               <Stack spacing={0.5} alignItems="flex-start" sx={{ minWidth: 0 }}>
-                <Typography fontWeight={600} sx={{ maxWidth: '100%' }} noWrap>
-                  {selectedCanonicalRecord?.title || 'Select record'}
-                </Typography>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ maxWidth: '100%' }}
-                  noWrap
-                >
-                  {selectedCanonicalRecord
-                    ? 'Canonical record selected.'
-                    : 'Select a canonical record to continue.'}
-                </Typography>
+                <Typography variant="caption">Canonical Reference:</Typography>
+
+                {selectedCanonicalRecord ? (
+                  <Typography fontWeight={600} sx={{ maxWidth: '100%' }} noWrap>
+                    {selectedCanonicalRecord.title}
+                  </Typography>
+                ) : (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ maxWidth: '100%' }}
+                    noWrap
+                  >
+                    Select a canonical record to continue.
+                  </Typography>
+                )}
               </Stack>
             </Button>
             <FormControlLabel
@@ -473,21 +550,31 @@ const InventoryFormsSection = () => {
               }
               disabled={options.disabled}
               label="Custom description"
-              sx={{ mx: 0, flexShrink: 0 }}
+              sx={{
+                mx: { xs: 0, md: 0.5 },
+                px: { xs: 0, md: 1 },
+                flexShrink: 0,
+                gap: 0.5,
+                '& .MuiFormControlLabel-label': {
+                  whiteSpace: 'nowrap',
+                },
+              }}
             />
-            <IconButton
-              aria-label="Add canonical record"
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
               onClick={handleCanonicalAddDialogOpen}
               disabled={options.disabled}
               sx={{
+                ...inventoryFormUtilityButtonSx,
                 flex: '0 0 auto',
-                width: 56,
+                minWidth: 132,
+                px: 2.25,
                 borderRadius: 1.5,
-                border: '1px solid rgba(17, 24, 39, 0.16)',
               }}
             >
-              <AddIcon />
-            </IconButton>
+              Add new
+            </Button>
           </Stack>
           {form.customDescriptionEnabled ? (
             <TextField
@@ -506,7 +593,7 @@ const InventoryFormsSection = () => {
           <Divider />
         </Stack>
 
-        <Stack spacing={2}>
+        <Stack spacing={2} sx={inventoryFormGroupSx}>
           <Typography variant="overline" sx={{ letterSpacing: '0.14em', color: 'text.secondary' }}>
             Sourcing and pricing
           </Typography>
@@ -518,8 +605,8 @@ const InventoryFormsSection = () => {
               value={form.productLine}
               onChange={(event) => updateTextField(formTarget, 'productLine', event.target.value)}
               disabled={options.disabled}
-              error={Boolean(validation.productLine)}
-              helperText={validation.productLine}
+              error={showProductLineError}
+              helperText={showProductLineError ? validation.productLine : ' '}
             >
               <MenuItem value="">Choose a product line</MenuItem>
               {inventoryProductLineOptions.map((option) => (
@@ -601,7 +688,7 @@ const InventoryFormsSection = () => {
           </Stack>
         </Stack>
 
-        <Stack spacing={2}>
+        <Stack spacing={2} sx={inventoryFormGroupSx}>
           <Typography variant="overline" sx={{ letterSpacing: '0.14em', color: 'text.secondary' }}>
             Condition and listing details
           </Typography>
@@ -627,6 +714,7 @@ const InventoryFormsSection = () => {
                   dispatch(inventorySlice.actions.conditionReportDialogOpened({ form: formTarget }))
                 }
                 disabled={options.disabled}
+                sx={inventoryFormUtilityButtonSx}
               >
                 Edit report
               </Button>
@@ -660,13 +748,15 @@ const InventoryFormsSection = () => {
             />
           </Stack>
         </Stack>
-        <TextField
-          label="Tags (comma-separated)"
-          fullWidth
-          value={form.tags}
-          onChange={(event) => updateTextField(formTarget, 'tags', event.target.value)}
-          disabled={options.disabled}
-        />
+        <Box sx={inventoryFormGroupSx}>
+          <TextField
+            label="Tags (comma-separated)"
+            fullWidth
+            value={form.tags}
+            onChange={(event) => updateTextField(formTarget, 'tags', event.target.value)}
+            disabled={options.disabled}
+          />
+        </Box>
         <Stack
           direction="row"
           spacing={1}
@@ -792,16 +882,48 @@ const InventoryFormsSection = () => {
         <Stack spacing={2}>
           {isEditingInventory && editingItem && (
             <Paper
+              key={editingId}
               id="inventory-edit-item"
               elevation={0}
-              sx={inventoryFormPaperSx}
+              sx={{
+                ...inventoryFormPaperSx,
+                scrollMarginTop: 24,
+                animation: 'inventoryEditLoaded 1.6s ease-out',
+                '@keyframes inventoryEditLoaded': {
+                  '0%': {
+                    boxShadow: '0 0 0 0 rgba(37, 99, 235, 0.34)',
+                    borderColor: 'rgba(37, 99, 235, 0.42)',
+                  },
+                  '35%': {
+                    boxShadow: '0 0 0 8px rgba(37, 99, 235, 0.12)',
+                    borderColor: 'rgba(37, 99, 235, 0.34)',
+                  },
+                  '100%': {
+                    boxShadow: '0 0 0 0 rgba(37, 99, 235, 0)',
+                    borderColor: 'rgba(17, 24, 39, 0.08)',
+                  },
+                },
+              }}
               onDragOver={handleFormDragOver('edit')}
               onDragLeave={handleFormDragLeave('edit')}
               onDrop={handleFormDrop('edit')}
             >
               {renderDropOverlay('edit')}
               <Stack spacing={1.5}>
-                <Typography fontWeight={600}>Edit item: {editingItem.title}</Typography>
+                <Stack
+                  direction={{ xs: 'column', md: 'row' }}
+                  spacing={1}
+                  justifyContent="space-between"
+                  alignItems={{ xs: 'flex-start', md: 'center' }}
+                >
+                  <Typography fontWeight={600}>Edit item: {editingItem.title}</Typography>
+                  <Chip
+                    size="small"
+                    color="info"
+                    label={`Data loaded ${new Date().toLocaleString()}`}
+                    sx={{ fontWeight: 600 }}
+                  />
+                </Stack>
                 <Typography variant="body2" color="text.secondary">
                   The add form is hidden until you save or cancel this edit.
                 </Typography>
