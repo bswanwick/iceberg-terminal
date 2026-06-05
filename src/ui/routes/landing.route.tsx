@@ -1,4 +1,4 @@
-import { Stack, Typography } from '@mui/material'
+import { Stack } from '@mui/material'
 import LandingDispatch from '../../features/landing/components/LandingDispatch'
 import LandingFeaturedListings from '../../features/landing/components/LandingFeaturedListings'
 import LandingHero from '../../features/landing/components/LandingHero'
@@ -17,14 +17,6 @@ function LandingRoute() {
       <LandingSubHero />
       <LandingReprints />
       <LandingDispatch />
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{ textAlign: 'center', pb: 1, color: 'rgba(235, 225, 209, 0.92)' }}
-      >
-        <br /> © {new Date().getFullYear()} Swanwick &amp; Company. All rights reserved.
-        <hr />
-      </Typography>
     </Stack>
   )
 }

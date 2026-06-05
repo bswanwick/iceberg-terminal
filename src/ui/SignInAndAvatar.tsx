@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { MouseEvent } from 'react'
-import { Avatar, Box, Button, ButtonBase, Menu, MenuItem, Stack, Typography } from '@mui/material'
+import { Avatar, Box, ButtonBase, Menu, MenuItem, Stack, Typography } from '@mui/material'
 import { Link as RouterLink } from 'react-router-dom'
 
 import { useAppDispatch, useAppSelector } from '../app/hooks'
@@ -11,55 +11,6 @@ import { AUTH_SIGN_OUT_REASON_USER_CLICKED, authSlice } from '../features/auth/s
 type MenuAnchor = HTMLElement | null
 
 type MenuClickEvent = MouseEvent<HTMLElement>
-
-type AuthProviderSignInProps = {
-  disabled: boolean
-  onGoogleSignIn: () => void
-}
-
-function AuthProviderSignIn({ disabled, onGoogleSignIn }: AuthProviderSignInProps) {
-  const [anchorEl, setAnchorEl] = useState<MenuAnchor>(null)
-  const menuOpen = Boolean(anchorEl)
-
-  const handleMenuOpen = (event: MenuClickEvent) => {
-    setAnchorEl(event.currentTarget)
-  }
-
-  const handleMenuClose = () => {
-    setAnchorEl(null)
-  }
-
-  const handleGoogleSignIn = () => {
-    handleMenuClose()
-    onGoogleSignIn()
-  }
-
-  return (
-    <>
-      <Button
-        variant="contained"
-        color="secondary"
-        onClick={handleMenuOpen}
-        disabled={disabled}
-        aria-controls={menuOpen ? 'auth-provider-menu' : undefined}
-        aria-haspopup="true"
-        aria-expanded={menuOpen ? 'true' : undefined}
-      >
-        Sign in
-      </Button>
-      <Menu
-        id="auth-provider-menu"
-        anchorEl={anchorEl}
-        open={menuOpen}
-        onClose={handleMenuClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <MenuItem onClick={handleGoogleSignIn}>Sign in with Google</MenuItem>
-      </Menu>
-    </>
-  )
-}
 
 function SignInAndAvatar() {
   const dispatch = useAppDispatch()
@@ -86,12 +37,7 @@ function SignInAndAvatar() {
   }
 
   if (!user) {
-    return (
-      <AuthProviderSignIn
-        onGoogleSignIn={() => dispatch(authSlice.actions.authSignInRequested())}
-        disabled={appLocked || !authReady || authStatus === 'loading'}
-      />
-    )
+    return null
   }
 
   return (

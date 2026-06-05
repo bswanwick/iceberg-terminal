@@ -28,11 +28,11 @@ type MenuAnchor = HTMLElement | null
 type MenuClickEvent = MouseEvent<HTMLElement>
 
 const MARKETING_NAV_ITEMS: MarketingNavItem[] = [
-  { label: 'Register', to: '/register' },
-  { label: 'Blog', to: '/blog' },
-  { label: 'About Us', to: '/about' },
-  { label: 'Gallery', to: '/#featured' },
-  { label: 'Prints', to: '/#reprints' },
+  { label: 'Browse the Collection', to: '/#featured' },
+  { label: 'Art & Décor', to: '/#reprints' },
+  { label: 'The Dispatch', to: '/blog' },
+  { label: 'About', to: '/about' },
+  { label: 'Archive', to: '/register' },
 ]
 
 const marketingHeaderOffsetSx = {
@@ -76,11 +76,6 @@ function MarketingSiteHeader() {
 
   const handleMenuClose = () => {
     setAnchorEl(null)
-  }
-
-  const handleGoogleSignIn = () => {
-    handleMenuClose()
-    dispatch(authSlice.actions.authSignInRequested())
   }
 
   const handleSignOut = () => {
@@ -246,20 +241,9 @@ function MarketingSiteHeader() {
                 )
               })}
 
-              <Divider />
-
-              {!user && (
-                <MenuItem
-                  onClick={handleGoogleSignIn}
-                  disabled={authActionDisabled}
-                  sx={{ py: 1.1 }}
-                >
-                  <ListItemText>Sign in with Google</ListItemText>
-                </MenuItem>
-              )}
-
               {user && (
                 <>
+                  <Divider />
                   <Box sx={{ px: 2, py: 1.25 }}>
                     <Typography sx={{ fontWeight: 600 }}>
                       {user.displayName ?? 'Signed-in user'}

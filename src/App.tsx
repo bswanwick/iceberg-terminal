@@ -14,6 +14,7 @@ import MarketingSiteHeader from './features/landing/components/MarketingSiteHead
 import IndexRoute from './ui/routes/index.route'
 import Header from './ui/Header'
 import ScreenLockOverlay from './ui/ScreenLockOverlay'
+import SiteFooter from './ui/SiteFooter'
 import ToastNotifications from './ui/ToastNotifications'
 
 const scrollToHashTarget = (hash: string) => {
@@ -106,6 +107,7 @@ function App() {
         <Stack spacing={3}>
           {!isMarketingRoute && <Header />}
           <IndexRoute />
+          <SiteFooter />
         </Stack>
       </Container>
       <ScreenLockOverlay />
