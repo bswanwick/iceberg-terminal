@@ -169,18 +169,16 @@ System shall store high-resolution images suitable for research and inspection
 
 1. Timeline View
 2. Ebay search builder (search for "eastern steamship -digital -reprint -postcard -matchbook")
-3. Improve intake processing with forms for taking pictures, scans, and close-ups.
-4. WebTWAIN
-5. Daily feed of new listings to review\
-6. Use local AI model to parse tags out of scanned images (ship names, people, places, etc) as part of intake process, use those tags to automate Etsy listings.
-7. Stub the canonical database from other known sites' lists
-8. `magick mogrify -path jpg -format jpg -quality 75 *.tif` to process tifs for web. Web friendly version, higher-res preview jpg/png version, full-res TIFF version (paid subscribers)
-9. screen lock should only appear on dashboard or iceberg terminal pages, not the marketing site.
-10. hasElevatedAccess isn't mine, replace with better.
-11. Autocomplete for the "Format" so I don't have to retype Brochure a million times.
-12. If Admin or Staff, then Files get uploaded to /assets not /user. Assets are protected company images and high-res scans.
-13. Remove the superflous Upload Photo button on the inventory form, we have upload file now.
-14. Do you know more about this? (A CTA inviting users to contribute to the canonical database.)
-15. The listing preview modal takes too long to appear from first click - images are too big.
-16. Don't use canon descriptions for the reprints line.
-17. Don't user scope inventory additions by admins. items added by admins are available to all auth'd users.
+3. Improve intake processing WebTWAIN to AI parser to Inventory form - a single image or a zip file of images should auto-generate a listing. parse tags, ship names, operators, destinations, etc.
+4. Daily feed of new listings from various marketplaces (ebay, etsy, hibid, etc)
+5. Stub the canonical database from other known sites' lists, demarcate those findings.
+6. `magick mogrify -path jpg -format jpg -quality 75 *.tif` to process tifs for web. Web friendly version, higher-res preview jpg/png version, full-res TIFF version (paid subscribers)
+7. screen lock should only appear on dashboard or iceberg terminal pages, not the marketing site.
+8. hasElevatedAccess isn't mine, replace with better. make sure firebase auth is sound.
+9. Autocomplete for the "Format" on inventory form so I don't have to retype "Brochure" a million times.
+10. If Admin or Staff, then Files get uploaded to /assets not /user. Assets are protected company images and high-res scans. Don't user scope inventory additions by admins. items added by admins are available to all auth'd users.
+11. Remove the superflous Upload Photo button on the inventory form, we have upload file now.
+12. Do you know more about this? (A CTA inviting users to contribute to the canonical database on the inventory listing page)
+13. The listing preview modal takes too long to appear from first click - images are too big.
+14. Don't use canon descriptions for the reprints line.
+15. Stub new inventory listings from acquisition intake metadata (i.e. don't wait until it arrives)

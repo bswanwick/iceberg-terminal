@@ -61,11 +61,10 @@ function LandingDispatch() {
         </Typography>
         <Typography variant="h3">The Tourist's Dispatch</Typography>
         <Typography variant="body1" sx={{ maxWidth: 720 }}>
-          Once in a while, we send out a free monthly e-newsletter with great stories, free content,
-          collector insights, and sneak previews. We call it <b>The Tourist's Dispatch</b> and it's
-          the best way to stay in the know. Everything you see on our site was hand-typed by a
-          human; no copy/paste, no AI. Just good old-fashioned travel writing written by a real
-          person. Fancy that!
+          Once in a while, we send out a free newsletter with great stories, collector insights, and
+          deep dives into archives. Every word is hand-typed by someone who cares. Let's talk paper.
+          To receive our next issue, kindly share your email below. We will write to you when we are
+          ready.
         </Typography>
         {newsletterStatus === 'success' && lastSubmission && (
           <Alert severity="success">

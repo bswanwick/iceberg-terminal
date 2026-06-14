@@ -1,85 +1,29 @@
 import { useMemo, useState } from 'react'
-import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded'
-import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
+import EastRoundedIcon from '@mui/icons-material/EastRounded'
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
-import { Box, Button, Card, CardContent, Chip, Paper, Stack, Typography } from '@mui/material'
+import { Box, Card, CardContent, Chip, Paper, Stack, Typography } from '@mui/material'
 import { useAppSelector } from '../../../app/hooks'
 import {
   selectFeaturedInventoryError,
   selectFeaturedOriginals,
   selectFeaturedInventoryStatus,
 } from '../../featuredInventory/selectors'
+import LandingCarousel from './LandingCarousel'
 import ListingViewModal from './ListingViewModal'
 
 type FeaturedInventoryItem = ReturnType<typeof selectFeaturedOriginals>[number]
-
-const CAROUSEL_VIEWPORT = 3
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 2,
-})
 
 function LandingFeaturedListings() {
   const featuredInventory = useAppSelector(selectFeaturedOriginals)
   const featuredInventoryStatus = useAppSelector(selectFeaturedInventoryStatus)
   const featuredInventoryError = useAppSelector(selectFeaturedInventoryError)
 
-  const [carouselStart, setCarouselStart] = useState(0)
   const [selectedFeaturedId, setSelectedFeaturedId] = useState<string | null>(null)
-  const carouselLength = featuredInventory.length
-  const canSlide = carouselLength > CAROUSEL_VIEWPORT
 
   const selectedFeaturedItem = useMemo(
     () => featuredInventory.find((item) => item.id === selectedFeaturedId) ?? null,
     [featuredInventory, selectedFeaturedId],
   )
-
-  const visibleFeatured = useMemo(() => {
-    if (carouselLength === 0) {
-      return []
-    }
-
-    if (!canSlide) {
-      return featuredInventory
-    }
-
-    const items: FeaturedInventoryItem[] = []
-    let index = carouselStart
-
-    for (let count = 0; count < CAROUSEL_VIEWPORT; count += 1) {
-      const item = featuredInventory[index]
-
-      if (!item) {
-        break
-      }
-
-      items.push(item)
-      index = (index + 1) % carouselLength
-    }
-
-    return items
-  }, [canSlide, carouselLength, carouselStart, featuredInventory])
-
-  const showPreviousItems = () => {
-    if (carouselLength === 0) {
-      return
-    }
-
-    setCarouselStart((previous) => (previous - 1 + carouselLength) % carouselLength)
-  }
-
-  const showNextItems = () => {
-    if (carouselLength === 0) {
-      return
-    }
-
-    setCarouselStart((previous) => (previous + 1) % carouselLength)
-  }
-
-  const formatRetailPrice = (value: number | null) =>
-    value === null ? 'Price on request' : currencyFormatter.format(value)
 
   const openFeaturedPreview = (featuredId: string) => {
     setSelectedFeaturedId(featuredId)
@@ -103,12 +47,7 @@ function LandingFeaturedListings() {
       }}
     >
       <Stack spacing={3}>
-        <Stack
-          direction={{ xs: 'column', md: 'row' }}
-          alignItems={{ xs: 'flex-start', md: 'center' }}
-          justifyContent="space-between"
-          spacing={2}
-        >
+        <Stack spacing={1}>
           <Stack spacing={1}>
             <Typography variant="overline" sx={{ letterSpacing: '0.18em' }}>
               Need of a vacation?
@@ -123,195 +62,196 @@ function LandingFeaturedListings() {
               our hearts. We adore them and we hope you do too.
             </Typography>
           </Stack>
-          <Stack direction="row" spacing={1}>
-            <Button
-              variant="outlined"
-              color="primary"
-              onClick={showPreviousItems}
-              disabled={!canSlide}
-              aria-label="Show previous featured listings"
-            >
-              <ChevronLeftRoundedIcon />
-            </Button>
-            <Button
-              variant="outlined"
-              color="primary"
-              onClick={showNextItems}
-              disabled={!canSlide}
-              aria-label="Show next featured listings"
-            >
-              <ChevronRightRoundedIcon />
-            </Button>
-          </Stack>
         </Stack>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-          {featuredInventoryError ? (
-            <Card variant="outlined" sx={{ flex: 1, borderRadius: 2 }}>
-              <CardContent>
-                <Typography color="error">{featuredInventoryError}</Typography>
-              </CardContent>
-            </Card>
-          ) : featuredInventoryStatus === 'loading' && featuredInventory.length === 0 ? (
-            <Card variant="outlined" sx={{ flex: 1, borderRadius: 2 }}>
-              <CardContent>
-                <Typography variant="body1">Loading featured inventory.</Typography>
-              </CardContent>
-            </Card>
-          ) : visibleFeatured.length === 0 ? (
-            <Card variant="outlined" sx={{ flex: 1, borderRadius: 2 }}>
-              <CardContent>
-                <Typography variant="body1">No featured items are listed right now.</Typography>
-              </CardContent>
-            </Card>
-          ) : (
-            visibleFeatured.map((item) => (
-              <Card key={item.id} variant="outlined" sx={{ flex: 1, borderRadius: 2 }}>
-                {item.imageUrl ? (
-                  <Box
-                    component="button"
-                    type="button"
-                    onClick={() => openFeaturedPreview(item.id)}
-                    sx={{
-                      display: 'block',
-                      width: '100%',
-                      p: 0,
-                      border: 0,
-                      background: 'transparent',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      borderTopLeftRadius: 8,
-                      borderTopRightRadius: 8,
-                      overflow: 'hidden',
-                      '&:focus-visible .featured-preview-overlay, &:hover .featured-preview-overlay':
-                        {
-                          opacity: 1,
-                        },
-                    }}
-                  >
+        <LandingCarousel
+          items={featuredInventory}
+          isPaused={Boolean(selectedFeaturedItem)}
+          previousAriaLabel="Show previous featured listings"
+          nextAriaLabel="Show next featured listings"
+          renderItems={(visibleFeatured) =>
+            featuredInventoryError ? (
+              <Card variant="outlined" sx={{ flex: 1, borderRadius: 2 }}>
+                <CardContent>
+                  <Typography color="error">{featuredInventoryError}</Typography>
+                </CardContent>
+              </Card>
+            ) : featuredInventoryStatus === 'loading' && featuredInventory.length === 0 ? (
+              <Card variant="outlined" sx={{ flex: 1, borderRadius: 2 }}>
+                <CardContent>
+                  <Typography variant="body1">Loading featured inventory.</Typography>
+                </CardContent>
+              </Card>
+            ) : visibleFeatured.length === 0 ? (
+              <Card variant="outlined" sx={{ flex: 1, borderRadius: 2 }}>
+                <CardContent>
+                  <Typography variant="body1">No featured items are listed right now.</Typography>
+                </CardContent>
+              </Card>
+            ) : (
+              visibleFeatured.map((item: FeaturedInventoryItem) => (
+                <Card
+                  key={item.id}
+                  variant="outlined"
+                  sx={{ display: 'flex', flexDirection: 'column', flex: 1, borderRadius: 2 }}
+                >
+                  {item.imageUrl ? (
                     <Box
-                      component="img"
-                      src={item.imageUrl}
-                      alt={item.title}
+                      component="button"
+                      type="button"
+                      onClick={() => openFeaturedPreview(item.id)}
                       sx={{
                         display: 'block',
                         width: '100%',
+                        p: 0,
+                        border: 0,
+                        background: 'transparent',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        borderTopLeftRadius: 8,
+                        borderTopRightRadius: 8,
+                        overflow: 'hidden',
+                        '&:focus-visible .featured-preview-overlay, &:hover .featured-preview-overlay':
+                          {
+                            opacity: 1,
+                          },
+                      }}
+                    >
+                      <Box
+                        component="img"
+                        src={item.imageUrl}
+                        alt={item.title}
+                        sx={{
+                          display: 'block',
+                          width: '100%',
+                          height: 360,
+                          objectFit: 'contain',
+                          backgroundColor: 'rgba(19, 40, 60, 0.06)',
+                        }}
+                      />
+                      <Stack
+                        className="featured-preview-overlay"
+                        spacing={1}
+                        alignItems="center"
+                        justifyContent="center"
+                        sx={{
+                          position: 'absolute',
+                          inset: 0,
+                          opacity: 0,
+                          transition: 'opacity 180ms ease',
+                          background:
+                            'linear-gradient(180deg, rgba(19, 40, 60, 0.1) 0%, rgba(19, 40, 60, 0.62) 100%)',
+                          color: '#fff',
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            width: 56,
+                            height: 56,
+                            borderRadius: '50%',
+                            display: 'grid',
+                            placeItems: 'center',
+                            backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                            color: 'rgba(19, 40, 60, 0.92)',
+                          }}
+                        >
+                          <SearchRoundedIcon />
+                        </Box>
+                        <Typography variant="subtitle2">Preview listing</Typography>
+                      </Stack>
+                    </Box>
+                  ) : (
+                    <Box
+                      component="button"
+                      type="button"
+                      onClick={() => openFeaturedPreview(item.id)}
+                      sx={{
                         height: 360,
-                        objectFit: 'contain',
-                        backgroundColor: 'rgba(19, 40, 60, 0.06)',
-                      }}
-                    />
-                    <Stack
-                      className="featured-preview-overlay"
-                      spacing={1}
-                      alignItems="center"
-                      justifyContent="center"
-                      sx={{
-                        position: 'absolute',
-                        inset: 0,
-                        opacity: 0,
-                        transition: 'opacity 180ms ease',
+                        width: '100%',
+                        p: 0,
+                        border: 0,
+                        cursor: 'pointer',
+                        position: 'relative',
                         background:
-                          'linear-gradient(180deg, rgba(19, 40, 60, 0.1) 0%, rgba(19, 40, 60, 0.62) 100%)',
-                        color: '#fff',
+                          'linear-gradient(135deg, rgba(19, 40, 60, 0.18) 0%, rgba(201, 169, 113, 0.28) 100%)',
+                        borderTopLeftRadius: 8,
+                        borderTopRightRadius: 8,
+                        overflow: 'hidden',
+                        '&:focus-visible .featured-preview-overlay, &:hover .featured-preview-overlay':
+                          {
+                            opacity: 1,
+                          },
                       }}
                     >
-                      <Box
+                      <Stack
+                        className="featured-preview-overlay"
+                        spacing={1}
+                        alignItems="center"
+                        justifyContent="center"
                         sx={{
-                          width: 56,
-                          height: 56,
-                          borderRadius: '50%',
-                          display: 'grid',
-                          placeItems: 'center',
-                          backgroundColor: 'rgba(255, 255, 255, 0.92)',
-                          color: 'rgba(19, 40, 60, 0.92)',
+                          position: 'absolute',
+                          inset: 0,
+                          opacity: 0,
+                          transition: 'opacity 180ms ease',
+                          background:
+                            'linear-gradient(180deg, rgba(19, 40, 60, 0.1) 0%, rgba(19, 40, 60, 0.62) 100%)',
+                          color: '#fff',
                         }}
                       >
-                        <SearchRoundedIcon />
-                      </Box>
-                      <Typography variant="subtitle2">Preview listing</Typography>
+                        <Box
+                          sx={{
+                            width: 56,
+                            height: 56,
+                            borderRadius: '50%',
+                            display: 'grid',
+                            placeItems: 'center',
+                            backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                            color: 'rgba(19, 40, 60, 0.92)',
+                          }}
+                        >
+                          <SearchRoundedIcon />
+                        </Box>
+                        <Typography variant="subtitle2">Preview listing</Typography>
+                      </Stack>
+                    </Box>
+                  )}
+                  <CardContent sx={{ display: 'flex', flex: 1, flexDirection: 'column', gap: 1.5 }}>
+                    <Stack spacing={1.25} sx={{ flex: 1 }}>
+                      <Typography variant="h5">{item.title}</Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          display: '-webkit-box',
+                          overflow: 'hidden',
+                          WebkitBoxOrient: 'vertical',
+                          WebkitLineClamp: 3,
+                        }}
+                      >
+                        {item.summary}
+                      </Typography>
                     </Stack>
-                  </Box>
-                ) : (
-                  <Box
-                    component="button"
-                    type="button"
-                    onClick={() => openFeaturedPreview(item.id)}
-                    sx={{
-                      height: 360,
-                      width: '100%',
-                      p: 0,
-                      border: 0,
-                      cursor: 'pointer',
-                      position: 'relative',
-                      background:
-                        'linear-gradient(135deg, rgba(19, 40, 60, 0.18) 0%, rgba(201, 169, 113, 0.28) 100%)',
-                      borderTopLeftRadius: 8,
-                      borderTopRightRadius: 8,
-                      overflow: 'hidden',
-                      '&:focus-visible .featured-preview-overlay, &:hover .featured-preview-overlay':
-                        {
-                          opacity: 1,
-                        },
-                    }}
-                  >
+                    <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
+                      {item.tags.map((tag) => (
+                        <Chip key={tag} label={tag} size="small" />
+                      ))}
+                    </Stack>
                     <Stack
-                      className="featured-preview-overlay"
-                      spacing={1}
-                      alignItems="center"
+                      direction="row"
+                      spacing={0.75}
                       justifyContent="center"
-                      sx={{
-                        position: 'absolute',
-                        inset: 0,
-                        opacity: 0,
-                        transition: 'opacity 180ms ease',
-                        background:
-                          'linear-gradient(180deg, rgba(19, 40, 60, 0.1) 0%, rgba(19, 40, 60, 0.62) 100%)',
-                        color: '#fff',
-                      }}
+                      alignItems="center"
+                      sx={{ mt: 'auto', pt: 0.25, color: 'rgba(19, 40, 60, 0.78)' }}
                     >
-                      <Box
-                        sx={{
-                          width: 56,
-                          height: 56,
-                          borderRadius: '50%',
-                          display: 'grid',
-                          placeItems: 'center',
-                          backgroundColor: 'rgba(255, 255, 255, 0.92)',
-                          color: 'rgba(19, 40, 60, 0.92)',
-                        }}
-                      >
-                        <SearchRoundedIcon />
-                      </Box>
-                      <Typography variant="subtitle2">Preview listing</Typography>
+                      <Typography variant="button" sx={{ letterSpacing: '0.08em' }}>
+                        See more
+                      </Typography>
+                      <EastRoundedIcon sx={{ fontSize: 18 }} />
                     </Stack>
-                  </Box>
-                )}
-                <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <Stack spacing={0.75}>
-                    <Typography variant="h5">{item.title}</Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {item.collection}
-                    </Typography>
-                  </Stack>
-                  <Typography variant="body2" sx={{ minHeight: 84 }}>
-                    {item.summary}
-                  </Typography>
-                  <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
-                    {item.tags.map((tag) => (
-                      <Chip key={tag} label={tag} size="small" />
-                    ))}
-                  </Stack>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="h6">{formatRetailPrice(item.retailPrice)}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {item.updatedAt}
-                    </Typography>
-                  </Stack>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </Stack>
+                  </CardContent>
+                </Card>
+              ))
+            )
+          }
+        />
       </Stack>
       <ListingViewModal
         key={selectedFeaturedItem?.id ?? 'listing-preview'}

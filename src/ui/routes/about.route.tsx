@@ -21,7 +21,7 @@ function AboutRoute() {
             variant="overline"
             sx={{ color: 'rgba(233, 216, 182, 0.9)', letterSpacing: '0.2em' }}
           >
-            About Swanwick & Company
+            About Us
           </Typography>
           <Typography
             variant="h1"
@@ -30,39 +30,21 @@ function AboutRoute() {
               fontSize: { xs: 'clamp(2.25rem, 9vw, 3.25rem)', md: 'clamp(3rem, 5vw, 4.5rem)' },
             }}
           >
-            THE AGE OF OPEN HORIZONS
+            Open roads and open horizons
           </Typography>
           <Typography
             variant="h6"
             sx={{ color: 'rgba(238, 228, 211, 0.92)', fontWeight: 400, maxWidth: 780 }}
           >
-            The Tourist's Antiquarium preserves the history of an age when ordinary people first
-            gained the freedom to explore the world. It was a time of open roads, long-distance rail
-            travel, steamships, and smoking on airplanes. No internet. No credit cards. No
-            smartphones. Just printed pieces of paper, the promise of adventure, and perhaps a
-            slight uncertainty of return.
+            We are here to help preserve the history of a time when regular people first gained real
+            freedom to explore the world. It was a time of long-distance rail travel, steamships,
+            and smoking on airplanes. No internet. No credit cards. No smartphones. Just printed
+            pieces of paper, the promise of adventure, and the uncertainty of return.
           </Typography>
         </Stack>
       </Paper>
 
       <Stack direction={{ xs: 'column', lg: 'row' }} spacing={3}>
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, md: 4 },
-            borderRadius: 3,
-            flex: 1,
-            border: '1px solid rgba(19, 40, 60, 0.18)',
-            background:
-              'linear-gradient(140deg, rgba(246, 243, 234, 0.98) 0%, rgba(236, 232, 219, 0.98) 100%)',
-          }}
-        >
-          <Stack spacing={2}>
-            <Typography variant="h3">Why this work matters</Typography>
-            <Typography variant="body1">TODO - POOR HEART OUT, BUT IN A CLASSY WAY.</Typography>
-          </Stack>
-        </Paper>
-
         <Paper
           elevation={0}
           sx={{
@@ -75,7 +57,7 @@ function AboutRoute() {
           }}
         >
           <Stack spacing={2}>
-            <Typography variant="h3">About the Collection</Typography>
+            <Typography variant="h3">About our Collection</Typography>
             <Typography variant="body1">
               The Tourist’s Antiquarium is a growing collection and archive dedicated to the history
               of travel and tourism during the age when ordinary people first gained the ability to

@@ -43,6 +43,7 @@ return { title, brandPublisher, year, format };
 
 - Modals should have X icon in top-right corner to close, and clicking outside the modal should also close it.
 - The general theme and mood of the consumer UI is restrained, institutional, and accessible to the everyday user.
+- All site copy and text must be accessible and friendly to the everyday user. Avoid jargon, industry language, collector only terms, antique dealer language, collectible market syntax, etc. And especially make sure that we are mindful of people's personal boundaries and autonomy. We aim to show and immense respect for our users' agency. We want to empower them to make their own decisions and not feel pressured or manipulated by our language. So we should avoid language that could be perceived as pushy, manipulative, or that implies a lack of choice. Instead, we should use language that is informative, respectful, and that emphasizes the user's freedom to choose. For example, instead of saying "Don't miss out on this amazing deal!" we could say "You can subscribe to our newsletter for updates and insights, but it's completely up to you!" This way, we are providing information without pressuring the user to take any specific action.
 
 # Application Architecture
 

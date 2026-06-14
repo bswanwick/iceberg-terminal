@@ -1,24 +1,17 @@
 import { useMemo, useState } from 'react'
+import EastRoundedIcon from '@mui/icons-material/EastRounded'
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
-import { Box, Button, Card, CardContent, Paper, Stack, Typography } from '@mui/material'
+import { Box, Card, CardContent, Paper, Stack, Typography } from '@mui/material'
 import { useAppSelector } from '../../../app/hooks'
 import {
   selectFeaturedInventoryError,
   selectFeaturedPrints,
   selectFeaturedInventoryStatus,
 } from '../../featuredInventory/selectors'
+import LandingCarousel from './LandingCarousel'
 import ListingViewModal from './ListingViewModal'
 
 type FeaturedPrintItem = ReturnType<typeof selectFeaturedPrints>[number]
-
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 2,
-})
-
-const formatRetailPrice = (value: number | null) =>
-  value === null ? 'Price on request' : currencyFormatter.format(value)
 
 function LandingReprints() {
   const featuredPrints = useAppSelector(selectFeaturedPrints)
@@ -178,65 +171,95 @@ function LandingReprints() {
       }}
     >
       <Stack spacing={3}>
-        <Typography variant="overline" sx={{ letterSpacing: '0.18em' }}>
-          Looking for something new?
-        </Typography>
-        <Typography variant="h3">Faithfully reproduced prints</Typography>
-        <Typography variant="body1" sx={{ maxWidth: 780 }}>
-          We sell new paper too. Our in-house line uses traditional printing methods and authentic
-          antique printing press blocks to create high-quality, display ready, prints. Our handmade
-          line uses a high quality, acid-free, cotton rag paper. We then hand-roll the ink and
-          hand-press the paper ourselves, for that authentic period feel. We also offer
-          print-on-demand home decor items. These items are made from high-DPI scans that we
-          personally sourced, and in some cases captured, cropped, corrected, and digitized
-          ourselves! All of our reprint items are <b>made in the USA</b>.
-        </Typography>
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} useFlexGap flexWrap="wrap">
-          {featuredInventoryError ? (
-            <Card variant="outlined" sx={{ flex: '1 1 280px', borderRadius: 2 }}>
-              <CardContent>
-                <Typography color="error">{featuredInventoryError}</Typography>
-              </CardContent>
-            </Card>
-          ) : featuredInventoryStatus === 'loading' && featuredPrints.length === 0 ? (
-            <Card variant="outlined" sx={{ flex: '1 1 280px', borderRadius: 2 }}>
-              <CardContent>
-                <Typography variant="body1">Loading reprints.</Typography>
-              </CardContent>
-            </Card>
-          ) : featuredPrints.length === 0 ? (
-            <Card variant="outlined" sx={{ flex: '1 1 280px', borderRadius: 2 }}>
-              <CardContent>
-                <Typography variant="body1">No reprints are listed right now.</Typography>
-              </CardContent>
-            </Card>
-          ) : (
-            featuredPrints.map((item) => (
-              <Card key={item.id} variant="outlined" sx={{ flex: '1 1 280px', borderRadius: 2 }}>
-                {renderPrintPreviewButton(item)}
-                <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  <Typography variant="h5">{item.title}</Typography>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    {item.format || item.dimensions || item.collection || 'Featured print listing'}
-                  </Typography>
-                  <Typography variant="body2" sx={{ minHeight: 78 }}>
-                    {item.summary || item.description || 'Curated print edition.'}
-                  </Typography>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="h6">{formatRetailPrice(item.retailPrice)}</Typography>
-                    <Button
-                      variant="text"
-                      color="primary"
-                      onClick={() => openPrintPreview(item.id)}
-                    >
-                      Preview Print
-                    </Button>
-                  </Stack>
+        <Stack spacing={1}>
+          <Stack spacing={1}>
+            <Typography variant="overline" sx={{ letterSpacing: '0.18em' }}>
+              Looking for something new?
+            </Typography>
+            <Typography variant="h3">Faithfully reproduced prints</Typography>
+            <Typography variant="body1" sx={{ maxWidth: 780 }}>
+              We sell new paper too. Our in-house line uses traditional printing methods and
+              authentic antique printing press blocks to create high-quality, display ready, prints.
+              Our handmade line uses a high quality, acid-free, cotton rag paper. We then hand-roll
+              the ink and hand-press the paper ourselves, for that authentic period feel. We also
+              offer print-on-demand home decor items. These items are made from high-DPI scans that
+              we personally sourced, and in some cases captured, cropped, corrected, and digitized
+              ourselves! All of our reprint items are <b>made in the USA</b>.
+            </Typography>
+          </Stack>
+        </Stack>
+        <LandingCarousel
+          items={featuredPrints}
+          isPaused={Boolean(selectedPrintItem)}
+          previousAriaLabel="Show previous reprint listings"
+          nextAriaLabel="Show next reprint listings"
+          useFlexGap
+          flexWrap="wrap"
+          renderItems={(visiblePrints) =>
+            featuredInventoryError ? (
+              <Card variant="outlined" sx={{ flex: '1 1 280px', borderRadius: 2 }}>
+                <CardContent>
+                  <Typography color="error">{featuredInventoryError}</Typography>
                 </CardContent>
               </Card>
-            ))
-          )}
-        </Stack>
+            ) : featuredInventoryStatus === 'loading' && featuredPrints.length === 0 ? (
+              <Card variant="outlined" sx={{ flex: '1 1 280px', borderRadius: 2 }}>
+                <CardContent>
+                  <Typography variant="body1">Loading reprints.</Typography>
+                </CardContent>
+              </Card>
+            ) : visiblePrints.length === 0 ? (
+              <Card variant="outlined" sx={{ flex: '1 1 280px', borderRadius: 2 }}>
+                <CardContent>
+                  <Typography variant="body1">No reprints are listed right now.</Typography>
+                </CardContent>
+              </Card>
+            ) : (
+              visiblePrints.map((item: FeaturedPrintItem) => (
+                <Card
+                  key={item.id}
+                  variant="outlined"
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    flex: '1 1 280px',
+                    borderRadius: 2,
+                  }}
+                >
+                  {renderPrintPreviewButton(item)}
+                  <CardContent sx={{ display: 'flex', flex: 1, flexDirection: 'column', gap: 1.5 }}>
+                    <Stack spacing={1.25} sx={{ flex: 1 }}>
+                      <Typography variant="h5">{item.title}</Typography>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          display: '-webkit-box',
+                          overflow: 'hidden',
+                          WebkitBoxOrient: 'vertical',
+                          WebkitLineClamp: 3,
+                        }}
+                      >
+                        {item.summary || item.description || 'Curated print edition.'}
+                      </Typography>
+                    </Stack>
+                    <Stack
+                      direction="row"
+                      spacing={0.75}
+                      justifyContent="center"
+                      alignItems="center"
+                      sx={{ mt: 'auto', pt: 0.25, color: 'rgba(17, 33, 48, 0.78)' }}
+                    >
+                      <Typography variant="button" sx={{ letterSpacing: '0.08em' }}>
+                        See more
+                      </Typography>
+                      <EastRoundedIcon sx={{ fontSize: 18 }} />
+                    </Stack>
+                  </CardContent>
+                </Card>
+              ))
+            )
+          }
+        />
       </Stack>
       <ListingViewModal
         key={selectedPrintItem?.id ?? 'print-preview'}

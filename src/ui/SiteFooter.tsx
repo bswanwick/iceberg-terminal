@@ -66,10 +66,10 @@ function SiteFooter() {
       >
         <Stack spacing={0.75} sx={{ maxWidth: 420 }}>
           <Typography variant="overline" sx={{ color: 'rgba(242, 229, 207, 0.75)' }}>
-            Swanwick &amp; Company
+            The Backroom
           </Typography>
           <Typography variant="body2" sx={{ color: 'rgba(244, 238, 227, 0.92)' }}>
-            The Tourist&apos;s Antiquarium archive and inventory desk.
+            Archives, tools, and resources.
           </Typography>
           <Typography variant="body2" sx={{ color: 'rgba(214, 202, 183, 0.78)' }}>
             © {new Date().getFullYear()} Swanwick &amp; Company. All rights reserved.
