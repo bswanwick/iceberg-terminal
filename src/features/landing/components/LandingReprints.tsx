@@ -62,7 +62,7 @@ function LandingReprints() {
             sx={{
               display: 'block',
               width: '100%',
-              height: 320,
+              height: { xs: 420, sm: 320 },
               objectFit: 'contain',
               backgroundColor: 'rgba(17, 33, 48, 0.05)',
             }}
@@ -107,7 +107,7 @@ function LandingReprints() {
         type="button"
         onClick={() => openPrintPreview(item.id)}
         sx={{
-          height: 320,
+          height: { xs: 420, sm: 320 },
           width: '100%',
           p: 0,
           border: 0,
