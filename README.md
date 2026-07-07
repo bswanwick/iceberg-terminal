@@ -70,6 +70,29 @@ Copy `.env.example` to `.env.local` and fill in values from the Firebase Web App
 cp .env.example .env.local
 ```
 
+### GitHub Actions deployment secrets
+
+For CI builds and Firebase Hosting deploys, add the frontend values in GitHub at:
+
+**Repository Settings -> Secrets and variables -> Actions -> Secrets**
+
+Create these repository secrets with the same values you use locally:
+
+- `VITE_FIREBASE_API_KEY`
+- `VITE_FIREBASE_AUTH_DOMAIN`
+- `VITE_FIREBASE_PROJECT_ID`
+- `VITE_FIREBASE_STORAGE_BUCKET`
+- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+- `VITE_FIREBASE_APP_ID`
+- `VITE_FIREBASE_MEASUREMENT_ID`
+- `VITE_AUTH_ALLOWED_EMAILS`
+
+Optional:
+
+- `VITE_FIREBASE_FUNCTIONS_REGION`
+
+Do not commit these values to the repository. GitHub Actions reads them directly from repository secrets during PR previews and merge deployments.
+
 ### Roles
 
 - `VITE_AUTH_ALLOWED_EMAILS` is the Admin email allowlist (case-insensitive).
