@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -b && vite build",
-    "context": "firebase logout && firebase login && nvm use 20.19.2",
+    "context": "nvm use 24.18.0 && firebase logout && firebase login",
     "dev": "vite",
     "lint": "eslint . --max-warnings 0",
     "format": "prettier --write .",
