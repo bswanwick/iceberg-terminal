@@ -3,6 +3,7 @@ import EastRoundedIcon from '@mui/icons-material/EastRounded'
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
 import { Box, Card, CardContent, Paper, Stack, Typography } from '@mui/material'
 import { useAppSelector } from '../../../app/hooks'
+import { trackListingSelect } from '../../analytics/publicAnalytics'
 import {
   selectFeaturedInventoryError,
   selectFeaturedPrints,
@@ -24,8 +25,12 @@ function LandingReprints() {
     [featuredPrints, selectedPrintId],
   )
 
-  const openPrintPreview = (printId: string) => {
-    setSelectedPrintId(printId)
+  const openPrintPreview = (
+    item: FeaturedPrintItem,
+    interactionLocation: 'card_image' | 'card_placeholder',
+  ) => {
+    trackListingSelect({ item, sourceSection: 'reprints', interactionLocation })
+    setSelectedPrintId(item.id)
   }
 
   const closePrintPreview = () => {
@@ -38,7 +43,7 @@ function LandingReprints() {
         <Box
           component="button"
           type="button"
-          onClick={() => openPrintPreview(item.id)}
+          onClick={() => openPrintPreview(item, 'card_image')}
           sx={{
             display: 'block',
             width: '100%',
@@ -105,7 +110,7 @@ function LandingReprints() {
       <Box
         component="button"
         type="button"
-        onClick={() => openPrintPreview(item.id)}
+        onClick={() => openPrintPreview(item, 'card_placeholder')}
         sx={{
           height: { xs: 420, sm: 320 },
           width: '100%',

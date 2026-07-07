@@ -14,6 +14,7 @@ import {
 } from '@mui/material'
 import { Link as RouterLink, useLocation } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
+import { trackMarketingMenuOpen, trackMarketingNavClick } from '../../analytics/publicAnalytics'
 import { selectAuthReady, selectAuthStatus, selectAuthUser } from '../../auth/selectors'
 import { AUTH_SIGN_OUT_REASON_USER_CLICKED, authSlice } from '../../auth/slice'
 import { selectAppLocked } from '../../ui/selectors'
@@ -71,7 +72,13 @@ function MarketingSiteHeader() {
   const authActionDisabled = appLocked || !authReady || authStatus === 'loading'
 
   const handleMenuOpen = (event: MenuClickEvent) => {
+    trackMarketingMenuOpen()
     setAnchorEl(event.currentTarget)
+  }
+
+  const handleMarketingNavClick = (item: MarketingNavItem) => {
+    trackMarketingNavClick({ label: item.label, to: item.to, source: 'header_menu' })
+    handleMenuClose()
   }
 
   const handleMenuClose = () => {
@@ -224,7 +231,7 @@ function MarketingSiteHeader() {
                     key={item.to}
                     component={RouterLink}
                     to={item.to}
-                    onClick={handleMenuClose}
+                    onClick={() => handleMarketingNavClick(item)}
                     selected={active}
                     sx={{
                       py: 1.1,

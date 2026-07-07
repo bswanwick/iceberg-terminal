@@ -9,6 +9,7 @@ import { AUTH_SIGN_OUT_REASON_NOT_YET_ALLOWED, authSlice } from './features/auth
 import { canonicalRecordsSlice } from './features/canonicalRecords/slice'
 import { featuredInventorySlice } from './features/featuredInventory/slice'
 import { inventorySlice } from './features/inventory/slice'
+import { isPublicAnalyticsPath, trackPublicPageView } from './features/analytics/publicAnalytics'
 import { landingContentSlice } from './features/landingContent/slice'
 import MarketingSiteHeader from './features/landing/components/MarketingSiteHeader'
 import IndexRoute from './ui/routes/index.route'
@@ -46,11 +47,7 @@ function App() {
   const location = useLocation()
 
   const isMarketingRoute =
-    location.pathname === '/' ||
-    location.pathname === '/about' ||
-    location.pathname === '/blog' ||
-    location.pathname === '/iceberg-welcome' ||
-    location.pathname === '/register'
+    isPublicAnalyticsPath(location.pathname) || location.pathname === '/iceberg-welcome'
 
   useEffect(() => {
     dispatch(authSlice.actions.authStartListening())
@@ -99,6 +96,14 @@ function App() {
       window.cancelAnimationFrame(animationFrameId)
     }
   }, [location.hash, location.pathname])
+
+  useEffect(() => {
+    trackPublicPageView({
+      location,
+      pageTitle: document.title,
+      pageLocation: window.location.href,
+    })
+  }, [location])
 
   return (
     <Box>

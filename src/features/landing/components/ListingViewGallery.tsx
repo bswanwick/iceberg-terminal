@@ -4,6 +4,11 @@ import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import FilePresentRoundedIcon from '@mui/icons-material/FilePresentRounded'
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded'
 import { Box, Button, IconButton, Paper, Stack, Typography } from '@mui/material'
+import {
+  trackAttachmentOpen,
+  trackGalleryNavigate,
+  trackGalleryThumbnailSelect,
+} from '../../analytics/publicAnalytics'
 import type { FeaturedInventoryFile, FeaturedInventoryItem } from '../../featuredInventory/slice'
 
 export type ListingViewGalleryPalette = {
@@ -66,7 +71,14 @@ function ListingViewGallery({ item, listingPalette }: ListingViewGalleryProps) {
       return
     }
 
-    setSelectedImageIndex((previous) => (previous === 0 ? imageFiles.length - 1 : previous - 1))
+    const nextImageIndex = activeImageIndex === 0 ? imageFiles.length - 1 : activeImageIndex - 1
+    trackGalleryNavigate({
+      item,
+      direction: 'previous',
+      imageIndex: nextImageIndex + 1,
+      imageCount: imageFiles.length,
+    })
+    setSelectedImageIndex(nextImageIndex)
   }
 
   const showNextImage = () => {
@@ -74,7 +86,14 @@ function ListingViewGallery({ item, listingPalette }: ListingViewGalleryProps) {
       return
     }
 
-    setSelectedImageIndex((previous) => (previous + 1) % imageFiles.length)
+    const nextImageIndex = (activeImageIndex + 1) % imageFiles.length
+    trackGalleryNavigate({
+      item,
+      direction: 'next',
+      imageIndex: nextImageIndex + 1,
+      imageCount: imageFiles.length,
+    })
+    setSelectedImageIndex(nextImageIndex)
   }
 
   return (
@@ -222,7 +241,14 @@ function ListingViewGallery({ item, listingPalette }: ListingViewGalleryProps) {
               key={`${storedFile.url}-${storedFile.displayOrder}`}
               component="button"
               type="button"
-              onClick={() => setSelectedImageIndex(index)}
+              onClick={() => {
+                trackGalleryThumbnailSelect({
+                  item,
+                  imageIndex: index + 1,
+                  imageCount: imageFiles.length,
+                })
+                setSelectedImageIndex(index)
+              }}
               sx={{
                 p: 0,
                 width: 88,
@@ -292,6 +318,7 @@ function ListingViewGallery({ item, listingPalette }: ListingViewGalleryProps) {
                   href={storedFile.url}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() => trackAttachmentOpen({ item, storedFile })}
                   sx={{ borderColor: listingPalette.galleryButtonBorder }}
                 >
                   Open

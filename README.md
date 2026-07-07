@@ -172,7 +172,7 @@ System shall store high-resolution images suitable for research and inspection
 3. Improve intake processing WebTWAIN to AI parser to Inventory form - a single image or a zip file of images should auto-generate a listing. parse tags, ship names, operators, destinations, etc.
 4. Daily feed of new listings from various marketplaces (ebay, etsy, hibid, etc)
 5. Stub the canonical database from other known sites' lists, demarcate those findings.
-6. `magick mogrify -path jpg -format jpg -quality 75 *.tif` to process tifs for web. Web friendly version, higher-res preview jpg/png version, full-res TIFF version (paid subscribers)
+6. `magick mogrify -path jpg -format jpg -quality 75 *.tif` to process tifs for web. Web friendly version, higher-res preview jpg/png version, full-res TIFF version (paid subscribers) or other similar image compression utiltity
 7. screen lock should only appear on dashboard or iceberg terminal pages, not the marketing site.
 8. hasElevatedAccess isn't mine, replace with better. make sure firebase auth is sound.
 9. Autocomplete for the "Format" on inventory form so I don't have to retype "Brochure" a million times.
@@ -182,3 +182,4 @@ System shall store high-resolution images suitable for research and inspection
 13. The listing preview modal takes too long to appear from first click - images are too big.
 14. Don't use canon descriptions for the reprints line.
 15. Stub new inventory listings from acquisition intake metadata (i.e. don't wait until it arrives)
+16. Catalogs! Publish a quarterly catalog, share that on the landing page instead.

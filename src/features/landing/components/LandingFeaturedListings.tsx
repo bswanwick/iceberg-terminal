@@ -3,6 +3,7 @@ import EastRoundedIcon from '@mui/icons-material/EastRounded'
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded'
 import { Box, Card, CardContent, Chip, Paper, Stack, Typography } from '@mui/material'
 import { useAppSelector } from '../../../app/hooks'
+import { trackListingSelect } from '../../analytics/publicAnalytics'
 import {
   selectFeaturedInventoryError,
   selectFeaturedOriginals,
@@ -25,8 +26,12 @@ function LandingFeaturedListings() {
     [featuredInventory, selectedFeaturedId],
   )
 
-  const openFeaturedPreview = (featuredId: string) => {
-    setSelectedFeaturedId(featuredId)
+  const openFeaturedPreview = (
+    item: FeaturedInventoryItem,
+    interactionLocation: 'card_image' | 'card_placeholder',
+  ) => {
+    trackListingSelect({ item, sourceSection: 'featured_originals', interactionLocation })
+    setSelectedFeaturedId(item.id)
   }
 
   const closeFeaturedPreview = () => {
@@ -98,7 +103,7 @@ function LandingFeaturedListings() {
                     <Box
                       component="button"
                       type="button"
-                      onClick={() => openFeaturedPreview(item.id)}
+                      onClick={() => openFeaturedPreview(item, 'card_image')}
                       sx={{
                         display: 'block',
                         width: '100%',
@@ -163,7 +168,7 @@ function LandingFeaturedListings() {
                     <Box
                       component="button"
                       type="button"
-                      onClick={() => openFeaturedPreview(item.id)}
+                      onClick={() => openFeaturedPreview(item, 'card_placeholder')}
                       sx={{
                         height: 360,
                         width: '100%',

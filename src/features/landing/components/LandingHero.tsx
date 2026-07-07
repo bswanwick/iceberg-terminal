@@ -1,5 +1,6 @@
 import { Box, Button, Paper, Stack, Typography } from '@mui/material'
 import { useAppSelector } from '../../../app/hooks'
+import { trackHeroCtaClick, trackUnavailableFeatureClick } from '../../analytics/publicAnalytics'
 import { sanitizeLandingHeroHtml } from '../../landingContent/content'
 import { selectLandingHeroBodyHtml } from '../../landingContent/selectors'
 import { selectAppLocked } from '../../ui/selectors'
@@ -71,13 +72,27 @@ function LandingHero() {
         />
 
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-          <Button href="#featured" variant="contained" color="secondary" size="large">
+          <Button
+            href="#featured"
+            variant="contained"
+            color="secondary"
+            size="large"
+            onClick={() =>
+              trackHeroCtaClick({ label: 'The Main Gallery', destination: '#featured' })
+            }
+          >
             The Main Gallery
           </Button>
           <Button
             variant="contained"
             color="primary"
-            onClick={() => alert('Catalog search coming soon!')}
+            onClick={() => {
+              trackUnavailableFeatureClick({
+                label: 'Browse our Prints',
+                destination: 'catalog_search',
+              })
+              alert('Catalog search coming soon!')
+            }}
             disabled={appLocked}
             size="large"
           >

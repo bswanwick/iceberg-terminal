@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded'
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded'
 import {
@@ -15,6 +16,7 @@ import {
   Typography,
 } from '@mui/material'
 import { useMediaQuery, useTheme } from '@mui/material'
+import { trackListingPreviewClose, trackListingView } from '../../analytics/publicAnalytics'
 import type { FeaturedInventoryItem } from '../../featuredInventory/slice'
 import ListingViewGallery, { type ListingViewGalleryPalette } from './ListingViewGallery'
 
@@ -137,11 +139,28 @@ function ListingViewModal({ item, open, onClose }: ListingViewModalProps) {
       item?.summary ||
       'A detailed listing description will appear here soon.'
 
+  useEffect(() => {
+    if (!open || !item) {
+      return
+    }
+
+    trackListingView({
+      item,
+      sourceSection: item.productLine === 'Prints' ? 'reprints' : 'featured_originals',
+      interactionLocation: 'modal_open',
+    })
+  }, [item, open])
+
   if (!item) {
     return null
   }
 
   const isPrintListing = item.productLine === 'Prints'
+  const sourceSection = isPrintListing ? 'reprints' : 'featured_originals'
+  const handleClose = () => {
+    trackListingPreviewClose({ item, sourceSection, interactionLocation: 'modal_close' })
+    onClose()
+  }
   const listingPalette = isPrintListing ? printListingPalette : originalListingPalette
   const dialogTitle = isPrintListing ? 'From our home decor line' : 'From our main gallery'
   const listingIdentityLabel = isPrintListing ? 'Studio reprint' : 'Authentic original'
@@ -165,7 +184,7 @@ function ListingViewModal({ item, open, onClose }: ListingViewModalProps) {
   return (
     <Dialog
       open={open}
-      onClose={onClose}
+      onClose={handleClose}
       fullScreen={fullScreen}
       fullWidth
       maxWidth="lg"
@@ -193,7 +212,7 @@ function ListingViewModal({ item, open, onClose }: ListingViewModalProps) {
         </Stack>
         <IconButton
           aria-label="Close listing preview"
-          onClick={onClose}
+          onClick={handleClose}
           sx={{ position: 'absolute', top: 12, right: 12, color: listingPalette.detailsText }}
         >
           <CloseRoundedIcon />
