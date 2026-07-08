@@ -1,22 +1,13 @@
 import { Alert, Avatar, Box, Button, Chip, Divider, Paper, Stack, Typography } from '@mui/material'
-import {
-  collection,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  type QueryDocumentSnapshot,
-  type DocumentData,
-} from 'firebase/firestore'
 import { useState } from 'react'
 import { useAppSelector } from '../../app/hooks'
-import { db } from '../../firebase'
 import {
   selectAuthReady,
   selectAuthStatus,
   selectAuthUser,
   selectHasElevatedAccess,
 } from '../../features/auth/selectors'
+import { fetchFirestoreCollectionPage, type FirestoreDocumentRecord } from '../../features/firebase'
 import { FilesStorageExplorer } from '../../features/files'
 import {
   LEGACY_NEWSLETTER_SUBSCRIPTIONS_COLLECTION,
@@ -74,17 +65,17 @@ const toStringArray = (value: unknown): string[] =>
     : []
 
 const mapSignupRequest = (
-  documentSnapshot: QueryDocumentSnapshot<DocumentData>,
+  documentRecord: FirestoreDocumentRecord,
   sourceCollection: string,
 ): SignupRequestRecord => {
-  const data = documentSnapshot.data()
+  const data = documentRecord.data
   const createdAtValue = toTimestampValue(data.createdAt)
   const nameValue = typeof data.name === 'string' ? data.name : ''
   const legacyFirstName = typeof data.firstName === 'string' ? data.firstName : ''
   const communicationPreferenceValue = data.communicationPreference === 'text' ? 'text' : 'email'
 
   return {
-    id: documentSnapshot.id,
+    id: documentRecord.id,
     sourceCollection,
     kind: data.kind === SIGNUP_FORM_KIND_ACCESS ? SIGNUP_FORM_KIND_ACCESS : 'newsletter',
     name: nameValue || legacyFirstName || 'Unknown requester',
@@ -162,26 +153,26 @@ function PlatformRoute() {
       setSignupRequestsLoading(true)
       setSignupRequestsError('')
 
-      const [currentSnapshot, legacySnapshot] = await Promise.all([
-        getDocs(
-          query(
-            collection(db, SIGNUP_REQUESTS_COLLECTION),
-            orderBy('createdAt', 'desc'),
-            limit(25),
-          ),
-        ),
-        getDocs(
-          query(
-            collection(db, LEGACY_NEWSLETTER_SUBSCRIPTIONS_COLLECTION),
-            orderBy('createdAt', 'desc'),
-            limit(25),
-          ),
-        ),
+      const [currentPage, legacyPage] = await Promise.all([
+        fetchFirestoreCollectionPage({
+          collectionKey: SIGNUP_REQUESTS_COLLECTION,
+          collectionPath: [SIGNUP_REQUESTS_COLLECTION],
+          orderBy: [{ fieldPath: 'createdAt', direction: 'desc' }],
+          pageSize: 25,
+          includeTotalCount: false,
+        }),
+        fetchFirestoreCollectionPage({
+          collectionKey: LEGACY_NEWSLETTER_SUBSCRIPTIONS_COLLECTION,
+          collectionPath: [LEGACY_NEWSLETTER_SUBSCRIPTIONS_COLLECTION],
+          orderBy: [{ fieldPath: 'createdAt', direction: 'desc' }],
+          pageSize: 25,
+          includeTotalCount: false,
+        }),
       ])
 
       const nextRequests = [
-        ...currentSnapshot.docs.map((entry) => mapSignupRequest(entry, SIGNUP_REQUESTS_COLLECTION)),
-        ...legacySnapshot.docs.map((entry) =>
+        ...currentPage.items.map((entry) => mapSignupRequest(entry, SIGNUP_REQUESTS_COLLECTION)),
+        ...legacyPage.items.map((entry) =>
           mapSignupRequest(entry, LEGACY_NEWSLETTER_SUBSCRIPTIONS_COLLECTION),
         ),
       ].sort((left, right) => right.createdAtValue - left.createdAtValue)

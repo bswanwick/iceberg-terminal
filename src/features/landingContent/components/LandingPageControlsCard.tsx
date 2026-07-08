@@ -7,13 +7,16 @@ import FormatItalicRoundedIcon from '@mui/icons-material/FormatItalicRounded'
 import FormatListBulletedRoundedIcon from '@mui/icons-material/FormatListBulletedRounded'
 import FormatListNumberedRoundedIcon from '@mui/icons-material/FormatListNumberedRounded'
 import FormatUnderlinedRoundedIcon from '@mui/icons-material/FormatUnderlinedRounded'
+import LinkRoundedIcon from '@mui/icons-material/LinkRounded'
+import LinkOffRoundedIcon from '@mui/icons-material/LinkOffRounded'
 import RedoRoundedIcon from '@mui/icons-material/RedoRounded'
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded'
 import UndoRoundedIcon from '@mui/icons-material/UndoRounded'
 import { Alert, Box, Button, Divider, Paper, Stack, TextField, Typography } from '@mui/material'
+import Link from '@tiptap/extension-link'
+import Underline from '@tiptap/extension-underline'
 import { EditorContent, useEditor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import Underline from '@tiptap/extension-underline'
 import { useMemo, useState } from 'react'
 import { useAppDispatch, useAppSelector } from '../../../app/hooks'
 import { selectHasElevatedAccess } from '../../auth/selectors'
@@ -41,6 +44,28 @@ const createToolbarButtonSx = (isActive: boolean) => ({
   borderColor: isActive ? 'rgba(181, 58, 45, 0.45)' : 'rgba(18, 63, 84, 0.15)',
   backgroundColor: isActive ? 'rgba(181, 58, 45, 0.1)' : 'rgba(255, 255, 255, 0.88)',
 })
+
+const normalizeLinkHref = (value: string) => {
+  const trimmedValue = value.trim()
+
+  if (!trimmedValue) {
+    return ''
+  }
+
+  if (/^(https?:|mailto:)/i.test(trimmedValue) || trimmedValue.startsWith('/')) {
+    return trimmedValue
+  }
+
+  if (trimmedValue.startsWith('#')) {
+    return trimmedValue
+  }
+
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedValue)) {
+    return `mailto:${trimmedValue}`
+  }
+
+  return `https://${trimmedValue}`
+}
 
 type LandingPageControlsFormProps = {
   content: LandingPageContent
@@ -70,6 +95,12 @@ function LandingPageControlsForm({
         codeBlock: false,
         heading: false,
         horizontalRule: false,
+      }),
+      Link.configure({
+        autolink: true,
+        linkOnPaste: true,
+        openOnClick: false,
+        protocols: ['mailto'],
       }),
       Underline,
     ],
@@ -129,6 +160,36 @@ function LandingPageControlsForm({
       nextLines[nextIndex] = itemToMove
       return nextLines
     })
+  }
+
+  const updateHeroLink = () => {
+    if (!editor) {
+      return
+    }
+
+    const currentHref = editor.getAttributes('link').href
+    const nextHref = window.prompt(
+      'Enter a web URL or email address',
+      typeof currentHref === 'string' ? currentHref : '',
+    )
+
+    if (nextHref === null) {
+      return
+    }
+
+    const normalizedHref = normalizeLinkHref(nextHref)
+
+    if (!normalizedHref) {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run()
+      return
+    }
+
+    editor
+      .chain()
+      .focus()
+      .extendMarkRange('link')
+      .setLink({ href: normalizedHref, target: '_blank', rel: 'noopener noreferrer' })
+      .run()
   }
 
   const handleSave = () => {
@@ -196,6 +257,23 @@ function LandingPageControlsForm({
           <Button
             variant="outlined"
             size="small"
+            onClick={updateHeroLink}
+            sx={createToolbarButtonSx(Boolean(editor?.isActive('link')))}
+          >
+            <LinkRoundedIcon fontSize="small" />
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => editor?.chain().focus().extendMarkRange('link').unsetLink().run()}
+            disabled={!editor?.isActive('link')}
+            sx={createToolbarButtonSx(false)}
+          >
+            <LinkOffRoundedIcon fontSize="small" />
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
             onClick={() => editor?.chain().focus().undo().run()}
             sx={createToolbarButtonSx(false)}
           >
@@ -222,12 +300,24 @@ function LandingPageControlsForm({
               p: 2,
               outline: 'none',
               color: '#10222f',
+              whiteSpace: 'pre-wrap',
             },
             '& .ProseMirror p': {
               my: 0,
             },
+            '& .ProseMirror p + p': {
+              mt: 1,
+            },
+            '& .ProseMirror p:empty::before': {
+              content: '"\\00a0"',
+            },
             '& .ProseMirror ul, & .ProseMirror ol': {
               pl: 3,
+            },
+            '& .ProseMirror a': {
+              color: '#0f485e',
+              fontWeight: 700,
+              textDecoration: 'underline',
             },
           }}
         >

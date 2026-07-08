@@ -3,3 +3,4 @@ import type { RootState } from '../../app/store'
 export const selectNewsletterStatus = (state: RootState) => state.newsletter.status
 export const selectNewsletterError = (state: RootState) => state.newsletter.error
 export const selectNewsletterLastSubmission = (state: RootState) => state.newsletter.lastSubmission
+export const selectNewsletterSignupCount = (state: RootState) => state.newsletter.signupCount

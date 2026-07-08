@@ -21,7 +21,7 @@ export const defaultLandingPageContent: LandingPageContent = {
   ],
 }
 
-const LANDING_HERO_ALLOWED_TAGS = ['b', 'br', 'em', 'i', 'li', 'ol', 'p', 'strong', 'u', 'ul']
+const LANDING_HERO_ALLOWED_TAGS = ['a', 'b', 'br', 'em', 'i', 'li', 'ol', 'p', 'strong', 'u', 'ul']
 
 const LANDING_HERO_ALLOWED_ATTR = ['href', 'rel', 'target']
 

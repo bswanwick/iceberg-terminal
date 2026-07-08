@@ -32,7 +32,7 @@ const FilesStorageExplorer = () => {
     try {
       setLoading(true)
       setStorageError('')
-      const { prefixes: nextPrefixes, files: nextFiles } = await listStoragePath(path)
+      const { prefixes: nextPrefixes, files: nextFiles } = await listStoragePath({ path })
       setPrefixes(nextPrefixes)
       setFiles(nextFiles)
     } catch (error) {

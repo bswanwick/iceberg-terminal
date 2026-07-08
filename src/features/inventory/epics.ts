@@ -2,31 +2,23 @@ import type { Epic } from 'redux-observable'
 import { from, of } from 'rxjs'
 import { catchError, filter, map, mergeMap, withLatestFrom } from 'rxjs/operators'
 import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  orderBy,
-  query,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-} from 'firebase/firestore'
+  addFirestoreDocument,
+  buildUserStoragePath,
+  deleteFirestoreDocument,
+  deleteStorageFile,
+  fetchFirestoreCollectionPage,
+  firebaseServerTimestamp,
+  setFirestoreDocument,
+  updateFirestoreDocument,
+  type FirestoreDocumentRecord,
+} from '../firebase'
 import type { AnyFeatureAction, RootState } from '../../app/store'
-import { db } from '../../firebase'
 import {
   featuredInventorySlice,
   type FeaturedInventoryConditionSummary,
   type FeaturedInventoryFile,
 } from '../featuredInventory/slice'
-import {
-  buildUserStoragePath,
-  deleteStorageFile,
-  sortStoredFiles,
-  uploadStorageFile,
-  type StoredFile,
-} from '../files'
+import { sortStoredFiles, uploadStorageFile, type StoredFile } from '../files'
 import { getFeaturedInventoryImage } from './fileUtils'
 import {
   collectorConditionCategoryOptions,
@@ -63,15 +55,20 @@ import {
 } from './condition-report'
 import {
   coercePublishYear,
-  normalizeInventoryProductLine,
+  isInventoryProductLine,
   normalizePublishYear,
   validateInventoryProductLine,
   validatePublishYear,
 } from './formUtils'
-import slice, { type InventoryFile, type InventoryItem } from './slice'
+import slice, {
+  type InventoryFile,
+  type InventoryItem,
+  type InventoryLineCounts,
+  type InventoryUpdatePayload,
+} from './slice'
 
-const inventoryCollection = (uid: string) => collection(db, 'users', uid, 'inventory')
-const featuredInventoryCollection = collection(db, 'featuredInventory')
+const inventoryCollectionKey = (uid: string) => `users/${uid}/inventory`
+const INVENTORY_PAGE_SIZE = 25
 
 const toErrorMessage = (error: unknown, fallback: string) => {
   if (import.meta.env.DEV) {
@@ -132,12 +129,12 @@ const toStoredFileArray = (value: unknown): StoredFile[] =>
 
 const toFileArray = (value: unknown): InventoryFile[] => toStoredFileArray(value)
 
-const toTimestampLabel = (value: unknown) => {
+const toOptionalTimestampLabel = (value: unknown) => {
   if (value && typeof value === 'object' && 'toDate' in value) {
     return (value as { toDate: () => Date }).toDate().toLocaleString()
   }
 
-  return 'Just now'
+  return undefined
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -148,6 +145,9 @@ const toOptionalString = (value: unknown) => (typeof value === 'string' ? value 
 const toOptionalNumber = (value: unknown) => (typeof value === 'number' ? value : undefined)
 
 const toOptionalBoolean = (value: unknown) => (typeof value === 'boolean' ? value : undefined)
+
+const toOptionalInventoryProductLine = (value: unknown) =>
+  typeof value === 'string' && isInventoryProductLine(value) ? value : undefined
 
 const toMoneyAmount = (value: unknown) => {
   if (typeof value === 'number' && Number.isFinite(value)) {
@@ -436,34 +436,31 @@ const toConditionReport = (value: unknown): VintagePaperConditionReport | undefi
   }
 }
 
-const toInventoryItem = (docSnap: {
-  id: string
-  data: () => Record<string, unknown>
-}): InventoryItem => {
-  const data = docSnap.data()
-
+const toInventoryItem = ({ id, data }: FirestoreDocumentRecord): InventoryItem => {
   return {
-    id: docSnap.id,
-    title: typeof data.title === 'string' ? data.title : '',
-    publisher: typeof data.publisher === 'string' ? data.publisher : '',
-    canonicalRecordId: typeof data.canonicalRecordId === 'string' ? data.canonicalRecordId : '',
-    customDescription: typeof data.customDescription === 'string' ? data.customDescription : '',
-    productLine: normalizeInventoryProductLine(data.productLine),
-    featured: toOptionalBoolean(data.featured) ?? false,
-    publishYear: coercePublishYear(data.publishYear ?? data.publishDate),
-    format: typeof data.format === 'string' ? data.format : '',
-    dimensions: typeof data.dimensions === 'string' ? data.dimensions : '',
-    conditionGrade: typeof data.conditionGrade === 'string' ? data.conditionGrade : '',
-    conditionReport: toConditionReport(data.conditionReport) ?? null,
-    acquisitionDate: typeof data.acquisitionDate === 'string' ? data.acquisitionDate : '',
-    acquisitionSource: typeof data.acquisitionSource === 'string' ? data.acquisitionSource : '',
+    id,
+    title: toOptionalString(data.title),
+    publisher: toOptionalString(data.publisher),
+    canonicalRecordId: toOptionalString(data.canonicalRecordId),
+    customDescription: toOptionalString(data.customDescription),
+    productLine: toOptionalInventoryProductLine(data.productLine),
+    featured: toOptionalBoolean(data.featured),
+    publishYear: coercePublishYear(data.publishYear ?? data.publishDate) || undefined,
+    format: toOptionalString(data.format),
+    dimensions: toOptionalString(data.dimensions),
+    conditionGrade: toOptionalString(data.conditionGrade),
+    conditionReport: toConditionReport(data.conditionReport),
+    acquisitionDate: toOptionalString(data.acquisitionDate),
+    acquisitionSource: toOptionalString(data.acquisitionSource),
     acquisitionCost: toMoneyAmount(data.acquisitionCost),
     retailPrice: toMoneyAmount(data.retailPrice),
-    notes: typeof data.notes === 'string' ? data.notes : '',
-    tags: toStringArray(data.tags),
-    files: toFileArray(data.files ?? data.photos),
-    createdAt: toTimestampLabel(data.createdAt),
-    updatedAt: data.updatedAt ? toTimestampLabel(data.updatedAt) : undefined,
+    notes: toOptionalString(data.notes),
+    tags: Array.isArray(data.tags) ? toStringArray(data.tags) : undefined,
+    files: Array.isArray(data.files ?? data.photos)
+      ? toFileArray(data.files ?? data.photos)
+      : undefined,
+    createdAt: toOptionalTimestampLabel(data.createdAt),
+    updatedAt: toOptionalTimestampLabel(data.updatedAt),
   }
 }
 
@@ -472,7 +469,7 @@ const requireUid = (state: RootState) => state.auth.user?.uid
 const buildFeaturedInventoryDocId = (uid: string, inventoryId: string) => `${uid}__${inventoryId}`
 
 type FeaturedInventorySyncItem = Pick<
-  InventoryItem,
+  InventoryUpdatePayload,
   | 'id'
   | 'title'
   | 'publisher'
@@ -583,18 +580,21 @@ const syncFeaturedInventoryDocument = (
   item: FeaturedInventorySyncItem,
   state: RootState,
 ) => {
-  const featuredDocRef = doc(featuredInventoryCollection, buildFeaturedInventoryDocId(uid, item.id))
+  const featuredDocumentPath: ['featuredInventory', string] = [
+    'featuredInventory',
+    buildFeaturedInventoryDocId(uid, item.id),
+  ]
 
   if (!item.featured) {
-    return deleteDoc(featuredDocRef)
+    return deleteFirestoreDocument({ documentPath: featuredDocumentPath })
   }
 
   const canonicalRecord = state.canonicalRecords.items.find(
     (record) => record.id === item.canonicalRecordId,
   )
-  const title = canonicalRecord?.title.trim() || item.title.trim() || 'Untitled item'
+  const title = canonicalRecord?.title?.trim() || item.title.trim() || 'Untitled item'
   const collection = item.publisher.trim() || item.format.trim() || 'Featured listing'
-  const canonicalDescription = canonicalRecord?.description.trim() || ''
+  const canonicalDescription = canonicalRecord?.description?.trim() || ''
   const customDescription = item.customDescription.trim()
   const description =
     customDescription || canonicalDescription || item.notes.trim() || 'Curated inventory.'
@@ -604,27 +604,30 @@ const syncFeaturedInventoryDocument = (
   const condition = buildFeaturedInventoryCondition(item.conditionGrade, item.conditionReport)
   const files = toFeaturedInventoryFiles(item.files)
 
-  return setDoc(featuredDocRef, {
-    inventoryId: item.id,
-    ownerId: uid,
-    canonicalRecordId: item.canonicalRecordId,
-    productLine: item.productLine,
-    title,
-    collection,
-    summary,
-    description,
-    canonicalDescription,
-    customDescription,
-    publisher: item.publisher,
-    format: item.format,
-    publishYear: item.publishYear,
-    dimensions: item.dimensions,
-    tags,
-    retailPrice: item.retailPrice,
-    imageUrl,
-    files,
-    condition,
-    updatedAt: serverTimestamp(),
+  return setFirestoreDocument({
+    documentPath: featuredDocumentPath,
+    data: {
+      inventoryId: item.id,
+      ownerId: uid,
+      canonicalRecordId: item.canonicalRecordId,
+      productLine: item.productLine,
+      title,
+      collection,
+      summary,
+      description,
+      canonicalDescription,
+      customDescription,
+      publisher: item.publisher,
+      format: item.format,
+      publishYear: item.publishYear,
+      dimensions: item.dimensions,
+      tags,
+      retailPrice: item.retailPrice,
+      imageUrl,
+      files,
+      condition,
+      updatedAt: firebaseServerTimestamp(),
+    },
   })
 }
 
@@ -636,6 +639,12 @@ const uploadInventoryStoredFile = (uid: string, scope: 'files', file: File) =>
 
 const deleteInventoryStoredFiles = (files: InventoryFile[]) =>
   Promise.all(files.map((storedFile) => deleteStorageFile(storedFile.path)))
+
+const countInventoryLineItems = (items: InventoryItem[]): InventoryLineCounts => ({
+  originals: items.filter((item) => item.productLine === 'Originals').length,
+  reprints: items.filter((item) => item.productLine === 'Prints').length,
+  missingProductLine: items.filter((item) => !item.productLine).length,
+})
 
 export const inventoryFetchEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootState> = (
   action$,
@@ -650,10 +659,20 @@ export const inventoryFetchEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootSt
         return of(slice.actions.inventoryFetchFailed('Sign in to load inventory.'))
       }
 
-      const itemsQuery = query(inventoryCollection(uid), orderBy('createdAt', 'desc'))
-      return from(getDocs(itemsQuery)).pipe(
-        map((snapshot) => snapshot.docs.map((docSnap) => toInventoryItem(docSnap))),
-        map((items) => slice.actions.inventoryFetchSucceeded(items)),
+      return from(
+        fetchFirestoreCollectionPage({
+          collectionKey: inventoryCollectionKey(uid),
+          collectionPath: ['users', uid, 'inventory'],
+          orderBy: [{ fieldPath: 'createdAt', direction: 'desc' }],
+          pageSize: INVENTORY_PAGE_SIZE,
+        }),
+      ).pipe(
+        map((page) => page.items.map((item) => toInventoryItem(item))),
+        map((items) => ({
+          items,
+          lineCounts: countInventoryLineItems(items),
+        })),
+        map((payload) => slice.actions.inventoryFetchSucceeded(payload)),
         catchError((error) =>
           of(slice.actions.inventoryFetchFailed(toErrorMessage(error, 'Load failed'))),
         ),
@@ -709,27 +728,30 @@ export const inventoryAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootStat
       const sanitizedConditionReport = sanitizeConditionReport(conditionReport)
 
       return from(
-        addDoc(inventoryCollection(uid), {
-          title,
-          publisher,
-          canonicalRecordId,
-          customDescription,
-          productLine,
-          featured,
-          publishYear: normalizePublishYear(publishYear),
-          format,
-          dimensions,
-          conditionGrade,
-          conditionReport: sanitizedConditionReport,
-          acquisitionDate,
-          acquisitionSource,
-          acquisitionCost,
-          retailPrice,
-          notes,
-          tags,
-          files,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
+        addFirestoreDocument({
+          collectionPath: ['users', uid, 'inventory'],
+          data: {
+            title,
+            publisher,
+            canonicalRecordId,
+            customDescription,
+            productLine,
+            featured,
+            publishYear: normalizePublishYear(publishYear),
+            format,
+            dimensions,
+            conditionGrade,
+            conditionReport: sanitizedConditionReport,
+            acquisitionDate,
+            acquisitionSource,
+            acquisitionCost,
+            retailPrice,
+            notes,
+            tags,
+            files,
+            createdAt: firebaseServerTimestamp(),
+            updatedAt: firebaseServerTimestamp(),
+          },
         }),
       ).pipe(
         mergeMap((docRef) =>
@@ -820,28 +842,30 @@ export const inventoryUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
       }
 
       const sanitizedConditionReport = sanitizeConditionReport(conditionReport)
-      const itemRef = doc(db, 'users', uid, 'inventory', id)
       return from(
-        updateDoc(itemRef, {
-          title,
-          publisher,
-          canonicalRecordId,
-          customDescription,
-          productLine,
-          featured,
-          publishYear: normalizePublishYear(publishYear),
-          format,
-          dimensions,
-          conditionGrade,
-          conditionReport: sanitizedConditionReport,
-          acquisitionDate,
-          acquisitionSource,
-          acquisitionCost,
-          retailPrice,
-          notes,
-          tags,
-          files,
-          updatedAt: serverTimestamp(),
+        updateFirestoreDocument({
+          documentPath: ['users', uid, 'inventory', id],
+          data: {
+            title,
+            publisher,
+            canonicalRecordId,
+            customDescription,
+            productLine,
+            featured,
+            publishYear: normalizePublishYear(publishYear),
+            format,
+            dimensions,
+            conditionGrade,
+            conditionReport: sanitizedConditionReport,
+            acquisitionDate,
+            acquisitionSource,
+            acquisitionCost,
+            retailPrice,
+            notes,
+            tags,
+            files,
+            updatedAt: firebaseServerTimestamp(),
+          },
         }),
       ).pipe(
         mergeMap(() =>
@@ -935,13 +959,14 @@ export const inventoryDeleteEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootS
         return of(slice.actions.inventoryFetchFailed('Sign in to delete inventory.'))
       }
 
-      const itemRef = doc(db, 'users', uid, 'inventory', payload.id)
-      return from(deleteDoc(itemRef)).pipe(
+      return from(
+        deleteFirestoreDocument({ documentPath: ['users', uid, 'inventory', payload.id] }),
+      ).pipe(
         mergeMap(() =>
           from(
-            deleteDoc(
-              doc(featuredInventoryCollection, buildFeaturedInventoryDocId(uid, payload.id)),
-            ),
+            deleteFirestoreDocument({
+              documentPath: ['featuredInventory', buildFeaturedInventoryDocId(uid, payload.id)],
+            }),
           ).pipe(
             mergeMap(() =>
               of(

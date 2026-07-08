@@ -11,34 +11,34 @@ export type FeaturedInventoryFile = {
 }
 
 export type FeaturedInventoryConditionSummary = {
-  grade: string
-  category: string
-  summary: string
-  highlights: string[]
+  grade?: string
+  category?: string
+  summary?: string
+  highlights?: string[]
 }
 
 export type FeaturedInventoryItem = {
   id: string
-  inventoryId: string
-  ownerId: string
-  canonicalRecordId: string
-  productLine: InventoryProductLine
-  title: string
-  collection: string
-  summary: string
-  description: string
-  canonicalDescription: string
-  customDescription: string
-  publisher: string
-  format: string
-  publishYear: string
-  dimensions: string
-  tags: string[]
-  retailPrice: number | null
-  imageUrl: string
-  files: FeaturedInventoryFile[]
-  condition: FeaturedInventoryConditionSummary | null
-  updatedAt: string
+  inventoryId?: string
+  ownerId?: string
+  canonicalRecordId?: string
+  productLine?: InventoryProductLine
+  title?: string
+  collection?: string
+  summary?: string
+  description?: string
+  canonicalDescription?: string
+  customDescription?: string
+  publisher?: string
+  format?: string
+  publishYear?: string
+  dimensions?: string
+  tags?: string[]
+  retailPrice?: number | null
+  imageUrl?: string
+  files?: FeaturedInventoryFile[]
+  condition?: FeaturedInventoryConditionSummary | null
+  updatedAt?: string
 }
 
 type FeaturedInventoryStatus = 'idle' | 'loading'
@@ -47,12 +47,25 @@ type FeaturedInventoryState = {
   items: FeaturedInventoryItem[]
   status: FeaturedInventoryStatus
   error: string | null
+  totalCount: number | null
+  hasNextPage: boolean
+  pageSize: number
+}
+
+type FeaturedInventoryFetchSucceededPayload = {
+  items: FeaturedInventoryItem[]
+  totalCount?: number
+  hasNextPage: boolean
+  pageSize: number
 }
 
 const initialState: FeaturedInventoryState = {
   items: [],
   status: 'idle',
   error: null,
+  totalCount: null,
+  hasNextPage: false,
+  pageSize: 25,
 }
 
 export const featuredInventorySlice = createSlice({
@@ -63,10 +76,16 @@ export const featuredInventorySlice = createSlice({
       state.status = 'loading'
       state.error = null
     },
-    featuredInventoryFetchSucceeded: (state, action: PayloadAction<FeaturedInventoryItem[]>) => {
-      state.items = action.payload
+    featuredInventoryFetchSucceeded: (
+      state,
+      action: PayloadAction<FeaturedInventoryFetchSucceededPayload>,
+    ) => {
+      state.items = action.payload.items
       state.status = 'idle'
       state.error = null
+      state.totalCount = action.payload.totalCount ?? null
+      state.hasNextPage = action.payload.hasNextPage
+      state.pageSize = action.payload.pageSize
     },
     featuredInventoryFetchFailed: (state, action: PayloadAction<string>) => {
       state.status = 'idle'

@@ -60,7 +60,8 @@ type InventoryRow = {
   id: string
   title: string
   productLine: string
-  featured: boolean
+  productLineFilterValue: string
+  featured?: boolean
   publishYear: string
   acquisitionCost: number | null
   retailPrice: number | null
@@ -107,6 +108,9 @@ const inventoryColumns: InventoryColumn[] = [
   },
 ]
 
+const missingProductLineFilterValue = 'missing-product-line'
+const missingProductLineLabel = 'Missing product line'
+
 const normalizeFilter = (value: string) => value.trim().toLowerCase()
 
 const createInitialFilters = (): InventoryFilters => ({
@@ -132,9 +136,9 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 const formatCurrency = (value: number | null) =>
   value === null ? '—' : currencyFormatter.format(value)
 
-const toDaysInInventory = (createdAt: string) => {
+const toDaysInInventory = (createdAt: string | undefined) => {
   if (!createdAt || createdAt === 'Just now') {
-    return 0
+    return null
   }
 
   const createdDate = new Date(createdAt)
@@ -193,6 +197,18 @@ const sortInventoryRows = (
       return compareNumbers(Number(leftValue), Number(rightValue))
     }
 
+    if (leftValue === undefined && rightValue === undefined) {
+      return 0
+    }
+
+    if (leftValue === undefined) {
+      return -1
+    }
+
+    if (rightValue === undefined) {
+      return 1
+    }
+
     if (leftValue === null && rightValue === null) {
       return 0
     }
@@ -219,12 +235,13 @@ const buildInventoryRows = (records: ReturnType<typeof selectInventory>): Invent
   records.map((item) => ({
     id: item.id,
     title: item.title || 'Untitled item',
-    productLine: item.productLine,
+    productLine: item.productLine ?? missingProductLineLabel,
+    productLineFilterValue: item.productLine ?? missingProductLineFilterValue,
     featured: item.featured,
     publishYear: item.publishYear || 'No publish year',
     acquisitionCost: item.acquisitionCost,
     retailPrice: item.retailPrice,
-    hasFiles: item.files.length > 0,
+    hasFiles: (item.files?.length ?? 0) > 0,
     daysInInventory: toDaysInInventory(item.createdAt),
   }))
 
@@ -251,7 +268,11 @@ const InventorySection = () => {
         row.title,
         row.productLine,
         row.publishYear,
-        row.featured ? 'featured adored collection' : 'not featured',
+        row.featured === undefined
+          ? 'featured status unspecified'
+          : row.featured
+            ? 'featured adored collection'
+            : 'not featured',
         row.hasFiles ? 'has files' : 'no files without files',
         formatCurrency(row.acquisitionCost),
         formatCurrency(row.retailPrice),
@@ -263,15 +284,15 @@ const InventorySection = () => {
         return false
       }
 
-      if (filters.productLine !== 'all' && row.productLine !== filters.productLine) {
+      if (filters.productLine !== 'all' && row.productLineFilterValue !== filters.productLine) {
         return false
       }
 
-      if (filters.featured === 'featured' && !row.featured) {
+      if (filters.featured === 'featured' && row.featured !== true) {
         return false
       }
 
-      if (filters.featured === 'not-featured' && row.featured) {
+      if (filters.featured === 'not-featured' && row.featured !== false) {
         return false
       }
 
@@ -461,7 +482,9 @@ const InventorySection = () => {
                   <TableCell align="center">
                     <Chip
                       size="small"
-                      label={row.featured ? 'Yes' : 'No'}
+                      label={
+                        row.featured === undefined ? 'Unspecified' : row.featured ? 'Yes' : 'No'
+                      }
                       color={row.featured ? 'warning' : 'default'}
                       variant={row.featured ? 'filled' : 'outlined'}
                     />
@@ -557,6 +580,9 @@ const InventorySection = () => {
                       {option}
                     </MenuItem>
                   ))}
+                  <MenuItem value={missingProductLineFilterValue}>
+                    {missingProductLineLabel}
+                  </MenuItem>
                 </TextField>
                 <TextField
                   select

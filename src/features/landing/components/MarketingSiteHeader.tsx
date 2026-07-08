@@ -248,33 +248,37 @@ function MarketingSiteHeader() {
                 )
               })}
 
-              {user && (
-                <>
-                  <Divider />
-                  <Box sx={{ px: 2, py: 1.25 }}>
-                    <Typography sx={{ fontWeight: 600 }}>
-                      {user.displayName ?? 'Signed-in user'}
+              {user && [
+                <Divider key="signed-in-user-top-divider" />,
+                <Box key="signed-in-user-details" sx={{ px: 2, py: 1.25 }}>
+                  <Typography sx={{ fontWeight: 600 }}>
+                    {user.displayName ?? 'Signed-in user'}
+                  </Typography>
+                  {user.email && (
+                    <Typography variant="body2" sx={{ fontFamily: 'IBM Plex Mono' }}>
+                      {user.email}
                     </Typography>
-                    {user.email && (
-                      <Typography variant="body2" sx={{ fontFamily: 'IBM Plex Mono' }}>
-                        {user.email}
-                      </Typography>
-                    )}
-                  </Box>
-                  <Divider />
-                  <MenuItem
-                    component={RouterLink}
-                    to="/dashboard"
-                    onClick={handleMenuClose}
-                    sx={{ py: 1.1 }}
-                  >
-                    <ListItemText>Dashboard</ListItemText>
-                  </MenuItem>
-                  <MenuItem onClick={handleSignOut} disabled={authActionDisabled} sx={{ py: 1.1 }}>
-                    <ListItemText>Sign out</ListItemText>
-                  </MenuItem>
-                </>
-              )}
+                  )}
+                </Box>,
+                <Divider key="signed-in-user-bottom-divider" />,
+                <MenuItem
+                  key="signed-in-user-dashboard"
+                  component={RouterLink}
+                  to="/dashboard"
+                  onClick={handleMenuClose}
+                  sx={{ py: 1.1 }}
+                >
+                  <ListItemText>Dashboard</ListItemText>
+                </MenuItem>,
+                <MenuItem
+                  key="signed-in-user-sign-out"
+                  onClick={handleSignOut}
+                  disabled={authActionDisabled}
+                  sx={{ py: 1.1 }}
+                >
+                  <ListItemText>Sign out</ListItemText>
+                </MenuItem>,
+              ]}
             </Menu>
           </Stack>
         </Container>

@@ -1,10 +1,9 @@
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
 import type { Epic } from 'redux-observable'
 import { from, of } from 'rxjs'
 import { catchError, filter, map, mergeMap, withLatestFrom } from 'rxjs/operators'
 import type { AnyFeatureAction, RootState } from '../../app/store'
-import { db } from '../../firebase'
 import { selectAuthUser } from '../auth/selectors'
+import { fetchFirestoreDocument, firebaseServerTimestamp, setFirestoreDocument } from '../firebase'
 import {
   LANDING_CONTENT_COLLECTION,
   LANDING_PAGE_DOCUMENT_ID,
@@ -22,19 +21,21 @@ const toErrorMessage = (error: unknown, fallback: string) => {
   return error instanceof Error && error.message ? error.message : fallback
 }
 
-const landingPageContentRef = doc(db, LANDING_CONTENT_COLLECTION, LANDING_PAGE_DOCUMENT_ID)
-
 export const landingContentFetchEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootState> = (
   action$,
 ) =>
   action$.pipe(
     filter(slice.actions.landingContentFetchRequested.match),
     mergeMap(() =>
-      from(getDoc(landingPageContentRef)).pipe(
+      from(
+        fetchFirestoreDocument({
+          documentPath: [LANDING_CONTENT_COLLECTION, LANDING_PAGE_DOCUMENT_ID],
+        }),
+      ).pipe(
         map((snapshot) =>
           slice.actions.landingContentFetchSucceeded(
-            snapshot.exists()
-              ? normalizeLandingPageContent(snapshot.data())
+            snapshot
+              ? normalizeLandingPageContent(snapshot.data)
               : normalizeLandingPageContent(null),
           ),
         ),
@@ -71,14 +72,14 @@ export const landingContentSaveEpic: Epic<AnyFeatureAction, AnyFeatureAction, Ro
       }
 
       return from(
-        setDoc(
-          landingPageContentRef,
-          {
+        setFirestoreDocument({
+          documentPath: [LANDING_CONTENT_COLLECTION, LANDING_PAGE_DOCUMENT_ID],
+          data: {
             ...normalizedContent,
-            updatedAt: serverTimestamp(),
+            updatedAt: firebaseServerTimestamp(),
           },
-          { merge: true },
-        ),
+          options: { merge: true },
+        }),
       ).pipe(
         mergeMap(() => [
           slice.actions.landingContentSaveSucceeded(normalizedContent),

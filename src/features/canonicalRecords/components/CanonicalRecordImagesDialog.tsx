@@ -27,6 +27,7 @@ import {
   isStoredImageFile,
   openStoredFileInNewTab,
   sortStoredFiles,
+  type StoredFile,
 } from '../../files'
 import { selectAppLocked } from '../../ui/selectors'
 import {
@@ -38,7 +39,7 @@ import {
   selectCanonicalRecords,
   selectCanonicalRecordsStatus,
 } from '../selectors'
-import { canonicalRecordsSlice, type CanonicalRecord } from '../slice'
+import { canonicalRecordsSlice } from '../slice'
 
 type CanonicalDragEvent = DragEvent<HTMLElement>
 
@@ -73,7 +74,7 @@ const CanonicalRecordImagesDialog = () => {
     dispatch(canonicalRecordsSlice.actions.canonicalRecordImageManagerClosed())
   }
 
-  const handleHeroSelect = (storedFile: CanonicalRecord['images'][number]) => {
+  const handleHeroSelect = (storedFile: StoredFile) => {
     if (!imageManagerForm || !isStoredImageFile(storedFile)) {
       return
     }
@@ -86,7 +87,7 @@ const CanonicalRecordImagesDialog = () => {
     )
   }
 
-  const handleDeleteImage = (storedFile: CanonicalRecord['images'][number]) => {
+  const handleDeleteImage = (storedFile: StoredFile) => {
     if (!imageManagerForm) {
       return
     }
@@ -99,7 +100,7 @@ const CanonicalRecordImagesDialog = () => {
     )
   }
 
-  const handleDragStart = (storedFile: CanonicalRecord['images'][number]) => () => {
+  const handleDragStart = (storedFile: StoredFile) => () => {
     setDraggingPath(storedFile.path)
     setDropTargetPath(storedFile.path)
   }
@@ -109,35 +110,33 @@ const CanonicalRecordImagesDialog = () => {
     setDropTargetPath(null)
   }
 
-  const handleDragOver =
-    (storedFile: CanonicalRecord['images'][number]) => (event: CanonicalDragEvent) => {
-      event.preventDefault()
-      if (draggingPath && draggingPath !== storedFile.path) {
-        setDropTargetPath(storedFile.path)
-      }
+  const handleDragOver = (storedFile: StoredFile) => (event: CanonicalDragEvent) => {
+    event.preventDefault()
+    if (draggingPath && draggingPath !== storedFile.path) {
+      setDropTargetPath(storedFile.path)
     }
+  }
 
-  const handleDrop =
-    (storedFile: CanonicalRecord['images'][number]) => (event: CanonicalDragEvent) => {
-      event.preventDefault()
+  const handleDrop = (storedFile: StoredFile) => (event: CanonicalDragEvent) => {
+    event.preventDefault()
 
-      if (!imageManagerForm || !draggingPath || draggingPath === storedFile.path) {
-        handleDragEnd()
-        return
-      }
-
-      dispatch(
-        canonicalRecordsSlice.actions.canonicalRecordImagesReordered({
-          form: imageManagerForm,
-          sourcePath: draggingPath,
-          destinationPath: storedFile.path,
-        }),
-      )
-
+    if (!imageManagerForm || !draggingPath || draggingPath === storedFile.path) {
       handleDragEnd()
+      return
     }
 
-  const renderImageCard = (storedFile: CanonicalRecord['images'][number]) => {
+    dispatch(
+      canonicalRecordsSlice.actions.canonicalRecordImagesReordered({
+        form: imageManagerForm,
+        sourcePath: draggingPath,
+        destinationPath: storedFile.path,
+      }),
+    )
+
+    handleDragEnd()
+  }
+
+  const renderImageCard = (storedFile: StoredFile) => {
     const isDropTarget = dropTargetPath === storedFile.path && draggingPath !== storedFile.path
 
     return (

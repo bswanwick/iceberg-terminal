@@ -9,6 +9,10 @@ import {
   trackGalleryNavigate,
   trackGalleryThumbnailSelect,
 } from '../../analytics/publicAnalytics'
+import {
+  getFeaturedInventoryFiles,
+  getFeaturedInventoryTitle,
+} from '../../featuredInventory/selectors'
 import type { FeaturedInventoryFile, FeaturedInventoryItem } from '../../featuredInventory/slice'
 
 export type ListingViewGalleryPalette = {
@@ -53,13 +57,15 @@ const formatFileSize = (size: number) => {
 
 function ListingViewGallery({ item, listingPalette }: ListingViewGalleryProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const listingFiles = useMemo(() => getFeaturedInventoryFiles(item), [item])
+  const listingTitle = getFeaturedInventoryTitle(item)
   const imageFiles = useMemo(
-    () => item.files.filter((storedFile) => isImageFile(storedFile)),
-    [item.files],
+    () => listingFiles.filter((storedFile) => isImageFile(storedFile)),
+    [listingFiles],
   )
   const attachmentFiles = useMemo(
-    () => item.files.filter((storedFile) => !isImageFile(storedFile)),
-    [item.files],
+    () => listingFiles.filter((storedFile) => !isImageFile(storedFile)),
+    [listingFiles],
   )
   const activeImageIndex =
     imageFiles.length === 0 ? 0 : Math.min(selectedImageIndex, imageFiles.length - 1)
@@ -216,7 +222,7 @@ function ListingViewGallery({ item, listingPalette }: ListingViewGalleryProps) {
               <Box
                 component="img"
                 src={activeImage.url}
-                alt={activeImage.name || item.title}
+                alt={activeImage.name || listingTitle}
                 sx={{ width: '100%', height: '100%', objectFit: 'contain' }}
               />
             ) : (
@@ -267,7 +273,7 @@ function ListingViewGallery({ item, listingPalette }: ListingViewGalleryProps) {
               <Box
                 component="img"
                 src={storedFile.url}
-                alt={storedFile.name || `${item.title} image ${index + 1}`}
+                alt={storedFile.name || `${listingTitle} image ${index + 1}`}
                 sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
             </Box>

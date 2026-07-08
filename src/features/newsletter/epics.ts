@@ -1,9 +1,12 @@
 import type { Epic } from 'redux-observable'
 import { from, of } from 'rxjs'
 import { catchError, filter, map, mergeMap } from 'rxjs/operators'
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import type { AnyFeatureAction, RootState } from '../../app/store'
-import { db } from '../../firebase'
+import {
+  addFirestoreDocument,
+  fetchFirestoreCollectionPage,
+  firebaseServerTimestamp,
+} from '../firebase'
 import slice from './slice'
 import {
   SIGNUP_REQUESTS_COLLECTION,
@@ -45,15 +48,18 @@ export const newsletterSubscribeEpic: Epic<AnyFeatureAction, AnyFeatureAction, R
       }
 
       return from(
-        addDoc(collection(db, SIGNUP_REQUESTS_COLLECTION), {
-          kind: payload.kind,
-          email: payload.email,
-          name: payload.name,
-          cell: payload.cell,
-          communicationPreference: payload.communicationPreference,
-          message: payload.message,
-          interests: payload.interests,
-          createdAt: serverTimestamp(),
+        addFirestoreDocument({
+          collectionPath: [SIGNUP_REQUESTS_COLLECTION],
+          data: {
+            kind: payload.kind,
+            email: payload.email,
+            name: payload.name,
+            cell: payload.cell,
+            communicationPreference: payload.communicationPreference,
+            message: payload.message,
+            interests: payload.interests,
+            createdAt: firebaseServerTimestamp(),
+          },
         }),
       ).pipe(
         map(() => slice.actions.newsletterSubscribeSucceeded(payload)),
@@ -64,4 +70,29 @@ export const newsletterSubscribeEpic: Epic<AnyFeatureAction, AnyFeatureAction, R
         ),
       )
     }),
+  )
+
+export const newsletterSignupCountFetchEpic: Epic<AnyFeatureAction, AnyFeatureAction, RootState> = (
+  action$,
+) =>
+  action$.pipe(
+    filter(slice.actions.newsletterSignupCountRequested.match),
+    mergeMap(() =>
+      from(
+        fetchFirestoreCollectionPage({
+          collectionKey: SIGNUP_REQUESTS_COLLECTION,
+          collectionPath: [SIGNUP_REQUESTS_COLLECTION],
+          pageSize: 1,
+        }),
+      ).pipe(
+        map((page) => slice.actions.newsletterSignupCountSucceeded(page.totalCount ?? 0)),
+        catchError((error) =>
+          of(
+            slice.actions.newsletterSignupCountFailed(
+              toErrorMessage(error, 'Newsletter signup count failed.'),
+            ),
+          ),
+        ),
+      ),
+    ),
   )

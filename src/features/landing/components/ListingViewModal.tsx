@@ -17,6 +17,11 @@ import {
 } from '@mui/material'
 import { useMediaQuery, useTheme } from '@mui/material'
 import { trackListingPreviewClose, trackListingView } from '../../analytics/publicAnalytics'
+import {
+  getFeaturedInventorySummary,
+  getFeaturedInventoryTags,
+  getFeaturedInventoryTitle,
+} from '../../featuredInventory/selectors'
 import type { FeaturedInventoryItem } from '../../featuredInventory/slice'
 import ListingViewGallery, { type ListingViewGalleryPalette } from './ListingViewGallery'
 
@@ -124,20 +129,23 @@ const shippingDetailLines = [
   'If a condition discrepancy appears on arrival, contact us promptly so we can review it with you.',
 ]
 
-const formatRetailPrice = (value: number | null) =>
-  value === null ? 'Price on request' : currencyFormatter.format(value)
+const formatRetailPrice = (value: number | null | undefined) =>
+  value === null || value === undefined ? 'Price on request' : currencyFormatter.format(value)
 
 function ListingViewModal({ item, open, onClose }: ListingViewModalProps) {
   const theme = useTheme()
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'))
-  const hasCustomDescription = Boolean(item?.customDescription.trim())
-  const hasCanonicalDescription = Boolean(item?.canonicalDescription.trim())
+  const customDescription = item?.customDescription?.trim() ?? ''
+  const canonicalDescription = item?.canonicalDescription?.trim() ?? ''
+  const conditionHighlights = item?.condition?.highlights ?? []
+  const hasCustomDescription = Boolean(customDescription)
+  const hasCanonicalDescription = Boolean(canonicalDescription)
   const primaryDescription = hasCustomDescription
-    ? (item?.customDescription.trim() ?? '')
-    : item?.canonicalDescription.trim() ||
-      item?.description ||
-      item?.summary ||
-      'A detailed listing description will appear here soon.'
+    ? customDescription
+    : canonicalDescription ||
+      (item
+        ? getFeaturedInventorySummary(item)
+        : 'A detailed listing description will appear here soon.')
 
   useEffect(() => {
     if (!open || !item) {
@@ -156,6 +164,8 @@ function ListingViewModal({ item, open, onClose }: ListingViewModalProps) {
   }
 
   const isPrintListing = item.productLine === 'Prints'
+  const title = getFeaturedInventoryTitle(item)
+  const tags = getFeaturedInventoryTags(item)
   const sourceSection = isPrintListing ? 'reprints' : 'featured_originals'
   const handleClose = () => {
     trackListingPreviewClose({ item, sourceSection, interactionLocation: 'modal_close' })
@@ -232,7 +242,7 @@ function ListingViewModal({ item, open, onClose }: ListingViewModalProps) {
           >
             <Stack spacing={1.25}>
               <Typography variant="h4" sx={{ color: listingPalette.detailsText }}>
-                {item.title}
+                {title}
               </Typography>
               <Typography variant="body2" sx={{ color: listingPalette.detailsMutedText }}>
                 {listingIdentityDescription}
@@ -284,9 +294,9 @@ function ListingViewModal({ item, open, onClose }: ListingViewModalProps) {
                       {item.condition.summary}
                     </Typography>
                   ) : null}
-                  {item.condition.highlights.length > 0 ? (
+                  {conditionHighlights.length > 0 ? (
                     <Stack spacing={0.5}>
-                      {item.condition.highlights.map((highlight) => (
+                      {conditionHighlights.map((highlight) => (
                         <Typography
                           key={highlight}
                           variant="body2"
@@ -328,13 +338,13 @@ function ListingViewModal({ item, open, onClose }: ListingViewModalProps) {
                         Canonical Description
                       </Typography>
                       <Typography variant="body2" sx={{ color: listingPalette.detailsMutedText }}>
-                        {item.canonicalDescription}
+                        {canonicalDescription}
                       </Typography>
                     </Stack>
                   ) : null}
-                  {item.tags.length > 0 ? (
+                  {tags.length > 0 ? (
                     <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
-                      {item.tags.map((tag) => (
+                      {tags.map((tag) => (
                         <Chip key={tag} label={tag} size="small" sx={tagChipSx} />
                       ))}
                     </Stack>

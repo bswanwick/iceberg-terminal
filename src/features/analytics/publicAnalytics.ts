@@ -1,5 +1,10 @@
 import { getAnalytics, isSupported, logEvent, type Analytics } from 'firebase/analytics'
 import { app } from '../../firebase'
+import {
+  getFeaturedInventoryFiles,
+  getFeaturedInventoryImageUrl,
+  getFeaturedInventoryTags,
+} from '../featuredInventory/selectors'
 import type { FeaturedInventoryFile, FeaturedInventoryItem } from '../featuredInventory/slice'
 
 type PublicRouteName = 'landing' | 'about' | 'blog' | 'register'
@@ -111,20 +116,25 @@ const trackPublicEvent = (eventName: string, params: PublicAnalyticsParams) => {
 const buildListingParams = (
   item: FeaturedInventoryItem,
   sourceSection?: ListingSourceSection,
-): PublicAnalyticsParams => ({
-  item_id: item.inventoryId || item.id,
-  featured_item_id: item.id,
-  canonical_record_id: item.canonicalRecordId,
-  item_name: item.title,
-  item_category: item.productLine,
-  item_collection: item.collection,
-  price: item.retailPrice ?? undefined,
-  has_price: item.retailPrice === null ? 0 : 1,
-  has_image: item.imageUrl ? 1 : 0,
-  file_count: item.files.length,
-  tag_count: item.tags.length,
-  source_section: sourceSection,
-})
+): PublicAnalyticsParams => {
+  const files = getFeaturedInventoryFiles(item)
+  const tags = getFeaturedInventoryTags(item)
+
+  return {
+    item_id: item.inventoryId || item.id,
+    featured_item_id: item.id,
+    canonical_record_id: item.canonicalRecordId,
+    item_name: item.title,
+    item_category: item.productLine,
+    item_collection: item.collection,
+    price: item.retailPrice ?? undefined,
+    has_price: item.retailPrice === null || item.retailPrice === undefined ? 0 : 1,
+    has_image: getFeaturedInventoryImageUrl(item) ? 1 : 0,
+    file_count: files.length,
+    tag_count: tags.length,
+    source_section: sourceSection,
+  }
+}
 
 export const trackPublicPageView = ({
   location,

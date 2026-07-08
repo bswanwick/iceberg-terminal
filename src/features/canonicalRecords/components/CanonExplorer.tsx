@@ -93,18 +93,25 @@ const toTimestampValue = (value: string | undefined) => {
 }
 
 const buildRows = (records: CanonicalRecord[]): CanonExplorerRow[] =>
-  records.map((record) => ({
-    id: record.id,
-    title: record.title || 'Untitled',
-    description: record.description || 'No description',
-    tags: record.tags,
-    tagsCount: record.tags.length,
-    referencesCount: record.references.length,
-    imagesCount: record.images.length,
-    updatedAtLabel: record.updatedAt ?? record.createdAt,
-    updatedAtValue: toTimestampValue(record.updatedAt ?? record.createdAt),
-    heroUrl: getHeroStoredFile(record.images)?.url ?? '',
-  }))
+  records.map((record) => {
+    const tags = record.tags ?? []
+    const references = record.references ?? []
+    const images = record.images ?? []
+    const timestamp = record.updatedAt ?? record.createdAt
+
+    return {
+      id: record.id,
+      title: record.title || 'Untitled',
+      description: record.description || 'No description',
+      tags,
+      tagsCount: tags.length,
+      referencesCount: references.length,
+      imagesCount: images.length,
+      updatedAtLabel: timestamp ?? 'Missing timestamp',
+      updatedAtValue: toTimestampValue(timestamp),
+      heroUrl: getHeroStoredFile(images)?.url ?? '',
+    }
+  })
 
 const sortRows = (
   rows: CanonExplorerRow[],
@@ -173,8 +180,8 @@ const CanonExplorer = ({
         row.id,
         row.title,
         row.description,
-        record?.tags.join(' ') ?? '',
-        record?.references.join(' ') ?? '',
+        record?.tags?.join(' ') ?? '',
+        record?.references?.join(' ') ?? '',
       ]
         .join(' ')
         .toLowerCase()

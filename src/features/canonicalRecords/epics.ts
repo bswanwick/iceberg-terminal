@@ -2,27 +2,22 @@ import type { Epic } from 'redux-observable'
 import { from, of } from 'rxjs'
 import { catchError, filter, map, mergeMap, withLatestFrom } from 'rxjs/operators'
 import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDocs,
-  orderBy,
-  query,
-  serverTimestamp,
-  updateDoc,
-} from 'firebase/firestore'
-import type { AnyFeatureAction, RootState } from '../../app/store'
-import { db } from '../../firebase'
-import {
+  addFirestoreDocument,
   buildUserStoragePath,
+  deleteFirestoreDocument,
   deleteStorageFile,
+  fetchFirestoreCollectionPage,
+  firebaseServerTimestamp,
+  updateFirestoreDocument,
   uploadStorageFile,
-  type StoredFile,
-} from '../files'
+  type FirestoreDocumentRecord,
+} from '../firebase'
+import type { AnyFeatureAction, RootState } from '../../app/store'
+import { type StoredFile } from '../files'
 import slice, { type CanonicalRecord } from './slice'
 
-const canonicalRecordsCollection = () => collection(db, 'canonicalRecords')
+const CANONICAL_RECORDS_COLLECTION_KEY = 'canonicalRecords'
+const CANONICAL_RECORDS_PAGE_SIZE = 25
 
 const toErrorMessage = (error: unknown, fallback: string) => {
   if (import.meta.env.DEV) {
@@ -82,30 +77,29 @@ const toStoredFileArray = (value: unknown): StoredFile[] =>
         .filter((item): item is StoredFile => item !== null)
     : []
 
-const toTimestampLabel = (value: unknown) => {
+const toOptionalTimestampLabel = (value: unknown) => {
   if (value && typeof value === 'object' && 'toDate' in value) {
     return (value as { toDate: () => Date }).toDate().toLocaleString()
   }
 
-  return 'Just now'
+  return undefined
 }
 
-const toCanonicalRecord = (docSnap: {
-  id: string
-  data: () => Record<string, unknown>
-}): CanonicalRecord => {
-  const data = docSnap.data()
+const toOptionalString = (value: unknown) => (typeof value === 'string' ? value : undefined)
 
+const toCanonicalRecord = ({ id, data }: FirestoreDocumentRecord): CanonicalRecord => {
   return {
-    id: docSnap.id,
-    title: typeof data.title === 'string' ? data.title : 'Untitled',
-    description: typeof data.description === 'string' ? data.description : '',
-    tags: toStringArray(data.tags),
-    references: toStringArray(data.references ?? data.referenceImages),
-    images: toStoredFileArray(data.images),
-    createdAt: toTimestampLabel(data.createdAt),
-    updatedAt: data.updatedAt ? toTimestampLabel(data.updatedAt) : undefined,
-    createdBy: typeof data.createdBy === 'string' ? data.createdBy : undefined,
+    id,
+    title: toOptionalString(data.title),
+    description: toOptionalString(data.description),
+    tags: Array.isArray(data.tags) ? toStringArray(data.tags) : undefined,
+    references: Array.isArray(data.references ?? data.referenceImages)
+      ? toStringArray(data.references ?? data.referenceImages)
+      : undefined,
+    images: Array.isArray(data.images) ? toStoredFileArray(data.images) : undefined,
+    createdAt: toOptionalTimestampLabel(data.createdAt),
+    updatedAt: toOptionalTimestampLabel(data.updatedAt),
+    createdBy: toOptionalString(data.createdBy),
   }
 }
 
@@ -141,10 +135,22 @@ export const canonicalRecordsFetchEpic: Epic<AnyFeatureAction, AnyFeatureAction,
         return of(slice.actions.canonicalRecordsFetchFailed('Sign in to load canonical records.'))
       }
 
-      const recordsQuery = query(canonicalRecordsCollection(), orderBy('createdAt', 'desc'))
-      return from(getDocs(recordsQuery)).pipe(
-        map((snapshot) => snapshot.docs.map((docSnap) => toCanonicalRecord(docSnap))),
-        map((items) => slice.actions.canonicalRecordsFetchSucceeded(items)),
+      return from(
+        fetchFirestoreCollectionPage({
+          collectionKey: CANONICAL_RECORDS_COLLECTION_KEY,
+          collectionPath: ['canonicalRecords'],
+          orderBy: [{ fieldPath: 'createdAt', direction: 'desc' }],
+          pageSize: CANONICAL_RECORDS_PAGE_SIZE,
+        }),
+      ).pipe(
+        map((page) =>
+          slice.actions.canonicalRecordsFetchSucceeded({
+            items: page.items.map(toCanonicalRecord),
+            totalCount: page.totalCount,
+            hasNextPage: page.hasNextPage,
+            pageSize: page.pageSize,
+          }),
+        ),
         catchError((error) =>
           of(slice.actions.canonicalRecordsFetchFailed(toErrorMessage(error, 'Load failed'))),
         ),
@@ -168,15 +174,18 @@ export const canonicalRecordAddEpic: Epic<AnyFeatureAction, AnyFeatureAction, Ro
       }
 
       return from(
-        addDoc(canonicalRecordsCollection(), {
-          title: payload.title,
-          description: payload.description,
-          tags: payload.tags,
-          references: payload.references,
-          images: payload.images,
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-          createdBy: uid,
+        addFirestoreDocument({
+          collectionPath: ['canonicalRecords'],
+          data: {
+            title: payload.title,
+            description: payload.description,
+            tags: payload.tags,
+            references: payload.references,
+            images: payload.images,
+            createdAt: firebaseServerTimestamp(),
+            updatedAt: firebaseServerTimestamp(),
+            createdBy: uid,
+          },
         }),
       ).pipe(
         mergeMap(() =>
@@ -211,15 +220,17 @@ export const canonicalRecordUpdateEpic: Epic<AnyFeatureAction, AnyFeatureAction,
         return of(slice.actions.canonicalRecordsFetchFailed('Sign in to update canonical records.'))
       }
 
-      const recordRef = doc(db, 'canonicalRecords', payload.id)
       return from(
-        updateDoc(recordRef, {
-          title: payload.title,
-          description: payload.description,
-          tags: payload.tags,
-          references: payload.references,
-          images: payload.images,
-          updatedAt: serverTimestamp(),
+        updateFirestoreDocument({
+          documentPath: ['canonicalRecords', payload.id],
+          data: {
+            title: payload.title,
+            description: payload.description,
+            tags: payload.tags,
+            references: payload.references,
+            images: payload.images,
+            updatedAt: firebaseServerTimestamp(),
+          },
         }),
       ).pipe(
         mergeMap(() =>
@@ -289,8 +300,7 @@ export const canonicalRecordDeleteEpic: Epic<AnyFeatureAction, AnyFeatureAction,
         return of(slice.actions.canonicalRecordsFetchFailed('Sign in to delete canonical records.'))
       }
 
-      const recordRef = doc(db, 'canonicalRecords', payload.id)
-      return from(deleteDoc(recordRef)).pipe(
+      return from(deleteFirestoreDocument({ documentPath: ['canonicalRecords', payload.id] })).pipe(
         mergeMap(() =>
           from(deleteCanonicalRecordImages(record?.images ?? [])).pipe(
             map(() => slice.actions.canonicalRecordsFetchRequested()),

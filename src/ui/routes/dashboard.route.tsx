@@ -19,9 +19,14 @@ import {
   selectCanonicalRecordMap,
   selectCanonicalRecordsError,
 } from '../../features/canonicalRecords/selectors'
-import { selectInventory, selectInventoryError } from '../../features/inventory/selectors'
+import {
+  selectInventory,
+  selectInventoryError,
+  selectInventoryLineCounts,
+} from '../../features/inventory/selectors'
 import LandingPageControlsCard from '../../features/landingContent/components/LandingPageControlsCard'
 import type { InventoryItem } from '../../features/inventory/slice'
+import { selectNewsletterSignupCount } from '../../features/newsletter/selectors'
 import { useRequireAuthenticatedRoute } from './useRequireAuthenticatedRoute'
 
 const parseTimestampForSort = (value: string | undefined): number => {
@@ -34,30 +39,43 @@ const parseTimestampForSort = (value: string | undefined): number => {
 }
 
 type MetricCardProps = {
-  label: string
-  value: string
+  text: string
   caption: string
 }
 
-function MetricCard({ label, value, caption }: MetricCardProps) {
+type MetricGroupProps = {
+  title: string
+  children: React.ReactNode
+}
+
+function MetricCard({ text, caption }: MetricCardProps) {
   return (
     <Paper
       elevation={0}
       sx={{
         p: 2,
+        height: '100%',
+        minHeight: 158,
         borderRadius: 2,
         border: '1px solid rgba(15, 72, 94, 0.15)',
         background: 'rgba(255, 255, 255, 0.75)',
       }}
     >
-      <Stack spacing={0.5}>
-        <Typography variant="overline" sx={{ fontFamily: 'IBM Plex Mono', lineHeight: 1.4 }}>
-          {label}
+      <Stack spacing={0.75} sx={{ height: '100%', containerType: 'inline-size' }}>
+        <Typography
+          variant="h4"
+          fontWeight={700}
+          sx={{
+            fontSize: 'clamp(1.25rem, 16cqi, 2.125rem)',
+            lineHeight: 1.15,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {text}
         </Typography>
-        <Typography variant="h4" fontWeight={700}>
-          {value}
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 'auto' }}>
           {caption}
         </Typography>
       </Stack>
@@ -65,33 +83,57 @@ function MetricCard({ label, value, caption }: MetricCardProps) {
   )
 }
 
+function MetricGroup({ title, children }: MetricGroupProps) {
+  return (
+    <Stack spacing={1.5}>
+      <Typography variant="h6" fontWeight={700}>
+        {title}
+      </Typography>
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            sm: 'repeat(2, minmax(0, 1fr))',
+            lg: 'repeat(3, minmax(0, 1fr))',
+          },
+          gridAutoRows: '1fr',
+          gap: 2,
+        }}
+      >
+        {children}
+      </Box>
+    </Stack>
+  )
+}
+
 function DashboardRoute() {
   const authError = useAppSelector(selectAuthError)
   const inventory = useAppSelector(selectInventory)
   const inventoryError = useAppSelector(selectInventoryError)
+  const inventoryLineCounts = useAppSelector(selectInventoryLineCounts)
+  const newsletterSignupCount = useAppSelector(selectNewsletterSignupCount)
   const canonicalRecordMap = useAppSelector(selectCanonicalRecordMap)
   const canonicalRecordsError = useAppSelector(selectCanonicalRecordsError)
   const shouldRedirectHome = useRequireAuthenticatedRoute()
 
   const metrics = useMemo(() => {
     const inventoryCount = inventory.length
-    const linkedCount = inventory.filter(
-      (item) => item.canonicalRecordId && canonicalRecordMap.has(item.canonicalRecordId),
-    ).length
-    const withFilesCount = inventory.filter((item) => item.files.length > 0).length
+    const withFilesCount = inventory.filter((item) => (item.files?.length ?? 0) > 0).length
     const withConditionReportCount = inventory.filter((item) => item.conditionReport).length
     const listingReadyCount = inventory.filter(
       (item) =>
         item.canonicalRecordId &&
         canonicalRecordMap.has(item.canonicalRecordId) &&
-        item.files.length > 0 &&
-        item.conditionGrade.trim().length > 0,
+        (item.files?.length ?? 0) > 0 &&
+        (item.conditionGrade?.trim().length ?? 0) > 0,
     ).length
 
     return {
       inventoryCount,
-      linkedCount,
-      unlinkedCount: Math.max(inventoryCount - linkedCount, 0),
+      originalsCount: inventoryLineCounts.originals,
+      reprintsCount: inventoryLineCounts.reprints,
+      missingProductLineCount: inventoryLineCounts.missingProductLine,
       withFilesCount,
       withoutFilesCount: Math.max(inventoryCount - withFilesCount, 0),
       withConditionReportCount,
@@ -99,7 +141,7 @@ function DashboardRoute() {
       listingReadyCount,
       needsEnrichmentCount: Math.max(inventoryCount - listingReadyCount, 0),
     }
-  }, [canonicalRecordMap, inventory])
+  }, [canonicalRecordMap, inventory, inventoryLineCounts])
 
   const recentActivity = useMemo(
     () =>
@@ -134,73 +176,64 @@ function DashboardRoute() {
         }}
       >
         <Stack spacing={2}>
-          <Box
-            id="dashboard-inventory-metrics"
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                sm: 'repeat(2, minmax(0, 1fr))',
-                lg: 'repeat(4, minmax(0, 1fr))',
-              },
-              gap: 2,
-            }}
-          >
+          <MetricGroup title="Analytics">
             <MetricCard
-              label="Inventory count"
-              value={String(metrics.inventoryCount)}
-              caption="Total records currently in managed inventory."
+              text="Page hits pending"
+              caption="Firebase Analytics is recording page views; admin rollups still need a reporting source."
             />
             <MetricCard
-              label="Canonical linkage"
-              value={`${metrics.linkedCount} linked`}
-              caption={`${metrics.unlinkedCount} records still need canonical pairing.`}
+              text="Product clicks pending"
+              caption="Product click events are tracked now; dashboard totals need an analytics aggregate."
+            />
+          </MetricGroup>
+
+          <MetricGroup title="Inventory">
+            <MetricCard
+              text={`${metrics.inventoryCount} items`}
+              caption="Total records currently loaded in managed inventory."
             />
             <MetricCard
-              label="File coverage"
-              value={`${metrics.withFilesCount} with files`}
+              text={`${metrics.originalsCount} originals`}
+              caption="Items classified in the Originals product line."
+            />
+            <MetricCard
+              text={`${metrics.reprintsCount} reprints`}
+              caption="Items classified in the Prints product line."
+            />
+            {metrics.missingProductLineCount > 0 && (
+              <MetricCard
+                text={`${metrics.missingProductLineCount} missing product line`}
+                caption="Records missing a stored product line value in Firestore."
+              />
+            )}
+            <MetricCard
+              text={`${metrics.withFilesCount} with files`}
               caption={`${metrics.withoutFilesCount} records are still missing files.`}
             />
             <MetricCard
-              label="Condition reports"
-              value={`${metrics.withConditionReportCount} completed`}
+              text={`${metrics.withConditionReportCount} reports completed`}
               caption={`${metrics.missingConditionReportCount} records still need condition reporting.`}
             />
-          </Box>
-
-          <Box
-            id="dashboard-listing-readiness"
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: '1fr',
-                md: 'repeat(2, minmax(0, 1fr))',
-                xl: 'repeat(4, minmax(0, 1fr))',
-              },
-              gap: 2,
-            }}
-          >
             <MetricCard
-              label="Listing readiness"
-              value={`${metrics.listingReadyCount} ready`}
+              text={`${metrics.listingReadyCount} ready to list`}
               caption={`${metrics.needsEnrichmentCount} records still need enrichment.`}
             />
+          </MetricGroup>
+
+          <MetricGroup title="People">
             <MetricCard
-              label="Pending orders"
-              value="Data source pending"
-              caption="Order pipeline card will activate when the website starts submitting orders."
+              text={
+                newsletterSignupCount === null
+                  ? 'Newsletter signups loading'
+                  : `${newsletterSignupCount} newsletter signups`
+              }
+              caption="Counted from signup requests without loading every record."
             />
             <MetricCard
-              label="eBay search hits"
-              value="Data source pending"
-              caption="Inbound search-hit ingestion not wired yet; card is reserved for that feed."
+              text="User registrations pending"
+              caption="Firebase Auth totals need a server-side source or mirrored user records."
             />
-            <MetricCard
-              label="Upcoming modules"
-              value="Reporting, SEO, Firestore"
-              caption="Reserved integration slots for additional business and IT intelligence modules."
-            />
-          </Box>
+          </MetricGroup>
         </Stack>
       </Paper>
 
@@ -238,15 +271,18 @@ function DashboardRoute() {
                 const hasCanonical =
                   item.canonicalRecordId && canonicalRecordMap.has(item.canonicalRecordId)
                 const listingReady =
-                  hasCanonical && item.files.length > 0 && item.conditionGrade.trim().length > 0
+                  hasCanonical &&
+                  (item.files?.length ?? 0) > 0 &&
+                  (item.conditionGrade?.trim().length ?? 0) > 0
+                const tags = item.tags ?? []
 
                 return (
                   <TableRow key={item.id} hover>
                     <TableCell>{item.title || 'Untitled inventory item'}</TableCell>
-                    <TableCell>{item.updatedAt ?? item.createdAt}</TableCell>
+                    <TableCell>{item.updatedAt ?? item.createdAt ?? 'Missing timestamp'}</TableCell>
                     <TableCell>{hasCanonical ? 'Linked' : 'Unlinked'}</TableCell>
                     <TableCell>{listingReady ? 'Ready to list' : 'Needs enrichment'}</TableCell>
-                    <TableCell>{item.tags.length > 0 ? item.tags.join(', ') : 'No tags'}</TableCell>
+                    <TableCell>{tags.length > 0 ? tags.join(', ') : 'No tags'}</TableCell>
                   </TableRow>
                 )
               })}

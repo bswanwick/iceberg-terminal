@@ -23,5 +23,5 @@ export type BuildUserStoragePathInput = {
 export type UploadStorageFileInput = {
   file: File
   path: string
-  metadata?: import('firebase/storage').UploadMetadata
+  metadata?: import('../firebase').UploadStorageFileInput['metadata']
 }

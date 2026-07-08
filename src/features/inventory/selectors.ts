@@ -1,6 +1,7 @@
 import type { RootState } from '../../app/store'
 
 export const selectInventory = (state: RootState) => state.inventory.items
+export const selectInventoryLineCounts = (state: RootState) => state.inventory.lineCounts
 export const selectInventoryStatus = (state: RootState) => state.inventory.status
 export const selectInventoryError = (state: RootState) => state.inventory.error
 export const selectInventoryAddForm = (state: RootState) => state.inventory.ui.addForm

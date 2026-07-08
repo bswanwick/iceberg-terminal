@@ -9,6 +9,10 @@ import {
 } from '../features/canonicalRecords/epics'
 import { featuredInventoryFetchEpic } from '../features/featuredInventory/epics'
 import {
+  firestoreCollectionFirstPageEpic,
+  firestoreCollectionNextPageEpic,
+} from '../features/firebase/epics'
+import {
   inventoryAddEpic,
   inventoryDeleteEpic,
   inventoryFileUploadEpic,
@@ -16,7 +20,10 @@ import {
   inventoryUpdateEpic,
 } from '../features/inventory/epics'
 import { landingContentFetchEpic, landingContentSaveEpic } from '../features/landingContent/epics'
-import { newsletterSubscribeEpic } from '../features/newsletter/epics'
+import {
+  newsletterSignupCountFetchEpic,
+  newsletterSubscribeEpic,
+} from '../features/newsletter/epics'
 import { uiScreenLockEpic, uiToastAutoDismissEpic } from '../features/ui/epics.ts'
 
 export const rootEpic = combineEpics(
@@ -25,6 +32,8 @@ export const rootEpic = combineEpics(
   authSignOutEpic,
   uiScreenLockEpic,
   uiToastAutoDismissEpic,
+  firestoreCollectionFirstPageEpic,
+  firestoreCollectionNextPageEpic,
   canonicalRecordsFetchEpic,
   canonicalRecordAddEpic,
   canonicalRecordUpdateEpic,
@@ -38,5 +47,6 @@ export const rootEpic = combineEpics(
   inventoryFileUploadEpic,
   landingContentFetchEpic,
   landingContentSaveEpic,
+  newsletterSignupCountFetchEpic,
   newsletterSubscribeEpic,
 )

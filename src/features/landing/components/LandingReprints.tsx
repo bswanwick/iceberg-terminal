@@ -6,6 +6,9 @@ import { useAppSelector } from '../../../app/hooks'
 import { trackListingSelect } from '../../analytics/publicAnalytics'
 import {
   selectFeaturedInventoryError,
+  getFeaturedInventoryImageUrl,
+  getFeaturedInventorySummary,
+  getFeaturedInventoryTitle,
   selectFeaturedPrints,
   selectFeaturedInventoryStatus,
 } from '../../featuredInventory/selectors'
@@ -38,7 +41,10 @@ function LandingReprints() {
   }
 
   const renderPrintPreviewButton = (item: FeaturedPrintItem) => {
-    if (item.imageUrl) {
+    const imageUrl = getFeaturedInventoryImageUrl(item)
+    const title = getFeaturedInventoryTitle(item)
+
+    if (imageUrl) {
       return (
         <Box
           component="button"
@@ -62,8 +68,8 @@ function LandingReprints() {
         >
           <Box
             component="img"
-            src={item.imageUrl}
-            alt={item.title}
+            src={imageUrl}
+            alt={title}
             sx={{
               display: 'block',
               width: '100%',
@@ -220,48 +226,54 @@ function LandingReprints() {
                 </CardContent>
               </Card>
             ) : (
-              visiblePrints.map((item: FeaturedPrintItem) => (
-                <Card
-                  key={item.id}
-                  variant="outlined"
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    flex: '1 1 280px',
-                    borderRadius: 2,
-                  }}
-                >
-                  {renderPrintPreviewButton(item)}
-                  <CardContent sx={{ display: 'flex', flex: 1, flexDirection: 'column', gap: 1.5 }}>
-                    <Stack spacing={1.25} sx={{ flex: 1 }}>
-                      <Typography variant="h5">{item.title}</Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          display: '-webkit-box',
-                          overflow: 'hidden',
-                          WebkitBoxOrient: 'vertical',
-                          WebkitLineClamp: 3,
-                        }}
-                      >
-                        {item.summary || item.description || 'Curated print edition.'}
-                      </Typography>
-                    </Stack>
-                    <Stack
-                      direction="row"
-                      spacing={0.75}
-                      justifyContent="center"
-                      alignItems="center"
-                      sx={{ mt: 'auto', pt: 0.25, color: 'rgba(17, 33, 48, 0.78)' }}
+              visiblePrints.map((item: FeaturedPrintItem) => {
+                const title = getFeaturedInventoryTitle(item)
+
+                return (
+                  <Card
+                    key={item.id}
+                    variant="outlined"
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      flex: '1 1 280px',
+                      borderRadius: 2,
+                    }}
+                  >
+                    {renderPrintPreviewButton(item)}
+                    <CardContent
+                      sx={{ display: 'flex', flex: 1, flexDirection: 'column', gap: 1.5 }}
                     >
-                      <Typography variant="button" sx={{ letterSpacing: '0.08em' }}>
-                        See more
-                      </Typography>
-                      <EastRoundedIcon sx={{ fontSize: 18 }} />
-                    </Stack>
-                  </CardContent>
-                </Card>
-              ))
+                      <Stack spacing={1.25} sx={{ flex: 1 }}>
+                        <Typography variant="h5">{title}</Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            display: '-webkit-box',
+                            overflow: 'hidden',
+                            WebkitBoxOrient: 'vertical',
+                            WebkitLineClamp: 3,
+                          }}
+                        >
+                          {getFeaturedInventorySummary(item)}
+                        </Typography>
+                      </Stack>
+                      <Stack
+                        direction="row"
+                        spacing={0.75}
+                        justifyContent="center"
+                        alignItems="center"
+                        sx={{ mt: 'auto', pt: 0.25, color: 'rgba(17, 33, 48, 0.78)' }}
+                      >
+                        <Typography variant="button" sx={{ letterSpacing: '0.08em' }}>
+                          See more
+                        </Typography>
+                        <EastRoundedIcon sx={{ fontSize: 18 }} />
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                )
+              })
             )
           }
         />

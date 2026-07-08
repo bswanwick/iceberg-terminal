@@ -6,6 +6,10 @@ import { useAppSelector } from '../../../app/hooks'
 import { trackListingSelect } from '../../analytics/publicAnalytics'
 import {
   selectFeaturedInventoryError,
+  getFeaturedInventoryImageUrl,
+  getFeaturedInventorySummary,
+  getFeaturedInventoryTags,
+  getFeaturedInventoryTitle,
   selectFeaturedOriginals,
   selectFeaturedInventoryStatus,
 } from '../../featuredInventory/selectors'
@@ -93,167 +97,175 @@ function LandingFeaturedListings() {
                 </CardContent>
               </Card>
             ) : (
-              visibleFeatured.map((item: FeaturedInventoryItem) => (
-                <Card
-                  key={item.id}
-                  variant="outlined"
-                  sx={{ display: 'flex', flexDirection: 'column', flex: 1, borderRadius: 2 }}
-                >
-                  {item.imageUrl ? (
-                    <Box
-                      component="button"
-                      type="button"
-                      onClick={() => openFeaturedPreview(item, 'card_image')}
-                      sx={{
-                        display: 'block',
-                        width: '100%',
-                        p: 0,
-                        border: 0,
-                        background: 'transparent',
-                        cursor: 'pointer',
-                        position: 'relative',
-                        borderTopLeftRadius: 8,
-                        borderTopRightRadius: 8,
-                        overflow: 'hidden',
-                        '&:focus-visible .featured-preview-overlay, &:hover .featured-preview-overlay':
-                          {
-                            opacity: 1,
-                          },
-                      }}
-                    >
+              visibleFeatured.map((item: FeaturedInventoryItem) => {
+                const imageUrl = getFeaturedInventoryImageUrl(item)
+                const title = getFeaturedInventoryTitle(item)
+                const tags = getFeaturedInventoryTags(item)
+
+                return (
+                  <Card
+                    key={item.id}
+                    variant="outlined"
+                    sx={{ display: 'flex', flexDirection: 'column', flex: 1, borderRadius: 2 }}
+                  >
+                    {imageUrl ? (
                       <Box
-                        component="img"
-                        src={item.imageUrl}
-                        alt={item.title}
+                        component="button"
+                        type="button"
+                        onClick={() => openFeaturedPreview(item, 'card_image')}
                         sx={{
                           display: 'block',
                           width: '100%',
-                          height: 360,
-                          objectFit: 'contain',
-                          backgroundColor: 'rgba(19, 40, 60, 0.06)',
-                        }}
-                      />
-                      <Stack
-                        className="featured-preview-overlay"
-                        spacing={1}
-                        alignItems="center"
-                        justifyContent="center"
-                        sx={{
-                          position: 'absolute',
-                          inset: 0,
-                          opacity: 0,
-                          transition: 'opacity 180ms ease',
-                          background:
-                            'linear-gradient(180deg, rgba(19, 40, 60, 0.1) 0%, rgba(19, 40, 60, 0.62) 100%)',
-                          color: '#fff',
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: 56,
-                            height: 56,
-                            borderRadius: '50%',
-                            display: 'grid',
-                            placeItems: 'center',
-                            backgroundColor: 'rgba(255, 255, 255, 0.92)',
-                            color: 'rgba(19, 40, 60, 0.92)',
-                          }}
-                        >
-                          <SearchRoundedIcon />
-                        </Box>
-                        <Typography variant="subtitle2">Preview listing</Typography>
-                      </Stack>
-                    </Box>
-                  ) : (
-                    <Box
-                      component="button"
-                      type="button"
-                      onClick={() => openFeaturedPreview(item, 'card_placeholder')}
-                      sx={{
-                        height: 360,
-                        width: '100%',
-                        p: 0,
-                        border: 0,
-                        cursor: 'pointer',
-                        position: 'relative',
-                        background:
-                          'linear-gradient(135deg, rgba(19, 40, 60, 0.18) 0%, rgba(201, 169, 113, 0.28) 100%)',
-                        borderTopLeftRadius: 8,
-                        borderTopRightRadius: 8,
-                        overflow: 'hidden',
-                        '&:focus-visible .featured-preview-overlay, &:hover .featured-preview-overlay':
-                          {
-                            opacity: 1,
-                          },
-                      }}
-                    >
-                      <Stack
-                        className="featured-preview-overlay"
-                        spacing={1}
-                        alignItems="center"
-                        justifyContent="center"
-                        sx={{
-                          position: 'absolute',
-                          inset: 0,
-                          opacity: 0,
-                          transition: 'opacity 180ms ease',
-                          background:
-                            'linear-gradient(180deg, rgba(19, 40, 60, 0.1) 0%, rgba(19, 40, 60, 0.62) 100%)',
-                          color: '#fff',
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: 56,
-                            height: 56,
-                            borderRadius: '50%',
-                            display: 'grid',
-                            placeItems: 'center',
-                            backgroundColor: 'rgba(255, 255, 255, 0.92)',
-                            color: 'rgba(19, 40, 60, 0.92)',
-                          }}
-                        >
-                          <SearchRoundedIcon />
-                        </Box>
-                        <Typography variant="subtitle2">Preview listing</Typography>
-                      </Stack>
-                    </Box>
-                  )}
-                  <CardContent sx={{ display: 'flex', flex: 1, flexDirection: 'column', gap: 1.5 }}>
-                    <Stack spacing={1.25} sx={{ flex: 1 }}>
-                      <Typography variant="h5">{item.title}</Typography>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          display: '-webkit-box',
+                          p: 0,
+                          border: 0,
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          position: 'relative',
+                          borderTopLeftRadius: 8,
+                          borderTopRightRadius: 8,
                           overflow: 'hidden',
-                          WebkitBoxOrient: 'vertical',
-                          WebkitLineClamp: 3,
+                          '&:focus-visible .featured-preview-overlay, &:hover .featured-preview-overlay':
+                            {
+                              opacity: 1,
+                            },
                         }}
                       >
-                        {item.summary}
-                      </Typography>
-                    </Stack>
-                    <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
-                      {item.tags.map((tag) => (
-                        <Chip key={tag} label={tag} size="small" />
-                      ))}
-                    </Stack>
-                    <Stack
-                      direction="row"
-                      spacing={0.75}
-                      justifyContent="center"
-                      alignItems="center"
-                      sx={{ mt: 'auto', pt: 0.25, color: 'rgba(19, 40, 60, 0.78)' }}
+                        <Box
+                          component="img"
+                          src={imageUrl}
+                          alt={title}
+                          sx={{
+                            display: 'block',
+                            width: '100%',
+                            height: 360,
+                            objectFit: 'contain',
+                            backgroundColor: 'rgba(19, 40, 60, 0.06)',
+                          }}
+                        />
+                        <Stack
+                          className="featured-preview-overlay"
+                          spacing={1}
+                          alignItems="center"
+                          justifyContent="center"
+                          sx={{
+                            position: 'absolute',
+                            inset: 0,
+                            opacity: 0,
+                            transition: 'opacity 180ms ease',
+                            background:
+                              'linear-gradient(180deg, rgba(19, 40, 60, 0.1) 0%, rgba(19, 40, 60, 0.62) 100%)',
+                            color: '#fff',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 56,
+                              height: 56,
+                              borderRadius: '50%',
+                              display: 'grid',
+                              placeItems: 'center',
+                              backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                              color: 'rgba(19, 40, 60, 0.92)',
+                            }}
+                          >
+                            <SearchRoundedIcon />
+                          </Box>
+                          <Typography variant="subtitle2">Preview listing</Typography>
+                        </Stack>
+                      </Box>
+                    ) : (
+                      <Box
+                        component="button"
+                        type="button"
+                        onClick={() => openFeaturedPreview(item, 'card_placeholder')}
+                        sx={{
+                          height: 360,
+                          width: '100%',
+                          p: 0,
+                          border: 0,
+                          cursor: 'pointer',
+                          position: 'relative',
+                          background:
+                            'linear-gradient(135deg, rgba(19, 40, 60, 0.18) 0%, rgba(201, 169, 113, 0.28) 100%)',
+                          borderTopLeftRadius: 8,
+                          borderTopRightRadius: 8,
+                          overflow: 'hidden',
+                          '&:focus-visible .featured-preview-overlay, &:hover .featured-preview-overlay':
+                            {
+                              opacity: 1,
+                            },
+                        }}
+                      >
+                        <Stack
+                          className="featured-preview-overlay"
+                          spacing={1}
+                          alignItems="center"
+                          justifyContent="center"
+                          sx={{
+                            position: 'absolute',
+                            inset: 0,
+                            opacity: 0,
+                            transition: 'opacity 180ms ease',
+                            background:
+                              'linear-gradient(180deg, rgba(19, 40, 60, 0.1) 0%, rgba(19, 40, 60, 0.62) 100%)',
+                            color: '#fff',
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 56,
+                              height: 56,
+                              borderRadius: '50%',
+                              display: 'grid',
+                              placeItems: 'center',
+                              backgroundColor: 'rgba(255, 255, 255, 0.92)',
+                              color: 'rgba(19, 40, 60, 0.92)',
+                            }}
+                          >
+                            <SearchRoundedIcon />
+                          </Box>
+                          <Typography variant="subtitle2">Preview listing</Typography>
+                        </Stack>
+                      </Box>
+                    )}
+                    <CardContent
+                      sx={{ display: 'flex', flex: 1, flexDirection: 'column', gap: 1.5 }}
                     >
-                      <Typography variant="button" sx={{ letterSpacing: '0.08em' }}>
-                        See more
-                      </Typography>
-                      <EastRoundedIcon sx={{ fontSize: 18 }} />
-                    </Stack>
-                  </CardContent>
-                </Card>
-              ))
+                      <Stack spacing={1.25} sx={{ flex: 1 }}>
+                        <Typography variant="h5">{title}</Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            display: '-webkit-box',
+                            overflow: 'hidden',
+                            WebkitBoxOrient: 'vertical',
+                            WebkitLineClamp: 3,
+                          }}
+                        >
+                          {getFeaturedInventorySummary(item)}
+                        </Typography>
+                      </Stack>
+                      <Stack direction="row" spacing={0.75} useFlexGap flexWrap="wrap">
+                        {tags.map((tag) => (
+                          <Chip key={tag} label={tag} size="small" />
+                        ))}
+                      </Stack>
+                      <Stack
+                        direction="row"
+                        spacing={0.75}
+                        justifyContent="center"
+                        alignItems="center"
+                        sx={{ mt: 'auto', pt: 0.25, color: 'rgba(19, 40, 60, 0.78)' }}
+                      >
+                        <Typography variant="button" sx={{ letterSpacing: '0.08em' }}>
+                          See more
+                        </Typography>
+                        <EastRoundedIcon sx={{ fontSize: 18 }} />
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                )
+              })
             )
           }
         />

@@ -1,27 +1,40 @@
+import { lazy, Suspense } from 'react'
+import { Box, LinearProgress } from '@mui/material'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import LandingRoute from './landing.route'
-import BlogRoute from './blog.route'
-import DashboardRoute from './dashboard.route'
-import PlatformRoute from './status.route'
-import CanonRoute from './canon.route'
-import InventoryRoute from './inventory.route'
-import AboutRoute from './about.route'
-import RegisterRoute from './register.route'
+
+const LandingRoute = lazy(() => import('./landing.route'))
+const AboutRoute = lazy(() => import('./about.route'))
+const BlogRoute = lazy(() => import('./blog.route'))
+const DashboardRoute = lazy(() => import('./dashboard.route'))
+const RegisterRoute = lazy(() => import('./register.route'))
+const InventoryRoute = lazy(() => import('./inventory.route'))
+const CanonRoute = lazy(() => import('./canon.route'))
+const PlatformRoute = lazy(() => import('./status.route'))
+
+function RouteLoadingFallback() {
+  return (
+    <Box sx={{ minHeight: 240, pt: 2 }}>
+      <LinearProgress color="secondary" />
+    </Box>
+  )
+}
 
 function IndexRoute() {
   return (
-    <Routes>
-      <Route path="/" element={<LandingRoute />} />
-      <Route path="/about" element={<AboutRoute />} />
-      <Route path="/blog" element={<BlogRoute />} />
-      <Route path="/iceberg-welcome" element={<Navigate to="/" replace />} />
-      <Route path="/dashboard" element={<DashboardRoute />} />
-      <Route path="/register" element={<RegisterRoute />} />
-      <Route path="/inventory" element={<InventoryRoute />} />
-      <Route path="/canon" element={<CanonRoute />} />
-      <Route path="/platform" element={<PlatformRoute />} />
-      <Route path="/status" element={<Navigate to="/platform" replace />} />
-    </Routes>
+    <Suspense fallback={<RouteLoadingFallback />}>
+      <Routes>
+        <Route path="/" element={<LandingRoute />} />
+        <Route path="/about" element={<AboutRoute />} />
+        <Route path="/blog" element={<BlogRoute />} />
+        <Route path="/iceberg-welcome" element={<Navigate to="/" replace />} />
+        <Route path="/dashboard" element={<DashboardRoute />} />
+        <Route path="/register" element={<RegisterRoute />} />
+        <Route path="/inventory" element={<InventoryRoute />} />
+        <Route path="/canon" element={<CanonRoute />} />
+        <Route path="/platform" element={<PlatformRoute />} />
+        <Route path="/status" element={<Navigate to="/platform" replace />} />
+      </Routes>
+    </Suspense>
   )
 }
 

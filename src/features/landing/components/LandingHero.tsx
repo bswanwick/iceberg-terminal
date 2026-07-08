@@ -38,8 +38,14 @@ function LandingHero() {
           variant="overline"
           sx={{ color: 'rgba(233, 216, 182, 0.9)', letterSpacing: '0.2em' }}
         >
-          Est. 2026 in New England
+          Coming 2027...
         </Typography>
+        {/* <Typography
+          variant="overline"
+          sx={{ color: 'rgba(233, 216, 182, 0.9)', letterSpacing: '0.2em' }}
+        >
+          Est. 2026 in New England
+        </Typography> */}
         <Typography
           variant="h1"
           sx={{
@@ -57,8 +63,15 @@ function LandingHero() {
             color: 'rgba(238, 228, 211, 0.92)',
             fontWeight: 400,
             fontSize: { xs: '16px', md: '1rem' },
+            whiteSpace: 'pre-wrap',
             '& p': {
               m: 0,
+            },
+            '& p + p': {
+              mt: 1,
+            },
+            '& p:empty::before': {
+              content: '"\\00a0"',
             },
             '& ul, & ol': {
               my: 0,
@@ -66,6 +79,13 @@ function LandingHero() {
             },
             '& li + li': {
               mt: 0.75,
+            },
+            '& a': {
+              color: '#f8efe0',
+              fontWeight: 700,
+              textDecoration: 'underline',
+              textDecorationColor: 'rgba(248, 239, 224, 0.75)',
+              textUnderlineOffset: '0.14em',
             },
           }}
           dangerouslySetInnerHTML={{ __html: sanitizeLandingHeroHtml(heroBodyHtml) }}

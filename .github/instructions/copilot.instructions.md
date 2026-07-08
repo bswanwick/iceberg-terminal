@@ -28,6 +28,14 @@ return { title, brandPublisher, year, format };
 - Avoid casting with `as`. Instead, ensure proper types are defined and inferred throughout the codebase.
 - No inline types. Define interfaces or types separately for better readability and maintainability.
 
+# Firebase and Data Access
+
+- Use the shared `src/features/firebase` feature for Firebase data access instead of importing Firestore or Storage SDK operations directly in feature code.
+- Import Firestore helpers such as `fetchFirestoreCollectionPage`, `fetchFirestoreDocument`, `addFirestoreDocument`, `setFirestoreDocument`, `updateFirestoreDocument`, `deleteFirestoreDocument`, and `firebaseServerTimestamp` from `../firebase` within feature modules.
+- Import Storage helpers such as `buildUserStoragePath`, `uploadStorageFile`, `deleteStorageFile`, and `listStoragePath` from `../firebase` within feature modules.
+- For collection reads that need paging, use the shared pagination helpers and types: `FirestoreCollectionPageRequest`, `FirestoreCollectionPageResult`, `firestoreCollectionFirstPageRequested`, `firestoreCollectionNextPageRequested`, and `selectFirebaseCollectionPageState`/`selectFirebaseCollectionHasNextPage` where centralized pagination state is useful.
+- Give every paginated collection a stable `collectionKey`, pass explicit `orderBy` clauses for deterministic cursors, and use `includeTotalCount: false` when a count is not needed.
+
 # Tips for working with libraries or dependencies
 
 **react**
@@ -58,6 +66,7 @@ return { title, brandPublisher, year, format };
 
 - `auth`: Handles user authentication, including login, logout, and session management.
 - `canonicalRecords`: Manages our canonical records, including CRUD operations, display, and state management.
+- `firebase`: Shared Firebase access layer for Firestore helpers, Storage helpers, collection pagination state, and Firebase side effects.
 - `inventory`: Manages our inventory records, including CRUD operations, display, and state management.
 - `landing`: Contains small amount of components and logic related to the landing page of the application.
 - `newsletter`: Manages newsletter subscription functionality, including form handling and API interactions.

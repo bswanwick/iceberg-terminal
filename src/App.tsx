@@ -11,6 +11,7 @@ import { featuredInventorySlice } from './features/featuredInventory/slice'
 import { inventorySlice } from './features/inventory/slice'
 import { isPublicAnalyticsPath, trackPublicPageView } from './features/analytics/publicAnalytics'
 import { landingContentSlice } from './features/landingContent/slice'
+import { newsletterSlice } from './features/newsletter/slice'
 import MarketingSiteHeader from './features/landing/components/MarketingSiteHeader'
 import IndexRoute from './ui/routes/index.route'
 import Header from './ui/Header'
@@ -65,6 +66,7 @@ function App() {
     if (user) {
       dispatch(canonicalRecordsSlice.actions.canonicalRecordsFetchRequested())
       dispatch(inventorySlice.actions.inventoryFetchRequested())
+      dispatch(newsletterSlice.actions.newsletterSignupCountRequested())
     }
   }, [dispatch, user])
 

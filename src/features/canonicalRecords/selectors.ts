@@ -5,6 +5,10 @@ import type { CanonicalRecord } from './slice'
 export const selectCanonicalRecords = (state: RootState) => state.canonicalRecords.items
 export const selectCanonicalRecordsStatus = (state: RootState) => state.canonicalRecords.status
 export const selectCanonicalRecordsError = (state: RootState) => state.canonicalRecords.error
+export const selectCanonicalRecordsTotalCount = (state: RootState) =>
+  state.canonicalRecords.totalCount
+export const selectCanonicalRecordsHasNextPage = (state: RootState) =>
+  state.canonicalRecords.hasNextPage
 export const selectCanonicalRecordAddForm = (state: RootState) => state.canonicalRecords.ui.addForm
 export const selectCanonicalRecordEditForm = (state: RootState) =>
   state.canonicalRecords.ui.editForm

@@ -4,14 +4,22 @@ import authSlice from '../auth/slice'
 
 export type CanonicalRecord = {
   id: string
+  title?: string
+  description?: string
+  tags?: string[]
+  references?: string[]
+  images?: StoredFile[]
+  createdAt?: string
+  updatedAt?: string
+  createdBy?: string
+}
+
+type CanonicalRecordSavePayload = {
   title: string
   description: string
   tags: string[]
   references: string[]
   images: StoredFile[]
-  createdAt: string
-  updatedAt?: string
-  createdBy?: string
 }
 
 export type CanonicalRecordFormState = {
@@ -92,15 +100,24 @@ type CanonicalRecordsState = {
   items: CanonicalRecord[]
   status: CanonicalRecordsStatus
   error: string | null
+  totalCount: number | null
+  hasNextPage: boolean
+  pageSize: number
   ui: CanonicalRecordUiState
 }
 
-type CanonicalRecordAddPayload = Omit<
-  CanonicalRecord,
-  'id' | 'createdAt' | 'updatedAt' | 'createdBy'
->
+type CanonicalRecordsFetchSucceededPayload = {
+  items: CanonicalRecord[]
+  totalCount?: number
+  hasNextPage: boolean
+  pageSize: number
+}
 
-type CanonicalRecordUpdatePayload = Omit<CanonicalRecord, 'createdAt' | 'updatedAt' | 'createdBy'>
+type CanonicalRecordAddPayload = CanonicalRecordSavePayload
+
+type CanonicalRecordUpdatePayload = CanonicalRecordSavePayload & {
+  id: string
+}
 
 type CanonicalRecordDeletePayload = {
   id: string
@@ -118,6 +135,9 @@ const initialState: CanonicalRecordsState = {
   items: [],
   status: 'idle',
   error: null,
+  totalCount: null,
+  hasNextPage: false,
+  pageSize: 25,
   ui: {
     addForm: createEmptyCanonicalRecordForm(),
     editForm: createEmptyCanonicalRecordForm(),
@@ -142,10 +162,16 @@ export const canonicalRecordsSlice = createSlice({
       state.status = 'loading'
       state.error = null
     },
-    canonicalRecordsFetchSucceeded: (state, action: PayloadAction<CanonicalRecord[]>) => {
-      state.items = action.payload
+    canonicalRecordsFetchSucceeded: (
+      state,
+      action: PayloadAction<CanonicalRecordsFetchSucceededPayload>,
+    ) => {
+      state.items = action.payload.items
       state.status = 'idle'
       state.error = null
+      state.totalCount = action.payload.totalCount ?? null
+      state.hasNextPage = action.payload.hasNextPage
+      state.pageSize = action.payload.pageSize
     },
     canonicalRecordsFetchFailed: (state, action: PayloadAction<string>) => {
       state.status = 'idle'
@@ -318,11 +344,11 @@ export const canonicalRecordsSlice = createSlice({
 
       state.ui.editingId = record.id
       state.ui.editForm = {
-        title: record.title,
-        description: record.description,
-        tags: record.tags.join(', '),
-        references: record.references.join(', '),
-        images: normalizeStoredFiles(record.images),
+        title: record.title ?? '',
+        description: record.description ?? '',
+        tags: record.tags?.join(', ') ?? '',
+        references: record.references?.join(', ') ?? '',
+        images: normalizeStoredFiles(record.images ?? []),
       }
       state.ui.editImagesPendingRemoval = []
       state.ui.imageManagerOpen = false
@@ -352,6 +378,9 @@ export const canonicalRecordsSlice = createSlice({
         state.items = []
         state.status = 'idle'
         state.error = null
+        state.totalCount = null
+        state.hasNextPage = false
+        state.pageSize = 25
         state.ui.addForm = createEmptyCanonicalRecordForm()
         state.ui.editForm = createEmptyCanonicalRecordForm()
         state.ui.addImagesPendingRemoval = []

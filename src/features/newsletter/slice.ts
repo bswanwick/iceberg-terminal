@@ -7,12 +7,14 @@ type NewsletterState = {
   status: NewsletterStatus
   error: string | null
   lastSubmission: SignupSubmissionPayload | null
+  signupCount: number | null
 }
 
 const initialState: NewsletterState = {
   status: 'idle',
   error: null,
   lastSubmission: null,
+  signupCount: null,
 }
 
 export const newsletterSlice = createSlice({
@@ -37,6 +39,13 @@ export const newsletterSlice = createSlice({
     newsletterClearStatus: (state) => {
       state.status = 'idle'
       state.error = null
+    },
+    newsletterSignupCountRequested: () => {},
+    newsletterSignupCountSucceeded: (state, action: PayloadAction<number>) => {
+      state.signupCount = action.payload
+    },
+    newsletterSignupCountFailed: (state, action: PayloadAction<string>) => {
+      state.error = action.payload
     },
   },
 })

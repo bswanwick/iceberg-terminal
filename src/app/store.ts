@@ -5,6 +5,7 @@ import canonicalRecords, { type CanonicalRecordsAction } from '../features/canon
 import featuredInventory, {
   type FeaturedInventoryAction,
 } from '../features/featuredInventory/slice'
+import firebase, { type FirebaseAction } from '../features/firebase/slice'
 import inventory, { type InventoryAction } from '../features/inventory/slice'
 import landingContent, { type LandingContentAction } from '../features/landingContent/slice'
 import newsletter, { type NewsletterAction } from '../features/newsletter/slice'
@@ -15,6 +16,7 @@ const rootReducer = combineReducers({
   auth: auth.reducer,
   canonicalRecords: canonicalRecords.reducer,
   featuredInventory: featuredInventory.reducer,
+  firebase: firebase.reducer,
   inventory: inventory.reducer,
   landingContent: landingContent.reducer,
   newsletter: newsletter.reducer,
@@ -27,6 +29,7 @@ export type AnyFeatureAction =
   | AuthAction
   | CanonicalRecordsAction
   | FeaturedInventoryAction
+  | FirebaseAction
   | InventoryAction
   | LandingContentAction
   | NewsletterAction

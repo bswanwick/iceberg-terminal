@@ -44,58 +44,49 @@ function AboutRoute() {
         </Stack>
       </Paper>
 
-      <Stack direction={{ xs: 'column', lg: 'row' }} spacing={3}>
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, md: 4 },
-            borderRadius: 3,
-            flex: 1,
-            border: '1px solid rgba(143, 112, 59, 0.24)',
-            background:
-              'linear-gradient(120deg, rgba(244, 235, 218, 0.98) 0%, rgba(232, 220, 194, 0.98) 100%)',
-          }}
-        >
-          <Stack spacing={2}>
-            <Typography variant="h3">About our Collection</Typography>
-            <Typography variant="body1">
-              The Tourist’s Antiquarium is a growing collection and archive dedicated to the history
-              of travel and tourism during the age when ordinary people first gained the ability to
-              explore the world at scale.
+      <Paper
+        component="article"
+        elevation={0}
+        sx={{
+          p: { xs: 3, md: 5 },
+          borderRadius: 3,
+          border: '1px solid rgba(143, 112, 59, 0.24)',
+          background:
+            'linear-gradient(120deg, rgba(244, 235, 218, 0.98) 0%, rgba(232, 220, 194, 0.98) 100%)',
+        }}
+      >
+        <Stack spacing={{ xs: 4, md: 5 }} sx={{ maxWidth: 900, mx: 'auto' }}>
+          <Stack component="section" spacing={2}>
+            <Typography variant="h3" component="h2">
+              About Us
             </Typography>
             <Typography variant="body1">
-              Our collection focuses primarily on printed artifacts dating from the late nineteenth
-              century through the mid twentieth century, including brochures, guidebooks, maps,
-              postcards, timetables, advertisements, photographs, and other materials related to
-              travel by rail, steamship, motor coach, air, and foot.
+              The Tourist's Antiquarium is an antiquarian bookseller with a research collection
+              specializing in the history of travel and tourism. We buy, study, preserve, and offer
+              original printed artifacts that document how people explored the world from the late
+              nineteenth through the mid twentieth century.
             </Typography>
             <Typography variant="body1">
-              These artifacts are more than collectibles. They are surviving records of a world
-              learning how to move, gather, wander, and imagine distant places. Through them we can
-              trace the development of tourism, transportation, design, advertising, and public life
-              across generations.
+              We believe these brochures, guidebooks, maps, postcards, timetables, and photographs
+              deserve to be appreciated not only as collectibles, but as firsthand records of a
+              world becoming more connected through travel.
+            </Typography>
+            <Typography variant="body1">
+              Whether you're a collector, researcher, decorator, historian, or simply curious, our
+              goal is to make this remarkable corner of history easier to discover and enjoy.
             </Typography>
 
             <Typography variant="body1">
-              The collection exists both as a preservation effort and as an educational resource
-              intended to reconnect modern audiences with the romance, ambition, and accessibility
-              of early travel culture.
+              Original material from our research collection is regularly offered for sale, helping
+              place these artifacts into the hands of collectors while supporting the preservation
+              and study of travel history.
             </Typography>
           </Stack>
-        </Paper>
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, md: 4 },
-            borderRadius: 3,
-            flex: 1,
-            border: '1px solid rgba(143, 112, 59, 0.24)',
-            background:
-              'linear-gradient(120deg, rgba(244, 235, 218, 0.98) 0%, rgba(232, 220, 194, 0.98) 100%)',
-          }}
-        >
-          <Stack spacing={2}>
-            <Typography variant="h3">Authenticity vs. Reproduction</Typography>
+
+          <Stack component="section" spacing={2}>
+            <Typography variant="h3" component="h2">
+              Authenticity vs. Reproduction
+            </Typography>
             <Typography variant="body1">
               The Tourist’s Antiquarium offers both original historical artifacts and modern
               reproductions derived from archival materials within our collection.
@@ -119,23 +110,10 @@ function AboutRoute() {
               researchers, educators, and the general public alike.
             </Typography>
           </Stack>
-        </Paper>
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 3, md: 4 },
-            borderRadius: 3,
-            flex: 1,
-            border: '1px solid rgba(143, 112, 59, 0.24)',
-            background:
-              'linear-gradient(120deg, rgba(244, 235, 218, 0.98) 0%, rgba(232, 220, 194, 0.98) 100%)',
-          }}
-        >
-          <Stack spacing={2}>
-            <Typography variant="h3">How We Catalog Artifacts</Typography>
-            <Typography variant="body1">
-              Artifacts within the collection are cataloged using a combination of historical
-              research, archival comparison, period references, provenance, and visual analysis.
+
+          <Stack component="section" spacing={2}>
+            <Typography variant="h3" component="h2">
+              How We Catalog Artifacts
             </Typography>
             <Typography variant="body1">
               Whenever possible, entries include publication dates, publishers, transportation
@@ -154,8 +132,8 @@ function AboutRoute() {
               designers, educators, and anyone interested in the development of travel culture.
             </Typography>
           </Stack>
-        </Paper>
-      </Stack>
+        </Stack>
+      </Paper>
     </Stack>
   )
 }

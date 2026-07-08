@@ -11,6 +11,29 @@ import {
 
 export type InventoryItem = {
   id: string
+  title?: string
+  publisher?: string
+  canonicalRecordId?: string
+  customDescription?: string
+  productLine?: InventoryProductLine
+  featured?: boolean
+  publishYear?: string
+  format?: string
+  dimensions?: string
+  conditionGrade?: string
+  conditionReport?: VintagePaperConditionReport | null
+  acquisitionDate?: string
+  acquisitionSource?: string
+  acquisitionCost: number | null
+  retailPrice: number | null
+  notes?: string
+  tags?: string[] // array of tags
+  files?: InventoryFile[]
+  createdAt?: string
+  updatedAt?: string
+}
+
+type InventorySavePayload = {
   title: string
   publisher: string
   canonicalRecordId: string
@@ -27,10 +50,8 @@ export type InventoryItem = {
   acquisitionCost: number | null
   retailPrice: number | null
   notes: string
-  tags: string[] // array of tags
+  tags: string[]
   files: InventoryFile[]
-  createdAt: string
-  updatedAt?: string
 }
 
 export type InventoryFile = StoredFile
@@ -127,6 +148,12 @@ type InventoryFilesReorderedPayload = {
 
 type InventoryStatus = 'idle' | 'loading' | 'saving'
 
+export type InventoryLineCounts = {
+  originals: number
+  reprints: number
+  missingProductLine: number
+}
+
 type InventoryUiState = {
   addForm: InventoryFormState
   editForm: InventoryFormState
@@ -146,14 +173,22 @@ type InventoryUiState = {
 
 type InventoryState = {
   items: InventoryItem[]
+  lineCounts: InventoryLineCounts
   status: InventoryStatus
   error: string | null
   ui: InventoryUiState
 }
 
-type InventoryAddPayload = Omit<InventoryItem, 'id' | 'createdAt' | 'updatedAt'>
+type InventoryFetchSucceededPayload = {
+  items: InventoryItem[]
+  lineCounts: InventoryLineCounts
+}
 
-type InventoryUpdatePayload = Omit<InventoryItem, 'createdAt' | 'updatedAt'>
+export type InventoryAddPayload = InventorySavePayload
+
+export type InventoryUpdatePayload = InventorySavePayload & {
+  id: string
+}
 
 type InventoryDeletePayload = {
   id: string
@@ -183,6 +218,11 @@ const createEmptyInventoryForm = (): InventoryFormState => ({
 
 const initialState: InventoryState = {
   items: [],
+  lineCounts: {
+    originals: 0,
+    reprints: 0,
+    missingProductLine: 0,
+  },
   status: 'idle',
   error: null,
   ui: {
@@ -211,8 +251,9 @@ export const inventorySlice = createSlice({
       state.status = 'loading'
       state.error = null
     },
-    inventoryFetchSucceeded: (state, action: PayloadAction<InventoryItem[]>) => {
-      state.items = action.payload
+    inventoryFetchSucceeded: (state, action: PayloadAction<InventoryFetchSucceededPayload>) => {
+      state.items = action.payload.items
+      state.lineCounts = action.payload.lineCounts
       state.status = 'idle'
       state.error = null
     },
@@ -387,25 +428,25 @@ export const inventorySlice = createSlice({
 
       state.ui.editingId = item.id
       state.ui.editForm = {
-        title: item.title,
-        publisher: item.publisher,
-        canonicalRecordId: item.canonicalRecordId,
-        customDescription: item.customDescription,
-        customDescriptionEnabled: Boolean(item.customDescription.trim()),
-        productLine: item.productLine,
-        featured: item.featured,
-        publishYear: item.publishYear,
-        format: item.format,
-        dimensions: item.dimensions,
-        conditionGrade: item.conditionGrade,
+        title: item.title ?? '',
+        publisher: item.publisher ?? '',
+        canonicalRecordId: item.canonicalRecordId ?? '',
+        customDescription: item.customDescription ?? '',
+        customDescriptionEnabled: Boolean(item.customDescription?.trim()),
+        productLine: item.productLine ?? '',
+        featured: item.featured ?? false,
+        publishYear: item.publishYear ?? '',
+        format: item.format ?? '',
+        dimensions: item.dimensions ?? '',
+        conditionGrade: item.conditionGrade ?? '',
         conditionReport: item.conditionReport ?? null,
-        acquisitionDate: item.acquisitionDate,
-        acquisitionSource: item.acquisitionSource,
+        acquisitionDate: item.acquisitionDate ?? '',
+        acquisitionSource: item.acquisitionSource ?? '',
         acquisitionCost: formatMoneyInput(item.acquisitionCost),
         retailPrice: formatMoneyInput(item.retailPrice),
-        notes: item.notes,
-        tags: item.tags.join(', '),
-        files: normalizeStoredFiles(item.files),
+        notes: item.notes ?? '',
+        tags: item.tags?.join(', ') ?? '',
+        files: normalizeStoredFiles(item.files ?? []),
       }
       state.ui.editFilesPendingRemoval = []
       state.ui.fileManagerOpen = false
