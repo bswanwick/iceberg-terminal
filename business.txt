@@ -1,0 +1,132 @@
+Organization
+
+Legal Name
+Swanwick & Co. LLC
+
+Public Brand
+The Tourist's Antiquarium
+
+Website
+earlytours.com
+
+Business Type
+Antiquarian bookseller specializing in travel and tourism history
+
+Primary Business Model
+Retail sale of original historical travel artifacts, supported by educational content and research.
+
+Primary Market
+United States
+
+Shipping
+United States only (currently)
+
+Contact
+Email only: blaise@earlytours.com
+
+Topical Authority
+
+The site should consistently reinforce expertise in:
+
+travel history
+tourism history
+travel ephemera
+antique travel brochures
+vintage guidebooks
+railroad travel
+steamships
+ocean liners
+early aviation
+travel advertising
+tourist maps
+postcards
+organized excursions
+package tours
+travel printing
+travel collectibles
+Specialty Areas
+
+These deserve dedicated landing pages because they're differentiators.
+
+Raymond & Whitcomb
+Thomas Cook
+New England tourism
+White Mountains tourism
+Grand hotels
+Early motor coach travel
+Steamship travel
+Ocean liners
+Rail excursions
+Round-the-world tours
+Audience
+
+Primary
+
+collectors
+decorators
+historians
+researchers
+museums
+
+Secondary
+
+travelers
+genealogy enthusiasts
+students
+teachers
+local historians
+Brand Signals
+
+The site is
+
+an antiquarian bookseller
+a historical research resource
+an educational publication
+an online gallery
+a retailer
+
+Not
+
+a flea market
+an auction site
+a general antiques dealer
+Social Profiles
+
+Current
+
+Reddit r/earlytours
+Reddit r/travelbrochures
+
+# Organization Description
+
+One concise paragraph should appear in both your Schema.org Organization markup and your About page:
+
+The Tourist's Antiquarium is an antiquarian bookseller specializing in original travel and tourism artifacts from approximately 1850–1950. Through research, collecting, and commerce, the organization makes the history of travel more accessible by preserving and interpreting brochures, guidebooks, maps, postcards, timetables, photographs, and other printed materials documenting the evolution of tourism.
+
+# more context
+Public brand: The Tourist’s Antiquarium
+Legal/copyright owner: Swanwick & Co. LLC
+Tagline: Excursions into the Golden Age of Travel
+Public launch year: 2027
+Website: earlytours.com
+Business type: Antiquarian bookseller
+Primary market: United States
+Shipping: United States only
+Address: Not public
+Phone: None
+Email: blaise@earlytours.com
+Social: Reddit r/earlytours, r/travelbrochures
+Positioning: The authority on travel history that also sells artifacts.
+Homepage focus: Original travel brochures, guidebooks, maps, postcards, and travel ephemera from the Golden Age of Tourism, c. 1850–1950.
+
+For the logo, you should create a stable URL like:
+
+https://www.earlytours.com/logo.png
+
+or:
+
+https://www.earlytours.com/assets/brand/logo.png
+
+Do not use hashed build URLs in schema if they may change.
+
+For the preferred image, use one stable “brand card” image for now: logo plus a tasteful spread of travel brochures/maps/postcards. Size it at 1200×630 for Open Graph/social sharing.

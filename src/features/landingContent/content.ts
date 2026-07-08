@@ -75,5 +75,5 @@ export const normalizeLandingPageContent = (value: unknown): LandingPageContent 
 
 export const buildTelegramWireMessage = (value: string[]) => {
   const normalizedLines = normalizeTelegramMessageLines(value)
-  return `${normalizedLines.join('= [STOP] ')}= [STOP]`
+  return `${normalizedLines.join('= ')}=`
 }

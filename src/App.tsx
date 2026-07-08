@@ -12,6 +12,8 @@ import { inventorySlice } from './features/inventory/slice'
 import { isPublicAnalyticsPath, trackPublicPageView } from './features/analytics/publicAnalytics'
 import { landingContentSlice } from './features/landingContent/slice'
 import { newsletterSlice } from './features/newsletter/slice'
+import { getSeoMetadataForPathname } from './features/seo/metadata'
+import Seo from './features/seo/Seo'
 import MarketingSiteHeader from './features/landing/components/MarketingSiteHeader'
 import IndexRoute from './ui/routes/index.route'
 import Header from './ui/Header'
@@ -100,15 +102,18 @@ function App() {
   }, [location.hash, location.pathname])
 
   useEffect(() => {
+    const metadata = getSeoMetadataForPathname(location.pathname)
+
     trackPublicPageView({
       location,
-      pageTitle: document.title,
+      pageTitle: metadata.title,
       pageLocation: window.location.href,
     })
   }, [location])
 
   return (
     <Box>
+      <Seo />
       {isMarketingRoute && <MarketingSiteHeader />}
       <Container maxWidth="lg" sx={{ py: isMarketingRoute ? 0 : { xs: 3, md: 5 } }}>
         <Stack spacing={3}>

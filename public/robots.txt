@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /inventory
+Disallow: /canon
+Disallow: /platform
+Disallow: /status
+Disallow: /iceberg-welcome
+
+Sitemap: https://www.earlytours.com/sitemap.xml
