@@ -6,6 +6,7 @@ const LandingRoute = lazy(() => import('./landing.route'))
 const AboutRoute = lazy(() => import('./about.route'))
 const BlogRoute = lazy(() => import('./blog.route'))
 const DashboardRoute = lazy(() => import('./dashboard.route'))
+const EbayQueryRoute = lazy(() => import('./ebay-query.route'))
 const RegisterRoute = lazy(() => import('./register.route'))
 const InventoryRoute = lazy(() => import('./inventory.route'))
 const CanonRoute = lazy(() => import('./canon.route'))
@@ -28,6 +29,7 @@ function IndexRoute() {
         <Route path="/blog" element={<BlogRoute />} />
         <Route path="/iceberg-welcome" element={<Navigate to="/" replace />} />
         <Route path="/dashboard" element={<DashboardRoute />} />
+        <Route path="/ebay-query" element={<EbayQueryRoute />} />
         <Route path="/register" element={<RegisterRoute />} />
         <Route path="/inventory" element={<InventoryRoute />} />
         <Route path="/canon" element={<CanonRoute />} />

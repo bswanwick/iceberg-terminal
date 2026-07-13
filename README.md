@@ -102,11 +102,22 @@ Do not commit these values to the repository. GitHub Actions reads them directly
 
 ### Functions environment
 
-The Functions runtime enforces admin role authority with `AUTH_ALLOWED_ADMIN_EMAILS`.
+The Functions runtime enforces admin role authority with `AUTH_ALLOWED_ADMIN_EMAILS` and owns server-side eBay API credentials.
 
 1. Copy `functions/.env.example` to `functions/.env`.
 2. Set `AUTH_ALLOWED_ADMIN_EMAILS` to the same comma-separated list used by `VITE_AUTH_ALLOWED_EMAILS`.
 3. Optional: set `AUTH_ALLOWED_ORIGINS` (comma-separated) to explicitly allow callable origins such as `http://localhost:5173`.
+4. Set the eBay Browse API values in the Functions env file only:
+   - `EBAY_CLIENT_ID` from eBay **App ID (Client ID)**. `EBAY_APP_ID` is also accepted as an alias.
+   - `EBAY_CLIENT_SECRET` from eBay **Cert ID (Client Secret)**. `EBAY_CERT_ID` is also accepted as an alias.
+   - `EBAY_ENVIRONMENT` (`PRODUCTION` or `SANDBOX`)
+   - `EBAY_MARKETPLACE_ID` (defaults to `EBAY_US` in code)
+   - `EBAY_ENDUSERCTX` (optional)
+   - `EBAY_ACCEPT_LANGUAGE` (optional)
+
+The eBay **Dev ID** is part of the portal keyset, but it is not used by Browse API client-credentials OAuth.
+
+Do not add eBay API keyset values to frontend `VITE_*` variables. Web clients should use the `src/features/ebay` callable client/actions, which call Firebase Functions and keep OAuth token fetching server-side.
 
 Optional frontend setting:
 

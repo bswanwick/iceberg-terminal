@@ -27,6 +27,14 @@ const headerNavGroups: HeaderNavGroup[] = [
     ],
   },
   {
+    label: 'Purchasing Feeds',
+    to: '/ebay-query',
+    quickLinks: [
+      { label: 'Query workshop', to: '/ebay-query#query-workshop' },
+      { label: 'Preview results', to: '/ebay-query#preview-results' },
+    ],
+  },
+  {
     label: 'Inventory',
     to: '/inventory',
     quickLinks: [

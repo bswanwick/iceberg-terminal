@@ -2,6 +2,7 @@ import { initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { setGlobalOptions } from 'firebase-functions'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
+import { searchEbayBrowse as searchEbayBrowseApi } from './ebay/browse'
 
 setGlobalOptions({ maxInstances: 10, region: 'us-central1' })
 
@@ -29,6 +30,8 @@ type SyncMyRoleResponse = {
   uid: string
   role: AuthRole
 }
+
+type EbayBrowseSearchData = Record<string, unknown>
 
 const parseCsv = (value: string | undefined): string[] => {
   if (!value) {
@@ -204,5 +207,15 @@ export const setUserRole = onCall<SetUserRoleData>(
     await setUserRoleClaim(uid, role)
 
     return { uid, role }
+  },
+)
+
+export const searchEbayBrowse = onCall<EbayBrowseSearchData>(
+  { cors: callableCors() },
+  async (request) => {
+    assertSignedIn(request.auth?.uid)
+    assertAdmin(toClaims(request.auth?.token), request.auth?.token.email)
+
+    return searchEbayBrowseApi(request.data)
   },
 )

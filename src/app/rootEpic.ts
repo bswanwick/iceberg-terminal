@@ -7,6 +7,7 @@ import {
   canonicalRecordUpdateEpic,
   canonicalRecordsFetchEpic,
 } from '../features/canonicalRecords/epics'
+import { ebayBrowseSearchEpic } from '../features/ebay/epics'
 import { featuredInventoryFetchEpic } from '../features/featuredInventory/epics'
 import {
   firestoreCollectionFirstPageEpic,
@@ -39,6 +40,7 @@ export const rootEpic = combineEpics(
   canonicalRecordUpdateEpic,
   canonicalRecordDeleteEpic,
   canonicalRecordImageUploadEpic,
+  ebayBrowseSearchEpic,
   featuredInventoryFetchEpic,
   inventoryFetchEpic,
   inventoryAddEpic,

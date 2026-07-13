@@ -2,6 +2,8 @@ import { combineReducers, configureStore } from '@reduxjs/toolkit'
 import { createEpicMiddleware } from 'redux-observable'
 import auth, { type AuthAction } from '../features/auth/slice'
 import canonicalRecords, { type CanonicalRecordsAction } from '../features/canonicalRecords/slice'
+import ebay, { type EbayAction } from '../features/ebay/slice'
+import ebayQuery, { type EbayQueryAction } from '../features/ebayQuery/slice'
 import featuredInventory, {
   type FeaturedInventoryAction,
 } from '../features/featuredInventory/slice'
@@ -15,6 +17,8 @@ import { rootEpic } from './rootEpic'
 const rootReducer = combineReducers({
   auth: auth.reducer,
   canonicalRecords: canonicalRecords.reducer,
+  ebay: ebay.reducer,
+  ebayQuery: ebayQuery.reducer,
   featuredInventory: featuredInventory.reducer,
   firebase: firebase.reducer,
   inventory: inventory.reducer,
@@ -28,6 +32,8 @@ export type RootState = ReturnType<typeof rootReducer>
 export type AnyFeatureAction =
   | AuthAction
   | CanonicalRecordsAction
+  | EbayAction
+  | EbayQueryAction
   | FeaturedInventoryAction
   | FirebaseAction
   | InventoryAction
