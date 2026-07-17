@@ -189,13 +189,20 @@ function LandingReprints() {
             </Typography>
             <Typography variant="h3">Faithfully reproduced prints</Typography>
             <Typography variant="body1" sx={{ maxWidth: 780 }}>
-              We sell new paper too. Our in-house line uses traditional printing methods and
-              authentic antique printing press blocks to create high-quality, display ready, prints.
-              Our handmade line uses a high quality, acid-free, cotton rag paper. We then hand-roll
-              the ink and hand-press the paper ourselves, for that authentic period feel. We also
-              offer print-on-demand home decor items. These items are made from high-DPI scans that
-              we personally sourced, and in some cases captured, cropped, corrected, and digitized
-              ourselves! All of our reprint items are <b>made in the USA</b>.
+              We sell new paper too. Our in-house line consists of two distinct product types:
+              handmade reproductions and print-on-demand editions. Our handmade line uses
+              traditional printing methods, such as our Mississippi River Pleasure Cruise handbills
+              recreated from antique printing press blocks. Each print is hand-rubbed in our
+              workshop.
+            </Typography>
+
+            <Typography variant="body1" sx={{ maxWidth: 780 }}>
+              Our print-on-demand line begins with high-resolution scans of original works that we
+              have personally sourced. We carefully capture, restore, and digitize these artifacts
+              to produce faithful reproductions while preserving the character of the originals.
+              Because we work from authentic historical material, we are able to offer images and
+              designs that are rarely available elsewhere. All of our reprint products are{' '}
+              <b>made in the USA</b>.
             </Typography>
           </Stack>
         </Stack>
