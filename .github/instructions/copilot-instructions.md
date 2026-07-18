@@ -2,6 +2,13 @@
 description: 'Workspace guidance for the Iceberg Terminal project.'
 ---
 
+# File Directory Structure
+
+- `src/features`: Contains all feature modules, each in its own directory. Used in the web app client.
+- `src/functions`: Contains all serverless functions (Firebase), Consumed only by the web app client currently.
+- `dev`: Contains development notes and references for the project. Not used in production.
+- `public`: Contains static assets for the web app client, such as images, fonts, and icons.
+
 # Coding Conventions
 
 - Minimal use of useEffect hooks. React is used only as a view layer; the app should remain UI framework agnostic.
@@ -30,7 +37,8 @@ return { title, brandPublisher, year, format };
 
 # Firebase and Data Access
 
-- Use the shared `src/features/firebase` feature for Firebase data access instead of importing Firestore or Storage SDK operations directly in feature code.
+- The `/src/firebase` directory is where we setup the singleton Firebase app instance and provide shared helpers for Firestore and Storage access. This is the only place where we should import Firebase SDKs directly.
+- Use the shared `src/features/firebase` feature for client-side Firebase data access instead of importing Firestore or Storage SDK operations directly in our feature code.
 - Import Firestore helpers such as `fetchFirestoreCollectionPage`, `fetchFirestoreDocument`, `addFirestoreDocument`, `setFirestoreDocument`, `updateFirestoreDocument`, `deleteFirestoreDocument`, and `firebaseServerTimestamp` from `../firebase` within feature modules.
 - Import Storage helpers such as `buildUserStoragePath`, `uploadStorageFile`, `deleteStorageFile`, and `listStoragePath` from `../firebase` within feature modules.
 - For collection reads that need paging, use the shared pagination helpers and types: `FirestoreCollectionPageRequest`, `FirestoreCollectionPageResult`, `firestoreCollectionFirstPageRequested`, `firestoreCollectionNextPageRequested`, and `selectFirebaseCollectionPageState`/`selectFirebaseCollectionHasNextPage` where centralized pagination state is useful.
@@ -42,6 +50,8 @@ return { title, brandPublisher, year, format };
 
 - In most cases, we don't need props for our components. useSelector within each component is preferred over passing props down from parent components.
 - Do not add props to newly created components unless explicitly told to. useSelector instead.
+- No prop drilling.
+- No triggering side-effects on render or mount. Avoid `useEffect(() => { ... }, [])`.
 
 **react-router**
 
@@ -51,22 +61,14 @@ return { title, brandPublisher, year, format };
 
 - Modals should have X icon in top-right corner to close, and clicking outside the modal should also close it.
 - The general theme and mood of the consumer UI is restrained, institutional, and accessible to the everyday user.
-- All site copy and text must be accessible and friendly to the everyday user. Avoid jargon, industry language, collector only terms, antique dealer language, collectible market syntax, etc. And especially make sure that we are mindful of people's personal boundaries and autonomy. We aim to show and immense respect for our users' agency. We want to empower them to make their own decisions and not feel pressured or manipulated by our language. So we should avoid language that could be perceived as pushy, manipulative, or that implies a lack of choice. Instead, we should use language that is informative, respectful, and that emphasizes the user's freedom to choose. For example, instead of saying "Don't miss out on this amazing deal!" we could say "You can subscribe to our newsletter for updates and insights, but it's completely up to you!" This way, we are providing information without pressuring the user to take any specific action.
+- All site copy and text must be accessible and friendly to the everyday user. Avoid jargon, industry language, collector-only terms, antique dealer language, collectible market syntax, etc. And especially make sure that we are mindful of people's personal boundaries and autonomy. We aim to show and immense respect for our users' agency. We want to empower them to make their own decisions and not feel pressured or manipulated by our language. So we should avoid language that could be perceived as pushy, manipulative, or that implies a lack of choice. Instead, we should use language that is informative, respectful, and that emphasizes the user's freedom to choose. For example, instead of saying "Don't miss out on this amazing deal!" we could say "You can subscribe to our newsletter for updates and insights, but it's completely up to you!" This way, we are providing information without pressuring the user to take any specific action.
+- Our website aims for a professional institutional tone that is both passionate and inviting. We want to create a sense of trust and reliability, while also being approachable and user-friendly.
 
 # Application Architecture
 
 ## Features
 
-- A feature is a (mostly) standalone unit of functionality that encapsulates related components, state management, and side effects for a logical part of the app.
-- Features are useful for decoupling different parts of the application and promoting separation of concerns. They allow developers to focus on specific functionality without worrying about the entire application structure. For example, many areas of our app will need auth. So we can create an auth feature that handles all authentication-related logic, components, and state management. This way, we can easily reuse the auth feature across different parts of the app without duplicating code or logic.
-- Each feature should have its own directory under `src/features`. For example, a feature for managing user profiles would be in `src/features/userProfile`.
-- We don't aim for perfect modularity, some features may have some dependencies on others, but we should strive for clean separation of concerns as a rule of thumb.
-
-### Current Features
-
-- `auth`: Handles user authentication, including login, logout, and session management.
-- `canonicalRecords`: Manages our canonical records, including CRUD operations, display, and state management.
-- `firebase`: Shared Firebase access layer for Firestore helpers, Storage helpers, collection pagination state, and Firebase side effects.
-- `inventory`: Manages our inventory records, including CRUD operations, display, and state management.
-- `landing`: Contains small amount of components and logic related to the landing page of the application.
-- `newsletter`: Manages newsletter subscription functionality, including form handling and API interactions.
+- The canonical feature architecture, current feature list, and boundary review live in `src/features/README.md`.
+- New feature modules should live under `src/features`, each in its own directory.
+- Prefer clean feature boundaries, but do not chase perfect modularity when a narrow dependency is clearer.
+- Prefer feature public entrypoints, such as `index.ts`, when importing across feature boundaries.

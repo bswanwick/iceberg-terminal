@@ -133,6 +133,10 @@ Keeping both values in sync ensures role behavior is consistent in UI and server
 - `npm run format` - run Prettier
 - `npm run format:check` - check Prettier formatting
 
+## Developer architecture
+
+Feature ownership, current feature boundaries, and feature-boundary review notes live in [src/features/README.md](src/features/README.md).
+
 ## Data storage
 
 Canonical records are stored in Firestore under `canonicalRecords` as a shared global catalog. Inventory is stored under `users/{uid}/inventory` and locked to the authenticated user via Firestore rules.
