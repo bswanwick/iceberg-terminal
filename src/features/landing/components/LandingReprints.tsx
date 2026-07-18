@@ -73,7 +73,7 @@ function LandingReprints() {
             sx={{
               display: 'block',
               width: '100%',
-              height: { xs: 420, sm: 320 },
+              height: 360,
               objectFit: 'contain',
               backgroundColor: 'rgba(17, 33, 48, 0.05)',
             }}
@@ -118,7 +118,7 @@ function LandingReprints() {
         type="button"
         onClick={() => openPrintPreview(item, 'card_placeholder')}
         sx={{
-          height: { xs: 420, sm: 320 },
+          height: 360,
           width: '100%',
           p: 0,
           border: 0,
