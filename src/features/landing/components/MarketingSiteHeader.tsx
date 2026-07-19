@@ -123,7 +123,23 @@ function MarketingSiteHeader() {
               alignItems={{ xs: 'flex-end', md: 'center' }}
               spacing={2}
             >
-              <Stack spacing={0.35} sx={{ minWidth: 0, pr: 1.5 }}>
+              <Stack
+                component={RouterLink}
+                to="/"
+                spacing={0.35}
+                aria-label="The Tourist's Antiquarium home"
+                sx={{
+                  minWidth: 0,
+                  pr: 1.5,
+                  color: 'inherit',
+                  textDecoration: 'none',
+                  '&:focus-visible': {
+                    borderRadius: 1,
+                    outline: '3px solid rgba(20, 50, 76, 0.32)',
+                    outlineOffset: 4,
+                  },
+                }}
+              >
                 <Typography
                   variant="h6"
                   sx={{ lineHeight: 1, display: { xs: 'none', md: 'block' } }}

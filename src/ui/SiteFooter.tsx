@@ -1,4 +1,5 @@
 import { Avatar, Box, ButtonBase, Paper, Stack, Typography } from '@mui/material'
+import { useLocation } from 'react-router-dom'
 
 import { useAppDispatch, useAppSelector } from '../app/hooks'
 import { selectAuthReady, selectAuthStatus, selectAuthUser } from '../features/auth/selectors'
@@ -32,12 +33,14 @@ function GoogleMark() {
 
 function SiteFooter() {
   const dispatch = useAppDispatch()
+  const location = useLocation()
   const user = useAppSelector(selectAuthUser)
   const authReady = useAppSelector(selectAuthReady)
   const authStatus = useAppSelector(selectAuthStatus)
   const appLocked = useAppSelector(selectAppLocked)
 
   const authActionDisabled = appLocked || !authReady || authStatus === 'loading'
+  const showArchiveSignInStack = location.pathname === '/register'
 
   const handleGoogleSignIn = () => {
     dispatch(authSlice.actions.authSignInRequested())
@@ -67,114 +70,116 @@ function SiteFooter() {
       >
         <Stack spacing={0.75} sx={{ maxWidth: 420, textAlign: { xs: 'center', md: 'left' } }}>
           <Typography variant="body2" sx={{ color: 'rgba(214, 202, 183, 0.78)' }}>
-            © {new Date().getFullYear()} Swanwick &amp; Company. All rights reserved.
+            All rights reserved.
+            <br />© {new Date().getFullYear()} Swanwick &amp; Co. LLC
           </Typography>
         </Stack>
 
-        <Stack
-          spacing={1.25}
-          alignItems={{ xs: 'center', md: 'flex-end' }}
-          sx={{
-            width: { xs: '100%', md: 'auto' },
-            minWidth: { md: 320 },
-            maxWidth: { xs: 'none', md: 400 },
-          }}
-        >
-          <Box
+        {showArchiveSignInStack && (
+          <Stack
+            spacing={1.25}
+            alignItems={{ xs: 'center' }}
+            justifyContent={{ xs: 'center' }}
             sx={{
-              width: { xs: 'calc(100% - 8px)', md: '100%' },
-              maxWidth: { xs: 'none', md: 420 },
-              px: 1.5,
-              py: 1.25,
-              borderRadius: 2,
-              border: '1px solid rgba(242, 229, 207, 0.12)',
-              backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              width: { xs: '100%', md: 'auto' },
+              minWidth: { md: 320 },
+              maxWidth: { xs: 'none', md: 400 },
             }}
           >
-            <Stack spacing={1.25} alignItems={{ xs: 'flex-start' }} direction="row">
-              <Stack spacing={0.25} alignItems={{ xs: 'flex-start' }} sx={{ flex: '1 1 auto' }}>
-                <Typography variant="overline" sx={{ color: 'rgba(242, 229, 207, 0.75)' }}>
-                  The Backroom
-                </Typography>
-                <Typography variant="body2" sx={{ color: 'rgba(244, 238, 227, 0.92)' }}>
-                  Archive, tools, and resources.
-                </Typography>
-              </Stack>
+            <Box
+              sx={{
+                width: { xs: 'calc(100% - 8px)', md: '100%' },
+                maxWidth: { xs: 'none', md: 420 },
+                px: 1.5,
+                py: 1.25,
+                borderRadius: 2,
+                border: '1px solid rgba(242, 229, 207, 0.12)',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+              }}
+            >
+              <Stack spacing={1.25} alignItems={{ xs: 'center' }} direction={'column'}>
+                <Stack spacing={0.25} sx={{ flex: '1 1 auto' }}>
+                  <Typography variant="overline" style={{ color: 'rgba(242, 229, 207, 0.75)' }}>
+                    Archive
+                  </Typography>
+                </Stack>
 
-              {!user && (
-                <ButtonBase
-                  onClick={handleGoogleSignIn}
-                  disabled={authActionDisabled}
-                  aria-label="Sign in with Google"
-                  sx={{
-                    width: '100%',
-                    minHeight: 40,
-                    justifyContent: 'flex-start',
-                    gap: 1.5,
-                    px: 1.75,
-                    py: 1,
-                    borderRadius: 999,
-                    border: '1px solid #747775',
-                    backgroundColor: '#ffffff',
-                    color: '#1f1f1f',
-                    fontFamily: '"Roboto", "Arial", sans-serif',
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
-                    letterSpacing: '0.01em',
-                    boxShadow: '0 1px 2px rgba(15, 23, 42, 0.18)',
-                    '&:hover': {
-                      backgroundColor: '#f8f9fa',
-                      boxShadow: '0 2px 8px rgba(15, 23, 42, 0.18)',
-                    },
-                    '&:focus-visible': {
-                      outline: '3px solid rgba(66, 133, 244, 0.35)',
-                      outlineOffset: 2,
-                    },
-                    '&.Mui-disabled': {
-                      borderColor: 'rgba(116, 119, 117, 0.5)',
-                      backgroundColor: 'rgba(255, 255, 255, 0.78)',
-                      color: 'rgba(31, 31, 31, 0.5)',
-                    },
-                  }}
-                >
-                  <GoogleMark />
-                  <Box component="span">Sign in with Google</Box>
-                </ButtonBase>
-              )}
-
-              {user && (
-                <Box sx={{ flex: '0 1 auto', minWidth: 0 }}>
-                  <Avatar
-                    src={user.photoURL ?? undefined}
-                    alt={user.displayName ?? user.email ?? 'Signed-in user'}
+                {!user && (
+                  <ButtonBase
+                    onClick={handleGoogleSignIn}
+                    disabled={authActionDisabled}
+                    aria-label="Sign in with Google"
                     sx={{
-                      width: 34,
-                      height: 34,
-                      mb: 0.75,
-                      bgcolor: 'rgba(242, 229, 207, 0.16)',
-                      color: 'rgba(244, 238, 227, 0.96)',
-                      fontSize: '0.95rem',
-                      fontWeight: 700,
+                      width: '100%',
+                      maxWidth: 200,
+                      minHeight: 40,
+                      justifyContent: 'flex-start',
+                      gap: 1.5,
+                      px: 1.75,
+                      py: 1,
+                      borderRadius: 999,
+                      border: '1px solid #747775',
+                      backgroundColor: '#ffffff',
+                      color: '#1f1f1f',
+                      fontFamily: '"Roboto", "Arial", sans-serif',
+                      fontSize: '0.875rem',
+                      fontWeight: 500,
+                      letterSpacing: '0.01em',
+                      boxShadow: '0 1px 2px rgba(15, 23, 42, 0.18)',
+                      '&:hover': {
+                        backgroundColor: '#f8f9fa',
+                        boxShadow: '0 2px 8px rgba(15, 23, 42, 0.18)',
+                      },
+                      '&:focus-visible': {
+                        outline: '3px solid rgba(66, 133, 244, 0.35)',
+                        outlineOffset: 2,
+                      },
+                      '&.Mui-disabled': {
+                        borderColor: 'rgba(116, 119, 117, 0.5)',
+                        backgroundColor: 'rgba(255, 255, 255, 0.78)',
+                        color: 'rgba(31, 31, 31, 0.5)',
+                      },
                     }}
                   >
-                    {(user.displayName ?? user.email ?? 'U').charAt(0).toUpperCase()}
-                  </Avatar>
-                  <Typography variant="body2" sx={{ color: 'rgba(214, 202, 183, 0.84)' }}>
-                    {user.displayName ?? 'Signed-in user'}
-                  </Typography>
-                  {user.email && (
-                    <Typography
-                      variant="body2"
-                      sx={{ color: 'rgba(214, 202, 183, 0.78)', fontFamily: 'IBM Plex Mono' }}
+                    <GoogleMark />
+                    <Box component="span">Sign in with Google</Box>
+                  </ButtonBase>
+                )}
+
+                {user && (
+                  <Box sx={{ flex: '0 1 auto', minWidth: 0 }}>
+                    <Avatar
+                      src={user.photoURL ?? undefined}
+                      alt={user.displayName ?? user.email ?? 'Signed-in user'}
+                      sx={{
+                        width: 34,
+                        height: 34,
+                        mb: 0.75,
+                        bgcolor: 'rgba(242, 229, 207, 0.16)',
+                        color: 'rgba(244, 238, 227, 0.96)',
+                        fontSize: '0.95rem',
+                        fontWeight: 700,
+                      }}
                     >
-                      {user.email}
+                      {(user.displayName ?? user.email ?? 'U').charAt(0).toUpperCase()}
+                    </Avatar>
+                    <Typography variant="body2" sx={{ color: 'rgba(214, 202, 183, 0.84)' }}>
+                      {user.displayName ?? 'Signed-in user'}
                     </Typography>
-                  )}
-                </Box>
-              )}
-            </Stack>
-          </Box>
-        </Stack>
+                    {user.email && (
+                      <Typography
+                        variant="body2"
+                        sx={{ color: 'rgba(214, 202, 183, 0.78)', fontFamily: 'IBM Plex Mono' }}
+                      >
+                        {user.email}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+              </Stack>
+            </Box>
+          </Stack>
+        )}
       </Stack>
     </Paper>
   )

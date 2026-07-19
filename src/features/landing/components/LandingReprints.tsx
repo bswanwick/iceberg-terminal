@@ -211,23 +211,21 @@ function LandingReprints() {
           isPaused={Boolean(selectedPrintItem)}
           previousAriaLabel="Show previous reprint listings"
           nextAriaLabel="Show next reprint listings"
-          useFlexGap
-          flexWrap="wrap"
           renderItems={(visiblePrints) =>
             featuredInventoryError ? (
-              <Card variant="outlined" sx={{ flex: '1 1 280px', borderRadius: 2 }}>
+              <Card variant="outlined" sx={{ flex: 1, borderRadius: 2 }}>
                 <CardContent>
                   <Typography color="error">{featuredInventoryError}</Typography>
                 </CardContent>
               </Card>
             ) : featuredInventoryStatus === 'loading' && featuredPrints.length === 0 ? (
-              <Card variant="outlined" sx={{ flex: '1 1 280px', borderRadius: 2 }}>
+              <Card variant="outlined" sx={{ flex: 1, borderRadius: 2 }}>
                 <CardContent>
                   <Typography variant="body1">Loading reprints.</Typography>
                 </CardContent>
               </Card>
             ) : visiblePrints.length === 0 ? (
-              <Card variant="outlined" sx={{ flex: '1 1 280px', borderRadius: 2 }}>
+              <Card variant="outlined" sx={{ flex: 1, borderRadius: 2 }}>
                 <CardContent>
                   <Typography variant="body1">No reprints are listed right now.</Typography>
                 </CardContent>
@@ -243,7 +241,7 @@ function LandingReprints() {
                     sx={{
                       display: 'flex',
                       flexDirection: 'column',
-                      flex: '1 1 280px',
+                      flex: 1,
                       borderRadius: 2,
                     }}
                   >
