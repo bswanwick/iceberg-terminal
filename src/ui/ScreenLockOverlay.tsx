@@ -4,16 +4,15 @@ import { useAppSelector } from '../app/hooks'
 import { selectScreenLocked } from '../features/ui/selectors'
 
 const waitPhrases = [
-  'Stand by for the next packet (of steam)...',
-  'Airship clearance pending. Hold fast...',
-  'Train whistle on the horizon. Please wait...',
-  'Telegraphing the clerks. One moment...',
-  'Charting the course. Kindly stand by...',
+  'Waiting for the next steam packet...',
+  'Zeppelin inbound. Hold fast...',
+  "The conductor says we'll be off soon...",
+  'Receiving telegram. One moment...',
+  'Plotting the course. Patience please...',
   'Consulting the Baedeker. Just a tick...',
-  'Cabin lights dimmed. Loading the manifest...',
-  'Hoisting the gangway. Almost there...',
-  'Mr. Cook is preparing the itinerary. Please wait...',
-  'The baggage van is en route. Hold on...',
+  'Hoisting the gangway. We set sail soon...',
+  'Mr. Cook says, thank you for your patience...',
+  'The motor coach has arrived. Safe travels...',
 ]
 
 const getRandomWaitPhraseIndex = () =>
@@ -24,7 +23,14 @@ function ScreenLockMessage() {
   const label = waitPhrases[labelIndex]
 
   return (
-    <Stack spacing={2} alignItems="center" role="status" aria-live="polite">
+    <Stack
+      spacing={2}
+      alignItems="center"
+      justifyContent="center"
+      role="status"
+      aria-live="polite"
+      sx={{ width: '100%', textAlign: 'center' }}
+    >
       <Box
         sx={{
           width: 72,
@@ -51,6 +57,7 @@ function ScreenLockMessage() {
         variant="h5"
         sx={{
           fontFamily: 'IBM Plex Mono',
+          textAlign: 'center',
           background: 'linear-gradient(90deg, #f7f4ee, #e9e2d2)',
           backgroundClip: 'text',
           color: 'transparent',
@@ -73,6 +80,9 @@ function ScreenLockOverlay() {
         color: '#f7f4ee',
         backgroundColor: 'rgba(12, 18, 24, 0.55)',
         backdropFilter: 'blur(2px)',
+        display: 'grid',
+        placeItems: 'center',
+        inset: 0,
       })}
     >
       {screenLocked ? <ScreenLockMessage /> : null}
